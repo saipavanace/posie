@@ -63,6 +63,9 @@ import {
   Briefcase,
   Languages,
   RotateCcw,
+  Phone,
+  Shield,
+  Scale,
 } from 'lucide-react';
 
 // Brand Information
@@ -159,6 +162,16 @@ export default function PosieStudioPage() {
 
   // F071 Rebooking at Checkout State
   const [rebookingChoice, setRebookingChoice] = useState<'pending' | 'booked' | 'sms_reminder' | 'declined'>('pending');
+
+  // F072 Telephony Portability State
+  const [loaGenerated, setLoaGenerated] = useState(false);
+
+  // F073 Tenant RBAC State
+  const [selectedRole, setSelectedRole] = useState<'salon_owner' | 'studio_manager' | 'service_provider' | 'front_desk_coordinator'>('front_desk_coordinator');
+  const [staffMemberDeactivated, setStaffMemberDeactivated] = useState(false);
+
+  // F074 Financial Ledger Idempotency State
+  const [checkoutClickCount, setCheckoutClickCount] = useState(0);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -1481,6 +1494,204 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F072: Customer Owned Business Phone Line & Portability Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Phone size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Customer-Owned Business Line & Portability (F072 / WB U19)
+              </h3>
+            </div>
+            <Badge variant="sage">Zero Telephony Lock-In</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Your business number belongs to you, not your software platform. Send client SMS broadcasts from an authorized local line, and take your number with you anytime with an instant Letter of Authorization (LOA).
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Registered Studio Line</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>(512) 555-0199</div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>A2P 10DLC Brand Status</span>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#3A523A' }}>Verified & Active</div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Carrier Account ID</span>
+              <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>POSIE-TEL-11111111</div>
+            </div>
+          </div>
+
+          {!loaGenerated ? (
+            <Button size="sm" variant="outline" onClick={() => setLoaGenerated(true)}>
+              Generate Official Carrier Port-Out Letter (LOA)
+            </Button>
+          ) : (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px 14px', borderRadius: '8px', fontSize: '0.84rem' }}>
+              <div style={{ fontWeight: 600, color: '#3A523A', marginBottom: '4px' }}>
+                ✓ Official Carrier Letter of Authorization (LOA) Generated
+              </div>
+              <p style={{ margin: '0 0 6px', color: 'var(--color-text)' }}>
+                Billing Tel: <code>+15125550199</code> • PIN: <code>8492</code> • Target: Any Telephony Carrier (Twilio, Verizon, AT&T). Zero exit penalty.
+              </p>
+              <Badge variant="sage">Port-Out Authorization Ready</Badge>
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F073: Tenant Identity & Access Control (Document DR07) Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Tenant Security & Least-Privilege Firewall (F073 / DR07)
+              </h3>
+            </div>
+            <Badge variant="sage">DR07 Recipient Firewall</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Strict multi-tenant boundaries separate salon businesses, locations, and staff roles. Front-desk team members can check in clients but are firewalled from sensitive medical SOAP notes and owner bank payouts.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '0.84rem', fontWeight: 600, alignSelf: 'center', marginRight: '6px' }}>Simulate Active Role:</span>
+            <Button
+              size="sm"
+              variant={selectedRole === 'front_desk_coordinator' ? 'primary' : 'outline'}
+              onClick={() => setSelectedRole('front_desk_coordinator')}
+            >
+              Front Desk Coordinator
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedRole === 'service_provider' ? 'primary' : 'outline'}
+              onClick={() => setSelectedRole('service_provider')}
+            >
+              Service Provider (Specialist)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedRole === 'salon_owner' ? 'primary' : 'outline'}
+              onClick={() => setSelectedRole('salon_owner')}
+            >
+              Salon Owner
+            </Button>
+          </div>
+
+          {/* Permission Firewall Matrix */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid #E8E5E0', background: '#FAFAFA', fontSize: '0.82rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Reception Arrival Queue:</span>
+              <div style={{ fontWeight: 600, color: '#3A523A' }}>✓ Allowed for all roles</div>
+            </div>
+
+            <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid #E8E5E0', background: selectedRole === 'front_desk_coordinator' ? '#FFF5F2' : '#FAFAFA', fontSize: '0.82rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Clinical SOAP Treatment Notes:</span>
+              <div style={{ fontWeight: 600, color: selectedRole === 'front_desk_coordinator' ? '#B36B5C' : '#3A523A' }}>
+                {selectedRole === 'front_desk_coordinator' ? '🔒 Blocked (DR07 Firewall)' : '✓ Authorized'}
+              </div>
+            </div>
+
+            <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid #E8E5E0', background: selectedRole !== 'salon_owner' ? '#FFF5F2' : '#FAFAFA', fontSize: '0.82rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Bank Account & Payouts:</span>
+              <div style={{ fontWeight: 600, color: selectedRole !== 'salon_owner' ? '#B36B5C' : '#3A523A' }}>
+                {selectedRole === 'salon_owner' ? '✓ Authorized (Owner Only)' : '🔒 Blocked'}
+              </div>
+            </div>
+          </div>
+
+          {/* Session Revocation Simulator */}
+          <div style={{ borderTop: '1px solid #E8E5E0', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+              Staff Departure Protocol: Deactivating a team member instantly revokes all active session tokens.
+            </span>
+            {!staffMemberDeactivated ? (
+              <Button size="sm" variant="outline" onClick={() => setStaffMemberDeactivated(true)}>
+                Simulate Instant Session Revocation
+              </Button>
+            ) : (
+              <span style={{ fontSize: '0.82rem', color: '#B36B5C', fontWeight: 600 }}>
+                ✓ Account deactivated. All active bearer tokens revoked immediately.
+              </span>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F074: Financial Ledger & Idempotent Checkout Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Scale size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Financial Ledger & Idempotency Safeguard (F074 / D14 / D15 / D17)
+              </h3>
+            </div>
+            <Badge variant="sage">Double-Entry Ledger</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Double charges from flaky Wi-Fi or rapid button clicks are mathematically prevented via cryptographic idempotency keys. Every transaction reconciles gross customer payments, processor fees, and bank deposits.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Gross Charged (Service $120 + Tip $20)</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>$140.00</div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Processing Fee (2.6% + 10¢)</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#B36B5C' }}>-$3.74</div>
+            </div>
+            <div style={{ border: '1px solid var(--color-primary)', padding: '12px', borderRadius: '8px', background: '#F9FAF8' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)' }}>Net Bank Payout Deposit</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>$136.26</div>
+            </div>
+          </div>
+
+          {/* Idempotency Demonstration */}
+          <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong style={{ fontSize: '0.88rem' }}>Checkout Action (Idempotency Key: <code>key_checkout_8829</code>)</strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Total Payment Executions Attempted: <strong>{checkoutClickCount}</strong>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant={checkoutClickCount === 0 ? 'primary' : 'outline'}
+                onClick={() => setCheckoutClickCount(checkoutClickCount + 1)}
+              >
+                {checkoutClickCount === 0 ? 'Execute Checkout Payment ($140.00)' : 'Simulate Network Retry (Double Click)'}
+              </Button>
+            </div>
+          </div>
+
+          {checkoutClickCount === 1 && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ Payment executed once: Transaction ID <code>f074...0001</code> created with 3 balanced double-entry ledger lines.
+            </div>
+          )}
+
+          {checkoutClickCount > 1 && (
+            <div style={{ background: '#FFF9F2', border: '1px solid #E2A76F', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8A531C' }}>
+              🛡️ <strong>Idempotency Guard Activated:</strong> Request retry recognized existing transaction <code>f074...0001</code>. Returned confirmed receipt without charging card a second time. Zero duplicate transactions created!
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

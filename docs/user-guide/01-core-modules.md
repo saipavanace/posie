@@ -419,3 +419,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F071 — Rebooking at Checkout
 * **What it is:** Post-service rebooking engine offering biological return cadence recommendations (e.g. 4-week brow tint refresh, 6-week toner) with convenient suggested appointment slots.
 * **Key Invariant (Basis: B):** **Complete freedom to defer.** Proposed return slots remain strictly unbooked until explicitly accepted by the client. Clients can reserve instantly, request an automated text reminder 1 week before their window, or defer gracefully without forced pressure.
+
+---
+
+## F072 — Customer-Owned Contact Number & Zero-Lock-In Portability
+* **What it is:** Dedicated business telephony provisioning that guarantees salon owners legally own and control their salon phone and SMS lines.
+* **Key Invariant (Basis: B, Portability):** **Zero carrier or platform lock-in.** The salon business name is permanently recorded on the carrier telecom registration. When migrating or switching providers, Posie issues a pre-filled, compliant Letter of Authorization (LOA) with Carrier Account SID and Billing Telephone Number (BTN) in 1-click without exit penalties or data hostaging.
+
+---
+
+## F073 — Multi-Tenant Isolation & Least-Privilege Role Control (Document DR07)
+* **What it is:** Tenant boundary enforcement and granular role-based access control protecting client privacy and staff permissions across salon locations.
+* **Key Invariant (Document DR07, Recipient Firewall):** **Strict clinical boundary.** Front-desk coordinators, receptionists, and marketing staff are strictly firewalled from accessing or printing confidential clinical SOAP charting, medical history, and patch test records. Cross-tenant access is blocked at the core boundary layer, and revoking staff access instantly terminates all active auth tokens.
+
+---
+
+## F074 — Financial Ledger & Idempotent Checkout History (Documents D14, D15, D17)
+* **What it is:** Immutable double-entry financial transaction ledger with 3-way payout reconciliation and network-retry idempotency safeguards.
+* **Key Invariant (Documents D14, D15, D17):** **Idempotent payment execution.** In flaky salon Wi-Fi environments, double-tapping checkout buttons or retrying payment requests never double-debits a client card. The ledger strictly reconciles gross client charges, card processing fees, and net bank payouts to the exact penny with zero unaccounted leakage.
+

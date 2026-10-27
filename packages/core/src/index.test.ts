@@ -105,6 +105,14 @@ import {
   recordLocalizedSignedConsent,
   generateRebookingOffer,
   recordClientRebookingChoice,
+  provisionCustomerOwnedNumber,
+  generatePortOutLoaDocument,
+  assertTenantBoundary,
+  checkStaffPermission,
+  deactivateStaffMember,
+  TenantSecurityViolation,
+  executeIdempotentCheckoutPayment,
+  reconcilePayoutPeriod,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -2427,6 +2435,139 @@ describe('Posie Core Logic - F071 (Rebooking at Checkout)', () => {
     expect(acceptedChoice.confirmedNextAppointmentId).toBeDefined();
   });
 });
+
+describe('Posie Core Logic - F072 (Customer Owned Contact Number & Portability)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+
+  it('provisions owned business number and guarantees zero-friction carrier port-out via LOA', () => {
+    // 1. Provision business number
+    const telephony = provisionCustomerOwnedNumber({
+      businessId,
+      e164PhoneNumber: '+15125550199',
+      formattedDisplayNumber: '(512) 555-0199',
+    });
+
+    expect(telephony.status).toBe('active_verified');
+    expect(telephony.portingOutAllowed).toBe(true); // INVARIANT: Never held hostage
+    expect(telephony.carrierAccountRef).toContain('POSIE-TEL-');
+
+    // 2. Generate Letter of Authorization (LOA) to port out
+    const { updatedTelephony, loaDocument } = generatePortOutLoaDocument(telephony, {
+      businessLegalName: 'Posie Beauty Atelier LLC',
+      authorizedSignerName: 'Elena Rostova',
+      serviceAddress: '1204 South Congress Ave, Austin TX 78704',
+      targetCarrierName: 'Twilio Inc.',
+      signatureToken: 'sig_token_loa_port_9876',
+    });
+
+    expect(updatedTelephony.status).toBe('port_out_requested');
+    expect(loaDocument.billingTelephoneNumber).toBe('+15125550199');
+    expect(loaDocument.pinPasscode).toBe(telephony.portingPinPasscode);
+    expect(loaDocument.targetCarrierName).toBe('Twilio Inc.');
+  });
+});
+
+describe('Posie Core Logic - F073 (Tenant Identity & Access Control - Document DR07)', () => {
+  const businessA = '11111111-1111-1111-1111-111111111111';
+  const businessB = '22222222-2222-2222-2222-222222222222';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('enforces multi-tenant isolation, firewalls front desk from clinical SOAP notes, and revokes sessions on deactivation', () => {
+    // 1. Multi-Tenant Firewall
+    expect(() => assertTenantBoundary(businessA, businessB)).toThrow(TenantSecurityViolation);
+    expect(() => assertTenantBoundary(businessA, businessA)).not.toThrow();
+
+    // 2. Role-Based Least Privilege (DR07)
+    const frontDeskUser = {
+      userId: staffId,
+      businessId: businessA,
+      email: 'reception@posieatelier.com',
+      fullName: 'Sam Receptionist',
+      role: 'front_desk_coordinator' as const,
+      isActive: true,
+      activeSessionTokens: ['sess_token_abc123'],
+      deactivatedAt: null,
+      deactivationReason: null,
+    };
+
+    // Front desk can check in arrival queue
+    const checkinPerm = checkStaffPermission(frontDeskUser, 'checkin_reception_queue');
+    expect(checkinPerm.allowed).toBe(true);
+
+    // Front desk BLOCKED from clinical treatment SOAP notes (DR07 firewall)
+    const soapPerm = checkStaffPermission(frontDeskUser, 'view_client_clinical_soap_notes');
+    expect(soapPerm.allowed).toBe(false);
+    expect(soapPerm.reason).toContain('DR07 Recipient Firewall');
+
+    // 3. Session Revocation on Deactivation
+    const deactivatedUser = deactivateStaffMember(frontDeskUser, 'Staff member relocated out of state');
+    expect(deactivatedUser.isActive).toBe(false);
+    expect(deactivatedUser.activeSessionTokens.length).toBe(0); // Immediately revoked
+    expect(deactivatedUser.deactivatedAt).toBeDefined();
+
+    // Deactivated user cannot perform actions
+    const postDeactivationPerm = checkStaffPermission(deactivatedUser, 'checkin_reception_queue');
+    expect(postDeactivationPerm.allowed).toBe(false);
+  });
+});
+
+describe('Posie Core Logic - F074 (Financial Ledger & Event History - Documents D14, D15, D17)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('prevents duplicate charges via idempotency and reconciles 3-way gross/fee/bank payout', () => {
+    const idempotencyKey = 'checkout_appt_33333333_attempt_1';
+
+    // 1. Initial checkout payment execution ($120 service + $20 tip = $140 gross)
+    const firstAttempt = executeIdempotentCheckoutPayment({
+      businessId,
+      idempotencyKey,
+      clientId,
+      clientName: 'Chloe Bennett',
+      specialistStaffId: staffId,
+      paymentMethod: 'credit_card',
+      serviceSubtotalCents: 12000,
+      tipCents: 2000,
+    });
+
+    expect(firstAttempt.wasExistingIdempotentHit).toBe(false);
+    expect(firstAttempt.transaction.grossChargedCents).toBe(14000);
+    expect(firstAttempt.transaction.movements.length).toBe(3); // Service revenue + tips + processor fees
+    expect(firstAttempt.transaction.processorFeeCents).toBeGreaterThan(0);
+
+    // 2. INVARIANT: Network retry with same idempotencyKey returns existing record without double billing
+    const secondAttempt = executeIdempotentCheckoutPayment({
+      businessId,
+      idempotencyKey,
+      clientId,
+      clientName: 'Chloe Bennett',
+      specialistStaffId: staffId,
+      paymentMethod: 'credit_card',
+      serviceSubtotalCents: 12000,
+      tipCents: 2000,
+      existingLedger: [firstAttempt.transaction],
+    });
+
+    expect(secondAttempt.wasExistingIdempotentHit).toBe(true);
+    expect(secondAttempt.transaction.transactionId).toBe(firstAttempt.transaction.transactionId);
+    expect(secondAttempt.transaction.isDuplicateRetryPrevented).toBe(true);
+
+    // 3. Three-Way Payout Reconciliation
+    const reconciliation = reconcilePayoutPeriod({
+      businessId,
+      periodStart: '2026-11-01',
+      periodEnd: '2026-11-01',
+      transactions: [firstAttempt.transaction],
+    });
+
+    expect(reconciliation.totalGrossSalesCents).toBe(12000);
+    expect(reconciliation.totalTipsCollectedCents).toBe(2000);
+    expect(reconciliation.netBankDepositPayoutCents).toBe(firstAttempt.transaction.netProcessorDepositCents);
+    expect(reconciliation.explanationNotice).toContain('Three-Way Payout Tie-Out');
+  });
+});
+
 
 
 
