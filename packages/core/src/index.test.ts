@@ -274,6 +274,16 @@ import {
   computeBackbarUsageSummary,
   evaluateLotHealth,
   forecastStockDemand,
+  evaluateServiceReadiness,
+  evaluateBusinessAnomaly,
+  evaluateRelationshipPrivileges,
+  isMinorClient,
+  createCareSummaryDraft,
+  signAndApproveCareSummary,
+  renderCareSummaryHtml,
+  grantAssistedSupportSession,
+  revokeAssistedSupportSession,
+  maskResourceForSupport,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -6482,6 +6492,262 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(forecast.alertMessage).toContain('Definite Shortage Alert');
     });
   });
+
+  describe('Posie Core Logic - F126 (Service Readiness Rules)', () => {
+    const prerequisites = [
+      {
+        id: 'p1',
+        type: 'intake_form' as const,
+        title: 'Facial Intake Questionnaire',
+        description: 'Updated within last 12 months',
+        isSatisfied: true,
+      },
+      {
+        id: 'p2',
+        type: 'patch_test' as const,
+        title: 'Glycolic Patch Test Verification',
+        description: 'Negative reaction recorded within 14 days',
+        isSatisfied: false,
+      },
+      {
+        id: 'p3',
+        type: 'staff_qualification' as const,
+        title: 'Esthetician Chemical Peel Certification',
+        description: 'State license and internal certification active',
+        isSatisfied: true,
+      },
+    ];
+
+    it('blocks readiness when clinical prerequisites are missing and requires documented practitioner override', () => {
+      // 1. Blocked due to missing patch test
+      const verdict = evaluateServiceReadiness({
+        appointmentId: 'appt_101',
+        serviceId: 'srv_peel',
+        serviceName: 'Level 2 Chemical Peel',
+        clientId: 'cli_1',
+        clientName: 'Gemma Chan',
+        practitionerId: 'prac_1',
+        prerequisites,
+      });
+
+      expect(verdict.status).toBe('blocked_missing_prerequisite');
+      expect(verdict.satisfiedCount).toBe(2);
+      expect(verdict.totalCount).toBe(3);
+      expect(verdict.missingPrerequisites[0].id).toBe('p2');
+      expect(verdict.guidanceMessage).toContain('Essential clinical safety requirements missing');
+
+      // 2. Override validation: empty reason must throw
+      expect(() =>
+        evaluateServiceReadiness({
+          appointmentId: 'appt_101',
+          serviceId: 'srv_peel',
+          serviceName: 'Level 2 Chemical Peel',
+          clientId: 'cli_1',
+          clientName: 'Gemma Chan',
+          practitionerId: 'prac_1',
+          prerequisites,
+          override: {
+            authorizedByPractitionerId: 'prac_1',
+            practitionerName: 'Dr. Evelyn Reed',
+            reason: 'ok', // too short
+            timestampUtc: new Date().toISOString(),
+          },
+        })
+      ).toThrow('valid clinical/operational reason');
+
+      // 3. Documented override succeeds with audit trail
+      const overridden = evaluateServiceReadiness({
+        appointmentId: 'appt_101',
+        serviceId: 'srv_peel',
+        serviceName: 'Level 2 Chemical Peel',
+        clientId: 'cli_1',
+        clientName: 'Gemma Chan',
+        practitionerId: 'prac_1',
+        prerequisites,
+        override: {
+          authorizedByPractitionerId: 'prac_1',
+          practitionerName: 'Dr. Evelyn Reed',
+          reason: 'Client received identical 30% formulation 10 days ago at sister atelier with zero erythema.',
+          timestampUtc: new Date().toISOString(),
+        },
+      });
+
+      expect(overridden.status).toBe('overridden_ready');
+      expect(overridden.overrideApplied?.authorizedByPractitionerId).toBe('prac_1');
+      expect(overridden.guidanceMessage).toContain('Prerequisites overridden by Dr. Evelyn Reed');
+    });
+  });
+
+  describe('Posie Core Logic - F127 (Business Anomaly Explanations)', () => {
+    it('suppresses alerts for insufficient sample sizes and flags significant anomalies with root-cause attribution', () => {
+      // 1. Low sample size suppression
+      const lowSample = evaluateBusinessAnomaly({
+        studioId: 'studio_1',
+        category: 'booking_volume_drop',
+        observation: {
+          currentValue: 2,
+          baselineValue: 4,
+          sampleSize: 3,
+          minSampleSizeRequired: 15, // minimum 15 required
+          unit: 'count',
+        },
+        sourceRecordIds: ['appt_1', 'appt_2'],
+      });
+
+      expect(lowSample.isAlertSuppressed).toBe(true);
+      expect(lowSample.suppressionReason).toContain('Insufficient sample size');
+      expect(lowSample.suggestedChecks[0]).toContain('Continue monitoring baseline');
+
+      // 2. Statistically valid booking drop
+      const validDrop = evaluateBusinessAnomaly({
+        studioId: 'studio_1',
+        category: 'booking_volume_drop',
+        observation: {
+          currentValue: 24,
+          baselineValue: 48,
+          sampleSize: 50,
+          minSampleSizeRequired: 15,
+          unit: 'count',
+        },
+        sourceRecordIds: ['rec_1', 'rec_2'],
+      });
+
+      expect(validDrop.isAlertSuppressed).toBe(false);
+      expect(validDrop.percentageDeviation).toBe(-50);
+      expect(validDrop.severity).toBe('high');
+      expect(validDrop.suggestedChecks.length).toBeGreaterThan(0);
+      expect(validDrop.suggestedChecks[0]).toContain('Review direct booking website');
+    });
+  });
+
+  describe('Posie Core Logic - F128 (Guardian and Authorized Payer Roles)', () => {
+    it('firewalls payers from clinical notes while enabling billing receipts and minors care', () => {
+      const clientMinor = {
+        id: 'person_minor',
+        fullName: 'Zoe Kravitz (Junior)',
+        email: 'zoe.jr@example.com',
+        phone: '(310) 555-0111',
+        dateOfBirth: '2012-05-15', // 14 years old
+        isMinor: true,
+      };
+
+      const guardian = {
+        id: 'person_mom',
+        fullName: 'Lisa Bonet',
+        email: 'lisa@example.com',
+        phone: '(310) 555-0122',
+      };
+
+      const payer = {
+        id: 'person_payer',
+        fullName: 'Jason Momoa',
+        email: 'jason@example.com',
+        phone: '(310) 555-0133',
+      };
+
+      const relationship = {
+        appointmentId: 'appt_family_1',
+        client: clientMinor,
+        guardian,
+        payer,
+        hasClientAuthorizedPayerMedicalDisclosure: false,
+      };
+
+      // 1. Minor check
+      expect(isMinorClient(clientMinor.dateOfBirth, '2026-10-27')).toBe(true);
+
+      // 2. Payer privileges: billing only, zero clinical access
+      const payerAccess = evaluateRelationshipPrivileges(relationship, payer.id);
+      expect(payerAccess.canViewBillingInvoice).toBe(true);
+      expect(payerAccess.canViewClinicalNotes).toBe(false);
+      expect(payerAccess.canViewBeforeAfterPhotos).toBe(false);
+      expect(payerAccess.canSignTreatmentConsent).toBe(false);
+      expect(payerAccess.explanation).toContain('WB F128 Invariant');
+      expect(payerAccess.explanation).toContain('Paying for a visit grants billing invoice access ONLY');
+
+      // 3. Guardian privileges: can sign consent and view notes
+      const guardianAccess = evaluateRelationshipPrivileges(relationship, guardian.id);
+      expect(guardianAccess.canViewBillingInvoice).toBe(true);
+      expect(guardianAccess.canViewClinicalNotes).toBe(true);
+      expect(guardianAccess.canSignTreatmentConsent).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F129 (Documented Care Summaries)', () => {
+    it('manages care summary draft lifecycle, excludes unreleased media, and locks on practitioner sign', () => {
+      const draft = createCareSummaryDraft(
+        'appt_50',
+        'Hydra-Dew Glass Facial',
+        'Zendaya Coleman',
+        'prac_reed',
+        'Dr. Evelyn Reed',
+        '2026-10-27',
+        'Skin presented with dehydration. Applied hyaluronic infusion with positive calm response.',
+        [
+          { productId: 'p1', name: 'Hydra-Infusion Ampoule', purpose: 'applied_in_treatment' },
+          { productId: 'p2', name: 'Barrier Recovery Cream', purpose: 'recommended_home_care', instructions: 'Twice daily' },
+        ],
+        ['Apply SPF 50 generously', 'Avoid retinol for 48 hours'],
+        [
+          { photoId: 'ph1', caption: 'Cheek hydration post-treatment', hasClientMediaRelease: true, thumbnailUrl: 'https://cdn.posie.com/ph1.jpg' },
+          { photoId: 'ph2', caption: 'Clinical pore close-up', hasClientMediaRelease: false, thumbnailUrl: 'https://cdn.posie.com/ph2.jpg' },
+        ]
+      );
+
+      // Invariant: unreleased photo excluded
+      expect(draft.photos.length).toBe(1);
+      expect(draft.photos[0].photoId).toBe('ph1');
+      expect(draft.status).toBe('draft');
+
+      // Invariant: unapproved draft cannot be delivered
+      expect(() => renderCareSummaryHtml(draft)).toThrow('Unapproved care summary drafts cannot be delivered');
+
+      // Sign and approve
+      const signed = signAndApproveCareSummary(draft, 'prac_reed');
+      expect(signed.status).toBe('practitioner_approved_signed');
+      expect(signed.approvedByPractitionerId).toBe('prac_reed');
+
+      const html = renderCareSummaryHtml(signed);
+      expect(html).toContain('Your Treatment Care Packet');
+      expect(html).toContain('Hydra-Dew Glass Facial');
+      expect(html).toContain('Barrier Recovery Cream');
+      expect(html).toContain('Verified and signed by Dr. Evelyn Reed');
+    });
+  });
+
+  describe('Posie Core Logic - F130 (Assisted Support Sessions)', () => {
+    it('enforces session caps, masks payment/health secrets, and supports instant kill switch', () => {
+      // 1. Session grant with duration cap (15m to 120m)
+      const session = grantAssistedSupportSession('studio_1', 'owner_1', 'eng_alex', ['calendar_scheduling_debug'], 240); // requested 240
+      expect(session.scopes).toEqual(['calendar_scheduling_debug']);
+      expect(session.isRevoked).toBe(false);
+
+      // 2. Secret masking
+      const rawCustomerResource = {
+        clientName: 'Anne Hathaway',
+        cardNumber: '4242424242421111',
+        cardCvc: '888',
+        secretKey: 'sk_live_posie_9999',
+        clinicalSoapFindings: 'Patient diagnosed with rosacea flare and dermal hypersensitivity.',
+        allergies: 'Severe fragrance allergy',
+        practitionerNetPayUSD: 450.0,
+      };
+
+      const masked = maskResourceForSupport('clinical_chart', 'chart_99', rawCustomerResource, session.scopes);
+      expect(masked.data.cardNumber).toBe('•••• •••• •••• 1111');
+      expect(masked.data.cardCvc).toBe('•••');
+      expect(masked.data.secretKey).toBe('[REDACTED_API_SECRET]');
+      expect(masked.data.clinicalSoapFindings).toBe('[Confidential Client Health Record Hidden from Support]');
+      expect(masked.data.practitionerNetPayUSD).toBe('[Personal Compensation Hidden]');
+      expect(masked.isMaskedForSupport).toBe(true);
+
+      // 3. Instant revocation kill switch
+      const revoked = revokeAssistedSupportSession(session, 'owner_1', 'Security audit complete');
+      expect(revoked.isRevoked).toBe(true);
+      expect(revoked.revocationReason).toContain('Security audit complete');
+    });
+  });
+
 
 
 

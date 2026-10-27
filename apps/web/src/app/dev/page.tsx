@@ -367,6 +367,21 @@ export default function PosieStudioPage() {
   // F125 Lot Expiry & Stock Forecast State
   const [lotPaoSimulated, setLotPaoSimulated] = useState<boolean>(false);
 
+  // F126 Service Readiness State
+  const [readinessOverridden, setReadinessOverridden] = useState<boolean>(false);
+
+  // F127 Business Anomaly State
+  const [anomalySampleLow, setAnomalySampleLow] = useState<boolean>(false);
+
+  // F128 Guardian & Authorized Payer State
+  const [selectedRelationshipRole, setSelectedRelationshipRole] = useState<'client' | 'guardian' | 'authorized_payer'>('authorized_payer');
+
+  // F129 Documented Care Summaries State
+  const [careSummaryApproved, setCareSummaryApproved] = useState<boolean>(false);
+
+  // F130 Assisted Support Sessions State
+  const [supportSessionActive, setSupportSessionActive] = useState<boolean>(true);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -387,7 +402,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F125)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F130)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -6210,6 +6225,332 @@ export default function PosieStudioPage() {
               onClick={() => setLotPaoSimulated(!lotPaoSimulated)}
             >
               {lotPaoSimulated ? 'Reset Stock Simulation' : 'Simulate Strict Booking Demand & Definite Shortage'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F126: Service Readiness Rules */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle2 size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Service Readiness Rules (F126)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={readinessOverridden ? 'sage' : 'rose'}>
+                {readinessOverridden ? 'Ready: Overridden by Dr. Reed' : 'Blocked: Missing Patch Test (Rule F126)'}
+              </Badge>
+              <Badge variant="muted">Gingr Pattern / WB F42</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Multi-factor clinical readiness verifying intake forms, patch tests, and staff certifications before appointment check-in.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Appointment: Level 2 Chemical Peel (Gemma Chan)
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: readinessOverridden ? '#2B5329' : '#8F4A3E', fontWeight: 600 }}>
+                {readinessOverridden ? 'Clear for Treatment (Documented Override)' : 'Safety Hold: Action Required'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Facial Intake Form:</div>
+                <strong style={{ color: '#2B5329' }}>✓ Satisfied (Updated)</strong>
+              </div>
+              <div style={{ background: readinessOverridden ? '#FFF' : '#FFF5F3', padding: '8px', borderRadius: '4px', border: readinessOverridden ? '1px solid var(--color-border)' : '1px solid #E5C3B8' }}>
+                <div>Patch Test (14 Days):</div>
+                <strong style={{ color: readinessOverridden ? '#2B5329' : '#8F4A3E' }}>
+                  {readinessOverridden ? '✓ Overridden (Dr. Reed)' : '⚠ Missing / Required'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Peel Certification:</div>
+                <strong style={{ color: '#2B5329' }}>✓ Staff Certified</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📋 <strong>WB F42 Invariant:</strong> Missing information routes to review rather than an automated diagnosis. The software never makes automated medical disqualifications; missing items require practitioner review and a documented override reason.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={readinessOverridden ? 'outline' : 'primary'}
+              onClick={() => setReadinessOverridden(!readinessOverridden)}
+            >
+              {readinessOverridden ? 'Reset Patch Test Requirement' : 'Document Practitioner Readiness Override (Rule F126)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F127: Business Anomaly Explanations */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Business Anomaly Explanations (F127)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={anomalySampleLow ? 'muted' : 'rose'}>
+                {anomalySampleLow ? 'Alert Suppressed (Sample: 3/15)' : 'High Severity: Booking Drop -50%'}
+              </Badge>
+              <Badge variant="muted">WB F58 Governance</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Flags unusual booking drops and payment declines with source records and suppression for low sample sizes.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Observed Sample Size:</div>
+                <strong style={{ color: anomalySampleLow ? '#8F4A3E' : '#2B5329' }}>
+                  {anomalySampleLow ? '3 Visits (Min 15 Required)' : '50 Visits (Statistically Significant)'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Alert Decision:</div>
+                <strong>{anomalySampleLow ? 'Suppressed (Rule F127)' : 'Active High Priority Alert'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Actionable Check:</div>
+                <strong>{anomalySampleLow ? 'Continue baseline monitoring' : 'Review direct website connection'}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📊 <strong>WB F58 Invariant:</strong> Governed metrics and historical baselines. Low sample sizes automatically suppress overconfident alerts to prevent small-business panic and notification fatigue.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAnomalySampleLow(!anomalySampleLow)}
+            >
+              Toggle Sample Size ({anomalySampleLow ? 'Simulate 50 Baseline Visits (Active Alert)' : 'Simulate 3 Baseline Visits (Suppressed)'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F128: Guardian and Authorized Payer Roles */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Guardian &amp; Authorized Payer Roles (F128)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={selectedRelationshipRole === 'authorized_payer' ? 'rose' : 'sage'}>
+                {selectedRelationshipRole === 'authorized_payer'
+                  ? 'Payer Mode: Billing Only (Notes Firewalled)'
+                  : selectedRelationshipRole === 'guardian'
+                  ? 'Guardian Mode: Full Medical Consent'
+                  : 'Client Mode: Adult Record Access'}
+              </Badge>
+              <Badge variant="muted">Rule DR04 Privacy</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Separates the client receiving treatment, authorized legal guardians, and third-party payers with strict privacy firewalls.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Appointment: Zoe Kravitz (Minor, Age 14) • Evaluating Role: {selectedRelationshipRole.toUpperCase()}
+              </strong>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Billing Invoice:</div>
+                <strong style={{ color: '#2B5329' }}>✓ Viewable</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Clinical SOAP Notes:</div>
+                <strong style={{ color: selectedRelationshipRole === 'authorized_payer' ? '#8F4A3E' : '#2B5329' }}>
+                  {selectedRelationshipRole === 'authorized_payer' ? '❌ Strictly Firewalled' : '✓ Permitted'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Clinical Photos:</div>
+                <strong style={{ color: selectedRelationshipRole === 'authorized_payer' ? '#8F4A3E' : '#2B5329' }}>
+                  {selectedRelationshipRole === 'authorized_payer' ? '❌ Strictly Firewalled' : '✓ Permitted'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Sign Medical Consent:</div>
+                <strong style={{ color: selectedRelationshipRole === 'guardian' ? '#2B5329' : '#8F4A3E' }}>
+                  {selectedRelationshipRole === 'guardian' ? '✓ Legal Guardian Sign' : '❌ Minor / Payer Barred'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🛡 <strong>Rule DR04 &amp; WB F128 Invariant:</strong> Paying for an appointment alone never grants access to private notes or images. Third-party payers receive billing invoices ONLY.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={selectedRelationshipRole === 'authorized_payer' ? 'primary' : 'outline'}
+              onClick={() => setSelectedRelationshipRole('authorized_payer')}
+            >
+              Role: Third-Party Payer (Jason)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedRelationshipRole === 'guardian' ? 'primary' : 'outline'}
+              onClick={() => setSelectedRelationshipRole('guardian')}
+            >
+              Role: Legal Guardian (Lisa)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedRelationshipRole === 'client' ? 'primary' : 'outline'}
+              onClick={() => setSelectedRelationshipRole('client')}
+            >
+              Role: Client (Zoe, Minor)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F129: Documented Care Summaries */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileCheck2 size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Documented Care Summaries (F129)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={careSummaryApproved ? 'sage' : 'muted'}>
+                {careSummaryApproved ? 'Approved & Signed by Dr. Reed' : 'Unfinalized Clinical Draft'}
+              </Badge>
+              <Badge variant="muted">Gingr Report Cards</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Aesthetic visit report cards with approved products, factual observations, home-care steps, and consented photography.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Care Packet: Hydra-Dew Glass Facial (Zendaya Coleman)
+              </strong>
+              <Badge variant={careSummaryApproved ? 'sage' : 'rose'}>
+                {careSummaryApproved ? 'Ready for Client Portal' : 'Draft: Approval Required'}
+              </Badge>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', fontSize: '0.82rem', marginBottom: '10px' }}>
+              <div><strong>Practitioner Observations:</strong> Skin presented with surface dehydration. Applied hyaluronic infusion with positive calm response.</div>
+              <div style={{ marginTop: '6px' }}><strong>Products:</strong> Hydra-Infusion Ampoule (Treatment), Barrier Recovery Cream (Home-care).</div>
+              <div style={{ marginTop: '6px' }}><strong>Consented Photos:</strong> 1 Post-treatment cheek photo included (1 unreleased pore photo excluded).</div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ✨ <strong>WB F129 Invariant:</strong> Staff approve the summary and can trace every statement to its source. AI/dictation drafts remain unfinalized until approved and signed by the responsible practitioner.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={careSummaryApproved ? 'outline' : 'primary'}
+              onClick={() => setCareSummaryApproved(!careSummaryApproved)}
+            >
+              {careSummaryApproved ? 'Revert to Draft' : 'Sign & Approve Care Summary (Dr. Reed)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F130: Assisted Support Sessions */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Headphones size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Assisted Support Sessions &amp; Secret Shielding (F130)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={supportSessionActive ? 'sage' : 'rose'}>
+                {supportSessionActive ? 'Support Session Active: 60m (Secrets Shielded)' : 'Session Revoked by Studio Owner'}
+              </Badge>
+              <Badge variant="muted">WB F60 Privacy</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Time-bounded, scoped support delegation allowing engineers to troubleshoot while strictly masking payment secrets and health records.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Credit Card PAN:</div>
+                <strong style={{ color: '#2B5329' }}>•••• •••• •••• 1111</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Card CVC / API Key:</div>
+                <strong style={{ color: '#2B5329' }}>••• / [REDACTED]</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Clinical SOAP Notes:</div>
+                <strong style={{ color: '#2B5329' }}>[Health Record Hidden]</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Staff Compensation:</div>
+                <strong style={{ color: '#2B5329' }}>[Pay Hidden]</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔒 <strong>WB F60 Invariant:</strong> Support cannot see payment secrets or private records outside the granted scope. Sessions are hard-capped at 2 hours and feature an instant 1-click owner kill switch.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={supportSessionActive ? 'outline' : 'primary'}
+              onClick={() => setSupportSessionActive(!supportSessionActive)}
+            >
+              {supportSessionActive ? 'Execute Owner Kill Switch (Revoke Session)' : 'Grant Temporary Support Session (60m)'}
             </Button>
           </div>
         </Card>

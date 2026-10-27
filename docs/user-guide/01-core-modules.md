@@ -744,6 +744,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Batch/lot tracking, manufacturer expiration management, Period After Opening (PAO) open-container degradation monitoring, and appointment-driven stock consumption forecasting.
 * **Key Invariant (Basis: Growth (G); WB F46, F47, F150, Rules F125, F042):** **Definite Shortage Truth & Lot Expiry Safety.** Alerts strictly distinguish definite scheduled shortages (confirmed appointments requiring SKU X where current unexpired stock < committed units) from speculative estimates with unknown usage rates. Products exceeding PAO or manufacturer expiration dates are automatically quarantined from clinical selection.
 
+---
+
+## F126 — Service Readiness Rules (WB F42, F43)
+* **What it is:** Multi-factor readiness verification engine checking intake forms, patch test observations, staff certifications, equipment calibration, and product stock prior to appointment check-in.
+* **Key Invariant (Basis: Technical/Clinical (T); Gingr pattern, WB F42, F43, Rules F126, F042):** **Professionally Approved Rules & Clinical Routing.** "Missing information routes to review rather than an automated diagnosis." The system never makes blanket automated medical eligibility decisions. Missing clinical safety requirements route to a practitioner review task with a mandatory documented override audit trail (reason, timestamp, and practitioner ID).
+
+---
+
+## F127 — Business Anomaly Explanations (WB F58, WB F88)
+* **What it is:** Operational diagnostic engine flagging unusual booking drops, empty calendar gap spikes, payment decline surges, and merchant fee rate drifts with root-cause attribution.
+* **Key Invariant (Basis: Growth (G); WB F58, Rules F127, F020, F113):** **Governed Metrics & Low-Sample Suppression.** "Low sample sizes and missing data suppress overconfident alerts." When observation counts fall below statistical validity thresholds (e.g. fewer than 15 baseline appointments), alerts are automatically suppressed as `insufficient_sample_size` to prevent alarm fatigue and panic over normal small-business variance.
+
+---
+
+## F128 — Guardian and Authorized Payer Roles (Rules DR04, DR05, F100)
+* **What it is:** Multi-party identity engine separating the client receiving treatment, legal guardians (for minors/dependents), third-party payers, and itinerary update recipients.
+* **Key Invariant (Basis: Core Trust; Rules DR04, DR05, F100, F128):** **Payer Separation from Clinical Records.** "Paying for an appointment alone never grants access to private notes or images." Third-party payers (parents, spouses, employers) receive billing invoices and receipts ONLY. They are strictly firewalled from viewing confidential intake questionnaires, clinical SOAP notes, or before/after photography without explicit signed authorization from the client.
+
+---
+
+## F129 — Documented Care Summaries (D10, D11)
+* **What it is:** Client-friendly aesthetic visit report card generator including practitioner-approved products used, clinical observations, home-care regimen next steps, and consented photography.
+* **Key Invariant (Basis: Technical/Clinical (T); Gingr report cards, D10, D11, Rule F129):** **Signed Record & Professional Traceability.** Staff approve the summary and can trace every statement to its source. AI/dictation drafts remain strictly unfinalized until reviewed and approved by the responsible practitioner. Photos lacking explicit client media publication consent are automatically filtered out.
+
+---
+
+## F130 — Assisted Support Sessions (WB F60, Rules SEC, OPS)
+* **What it is:** Time-bounded, permission-scoped support delegation console allowing Posie support engineers to inspect specific configuration issues while strictly masked from sensitive data.
+* **Key Invariant (Basis: Operational (I); WB F60, Rules SEC, OPS, F130):** **Scope Restriction & Secret Shielding.** Support cannot see payment secrets or private records outside the granted scope. Payment card details (PAN/CVC), gateway secret keys, client clinical SOAP charts, and staff personal compensation are strictly masked. All sessions have an owner 1-click instant kill switch and a maximum 2-hour hard cap.
+
+
 
 
 

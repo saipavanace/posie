@@ -123,4 +123,9 @@ export * from './emergency_day_view';
 export * from './public_api_webhooks';
 export * from './fractional_backbar_use';
 export * from './lot_expiry_forecast';
+export * from './service_readiness';
+export * from './anomaly_explanations';
+export * from './guardian_payer_roles';
+export * from './care_summaries';
+export * from './assisted_support';
 
