@@ -243,6 +243,17 @@ import {
   handleInboundCallReceived,
   processInboundVoicemail,
   setCallRecordingState,
+  recordCommunicationConsent,
+  revokeMarketingConsent,
+  evaluateMessageDispatchPermission,
+  dispatchGovernedMessage,
+  CANONICAL_METRIC_DICTIONARY,
+  computeGovernedMetrics,
+  generateRoleBasedDashboard,
+  canViewStaffMetrics,
+  analyzeRetentionCohort,
+  identifyLapsedClientsByCadence,
+  calculateServiceContribution,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -5711,6 +5722,278 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       const activeRecordedCall = setCallRecordingState(dayCall.callRecord, true);
       expect(activeRecordedCall.recordingConsentState).toBe('recording_active');
       expect(activeRecordedCall.recordingAudioUrl).toContain('call-001.mp3');
+    });
+  });
+
+  describe('Posie Core Logic - F111 (Message Consent & Delivery System - Rules DR05, DR07, DR10, R03)', () => {
+    it('manages purpose-specific consent, suppresses marketing on opt-out, and enforces budget caps', () => {
+      const consent = recordCommunicationConsent({
+        clientId: 'cli-zendaya',
+        clientPhone: '+13105550199',
+        clientEmail: 'zendaya@example.com',
+        transactionalConsent: true,
+        marketingConsent: true,
+        clinicalCareConsent: true,
+      });
+
+      const budget = {
+        studioId: 'studio-bh',
+        monthlyBudgetCapUSD: 20.0,
+        currentSpendUSD: 19.99, // Budget near max
+        costPerSmsUSD: 0.02,
+        isHardCapEnforced: true,
+      };
+
+      // 1. Transactional send is allowed
+      const txDispatch = dispatchGovernedMessage({
+        consent,
+        budget,
+        purpose: 'transactional',
+        channel: 'sms',
+        contentBody: 'Your appointment is confirmed for tomorrow at 2 PM.',
+      });
+      expect(txDispatch.evidence.status).toBe('delivered');
+
+      // 2. Budget cap stops marketing when budget would exceed $20.00
+      const budgetCapped = dispatchGovernedMessage({
+        consent,
+        budget,
+        purpose: 'marketing',
+        channel: 'sms',
+        contentBody: 'Enjoy $25 off our seasonal facial this week!',
+      });
+      expect(budgetCapped.evidence.status).toBe('suppressed_budget_cap');
+      expect(budgetCapped.evidence.failureReason).toContain('monthly SMS budget cap');
+
+      // 3. Revoke marketing consent (Client texts STOP)
+      const revoked = revokeMarketingConsent(consent, 'Client sent STOP via SMS');
+      expect(revoked.marketingConsent).toBe(false);
+      expect(revoked.transactionalConsent).toBe(true); // Transactional remains intact!
+
+      // 4. Marketing send is now suppressed due to opt-out
+      const optOutSuppressed = dispatchGovernedMessage({
+        consent: revoked,
+        budget: { ...budget, currentSpendUSD: 5.0 }, // Plenty of budget
+        purpose: 'marketing',
+        channel: 'sms',
+        contentBody: 'Seasonal specials are here!',
+      });
+      expect(optOutSuppressed.evidence.status).toBe('suppressed_optout');
+      expect(optOutSuppressed.evidence.failureReason).toContain('opted out of marketing');
+    });
+  });
+
+  describe('Posie Core Logic - F112 (Metric Dictionary & Governed Data Model)', () => {
+    it('computes governed studio metrics with canonical source lineage and freshness timestamps', () => {
+      expect(CANONICAL_METRIC_DICTIONARY.gross_sales.underlyingAccounts).toContain('4000');
+      expect(CANONICAL_METRIC_DICTIONARY.tips_collected.underlyingAccounts).toContain('2300');
+
+      const data = {
+        serviceSalesCents: 20000,    // $200.00
+        serviceDiscountsCents: 2000, // $20.00
+        serviceRefundsCents: 1000,   // $10.00 -> Net Service: $170.00
+        retailSalesCents: 5000,      // $50.00
+        retailRefundsCents: 500,     // $5.00 -> Net Retail: $45.00
+        tipsCollectedCents: 4000,    // $40.00
+        salesTaxCollectedCents: 2100,// $21.00
+        giftCardsSoldCents: 5000,    // $50.00
+        giftCardsRedeemedCents: 2000,// $20.00 -> GC Delta: $30.00
+        completedAppointmentsCount: 2,
+        rebookedAppointmentsCount: 1, // 50% rebooking
+      };
+
+      const metrics = computeGovernedMetrics(data, { startDate: '2026-10-01', endDate: '2026-10-31' });
+
+      // Invariant: Canonical Net Service Revenue
+      expect(metrics.net_service_revenue.value).toBe(170.0);
+      expect(metrics.net_retail_revenue.value).toBe(45.0);
+      expect(metrics.gross_sales.value).toBe(300.0); // 200 + 50 + 50
+      expect(metrics.tips_collected.value).toBe(40.0);
+      expect(metrics.deferred_gift_card_liability.value).toBe(30.0);
+      expect(metrics.rebooking_rate_percentage.value).toBe(50.0);
+      expect(metrics.average_ticket_value_usd.value).toBe(107.5); // (170 + 45) / 2
+
+      // Lineage & freshness
+      expect(metrics.net_service_revenue.sourceLineage).toEqual(['4000']);
+      expect(metrics.net_service_revenue.freshnessTimestampUTC).toBeDefined();
+    });
+  });
+
+  describe('Posie Core Logic - F113 (Role-Based Dashboards & Renter Privacy Firewall)', () => {
+    const studioFinancials = {
+      grossSalesUSD: 10000,
+      netServiceRevenueUSD: 8500,
+      netRetailRevenueUSD: 1500,
+      totalTipsCollectedUSD: 1800,
+      laborCostUSD: 4000,
+      netOperatingMarginUSD: 3500,
+      appointmentsTotal: 75,
+      studioUtilizationPercentage: 82.5,
+    };
+
+    const staffRecords = [
+      {
+        staffId: 'staff-maya',
+        staffName: 'Maya Lin',
+        role: 'commission_practitioner' as const,
+        serviceSalesUSD: 3200,
+        retailCommissionUSD: 120,
+        tipsUSD: 680,
+        appointmentsCompleted: 24,
+        hoursLogged: 32,
+        weeklyGoalUSD: 3000,
+        retentionRate: 85.0,
+      },
+      {
+        staffId: 'staff-chloe',
+        staffName: 'Chloe Vance',
+        role: 'booth_renter' as const,
+        serviceSalesUSD: 2800,
+        retailCommissionUSD: 0,
+        tipsUSD: 540,
+        appointmentsCompleted: 20,
+        hoursLogged: 28,
+        weeklyGoalUSD: 2500,
+        retentionRate: 78.0,
+      },
+    ];
+
+    it('enforces privacy firewall for practitioners while providing full P&L to owners', () => {
+      // 1. Owner view
+      const ownerDashboard = generateRoleBasedDashboard({
+        requestingStaffId: 'owner-elena',
+        requestingRole: 'owner',
+        studioFinancials,
+        staffRecords,
+      });
+
+      expect(ownerDashboard.viewType).toBe('owner_manager');
+      if (ownerDashboard.viewType === 'owner_manager') {
+        expect(ownerDashboard.data.studioOverview.grossSalesUSD).toBe(10000);
+        expect(ownerDashboard.data.studioOverview.laborCostPercentage).toBe(40.0);
+        expect(ownerDashboard.data.staffSummaries.length).toBe(2);
+      }
+
+      // 2. Practitioner view (Maya)
+      const mayaDashboard = generateRoleBasedDashboard({
+        requestingStaffId: 'staff-maya',
+        requestingRole: 'commission_practitioner',
+        studioFinancials,
+        staffRecords,
+      });
+
+      expect(mayaDashboard.viewType).toBe('practitioner');
+      if (mayaDashboard.viewType === 'practitioner') {
+        expect(mayaDashboard.data.personalMetrics.personalServiceRevenueUSD).toBe(3200);
+        expect(mayaDashboard.data.personalMetrics.tipsCollectedUSD).toBe(680);
+        expect(mayaDashboard.data.goalProgress.percentageAchieved).toBe(106.7); // 3200 / 3000
+        expect(mayaDashboard.data.isStudioFinancialsFirewalled).toBe(true);
+      }
+
+      // 3. Privacy access check
+      expect(canViewStaffMetrics('staff-maya', 'commission_practitioner', 'staff-maya')).toBe(true);
+      expect(canViewStaffMetrics('staff-maya', 'commission_practitioner', 'staff-chloe')).toBe(false); // Maya cannot snoop on Chloe!
+      expect(canViewStaffMetrics('owner-elena', 'owner', 'staff-chloe')).toBe(true); // Owner can view all
+    });
+  });
+
+  describe('Posie Core Logic - F114 (Retention and Return Cohorts - WB F58)', () => {
+    it('analyzes return cohorts, ignores same-day add-on visits, and flags cadence-lapsed clients', () => {
+      const firstTimeClients = [
+        { clientId: 'c1', clientName: 'Zendaya Coleman', firstVisitDate: '2024-11-01' },
+        { clientId: 'c2', clientName: 'Anne Hathaway', firstVisitDate: '2024-11-05' },
+        { clientId: 'c3', clientName: 'One-Time Visitor', firstVisitDate: '2024-11-10' },
+      ];
+
+      const subsequentVisits = [
+        // Same-day add-on visit for Zendaya on 2024-11-01 (MUST BE IGNORED)
+        { clientId: 'c1', clientName: 'Zendaya Coleman', visitDate: '2024-11-01', serviceCategory: 'Add-on Mask', amountPaidUSD: 35 },
+        // Valid return visit for Zendaya 28 days later
+        { clientId: 'c1', clientName: 'Zendaya Coleman', visitDate: '2024-11-29', serviceCategory: 'Facial', amountPaidUSD: 150 },
+        // Valid return visit for Anne 30 days later
+        { clientId: 'c2', clientName: 'Anne Hathaway', visitDate: '2024-12-05', serviceCategory: 'Brow Sculpt', amountPaidUSD: 55 },
+      ];
+
+      const summary = analyzeRetentionCohort({
+        cohortMonth: '2024-11',
+        firstTimeClients,
+        subsequentVisits,
+        referenceDate: '2025-02-01', // Cohort is >60 days old
+      });
+
+      expect(summary.initialAcquiredClientsCount).toBe(3);
+      expect(summary.returnedDistinctVisitCount).toBe(2); // Zendaya + Anne (One-time visitor did not return)
+      expect(summary.retentionRatePercentage).toBe(66.7);
+      expect(summary.repeatRevenueUSD).toBe(205.0); // 150 + 55 (35 same-day was excluded!)
+      expect(summary.isImmatureCohort).toBe(false);
+
+      // Immature cohort test (<60 days)
+      const immatureSummary = analyzeRetentionCohort({
+        cohortMonth: '2026-10',
+        firstTimeClients,
+        subsequentVisits,
+        referenceDate: '2026-10-27',
+      });
+      expect(immatureSummary.isImmatureCohort).toBe(true);
+
+      // Cadence lapsed client analysis
+      const lapsedReport = identifyLapsedClientsByCadence(
+        [
+          { clientId: 'c1', clientName: 'Zendaya', lastVisitDate: '2026-10-15', expectedCadenceDays: 28 }, // 12 days ago: On track
+          { clientId: 'c2', clientName: 'Lapsed Client', lastVisitDate: '2026-08-01', expectedCadenceDays: 28 }, // ~87 days ago: Lapsed
+        ],
+        '2026-10-27'
+      );
+
+      expect(lapsedReport[0].status).toBe('cadence_on_track');
+      expect(lapsedReport[1].status).toBe('cadence_overdue_lapsed');
+      expect(lapsedReport[1].daysOverdue).toBeGreaterThan(14);
+    });
+  });
+
+  describe('Posie Core Logic - F115 (Service Contribution Analysis - Rules R06, R07)', () => {
+    it('calculates operational contribution margin, flags missing costs, and evaluates floor thresholds', () => {
+      // 1. Fully mapped service
+      const hydraFacial = {
+        serviceId: 'srv-hydra',
+        serviceName: 'Hydra-Dew Glass Facial',
+        grossPriceUSD: 150.0,
+        practitionerCompensationUSD: 67.5, // 45% commission
+        backbarSuppliesUSD: 12.0,          // Serums + cleanser
+        merchantProcessingFeeUSD: 4.0,     // 2.6% + $0.10
+        overheadAllocationUSD: 10.0,       // Linens
+      };
+
+      const floorRule = {
+        minimumDollarMarginUSD: 50.0,
+        minimumPercentageMargin: 35.0,
+      };
+
+      const result = calculateServiceContribution(hydraFacial, floorRule);
+
+      // Costs = 67.5 + 12.0 + 4.0 + 10.0 = $93.50
+      // Margin = 150.0 - 93.50 = $56.50
+      // Margin % = 56.50 / 150 = 37.7%
+      expect(result.totalDirectCostsUSD).toBe(93.5);
+      expect(result.contributionMarginUSD).toBe(56.5);
+      expect(result.contributionMarginPercentage).toBe(37.7);
+      expect(result.hasMissingCostCoverage).toBe(false);
+      expect(result.meetsContributionFloor).toBe(true);
+      expect(result.accountingDisclaimer).toContain('Operational estimate only');
+
+      // 2. Service with missing backbar cost mapping
+      const unmappedService = {
+        serviceId: 'srv-peel',
+        serviceName: 'Custom Chemical Peel',
+        grossPriceUSD: 120.0,
+        practitionerCompensationUSD: 54.0,
+        // Missing backbarSuppliesUSD & merchantProcessingFeeUSD!
+      };
+
+      const unmappedResult = calculateServiceContribution(unmappedService, floorRule);
+      expect(unmappedResult.hasMissingCostCoverage).toBe(true);
+      expect(unmappedResult.missingCostItems).toContain('backbar_supplies_cost_unmapped');
+      expect(unmappedResult.missingCostItems).toContain('merchant_processing_fee_unmapped');
     });
   });
 

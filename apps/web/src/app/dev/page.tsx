@@ -313,6 +313,22 @@ export default function PosieStudioPage() {
   const [telephonyRecordingConsentDev, setTelephonyRecordingConsentDev] = useState<boolean>(true);
   const [telephonyAfterHoursRoute, setTelephonyAfterHoursRoute] = useState<boolean>(false);
 
+  // F111 Message Consent State
+  const [consentMarketingDevRevoked, setConsentMarketingDevRevoked] = useState<boolean>(false);
+  const [consentBudgetCapReached, setConsentBudgetCapReached] = useState<boolean>(false);
+
+  // F112 Metric Dictionary State
+  const [metricLineageInspectOpen, setMetricLineageInspectOpen] = useState<boolean>(false);
+
+  // F113 Role Dashboard State
+  const [dashboardRoleDev, setDashboardRoleDev] = useState<'owner' | 'practitioner'>('owner');
+
+  // F114 Cohort Retention State
+  const [cohortFilterImmature, setCohortFilterImmature] = useState<boolean>(false);
+
+  // F115 Service Contribution State
+  const [contributionBackbarMapped, setContributionBackbarMapped] = useState<boolean>(true);
+
 
 
 
@@ -339,7 +355,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F110)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F115)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -5087,6 +5103,348 @@ export default function PosieStudioPage() {
               onClick={() => setTelephonyRecordingConsentDev(!telephonyRecordingConsentDev)}
             >
               Toggle Recording Consent (Rule U19: {telephonyRecordingConsentDev ? 'Active' : 'Unrecorded'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F111: Message Consent & Delivery System */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Message Consent &amp; Delivery System (F111)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={consentMarketingDevRevoked ? 'rose' : (consentBudgetCapReached ? 'muted' : 'sage')}>
+                {consentMarketingDevRevoked ? 'Marketing Opted-Out (STOP)' : (consentBudgetCapReached ? 'SMS Spend Cap Reached ($20.00)' : 'All Consent Active')}
+              </Badge>
+              <Badge variant="muted">Rule DR05 / DR10</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Enforces purpose-specific consent (transactional vs. marketing vs. clinical). Revoking promotional consent instantly suppresses future campaign blasts across all automations while preserving critical appointment itineraries.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong>Transactional Booking SMS:</strong>
+                <p style={{ color: '#555', margin: '4px 0' }}>&ldquo;Your appointment is confirmed for Sunday at 2:00 PM.&rdquo;</p>
+                <div style={{ color: '#2B5329', fontWeight: 600 }}>✓ Allowed (Critical Notification Preserved)</div>
+              </div>
+
+              <div style={{ background: '#FFF', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong>Promotional Marketing SMS:</strong>
+                <p style={{ color: '#555', margin: '4px 0' }}>&ldquo;Enjoy $25 off our seasonal radiance facial this week!&rdquo;</p>
+                {consentMarketingDevRevoked ? (
+                  <div style={{ color: '#8F4A3E', fontWeight: 600 }}>🚫 Suppressed: Client Revoked Marketing (Rule DR05)</div>
+                ) : consentBudgetCapReached ? (
+                  <div style={{ color: '#B36B5C', fontWeight: 600 }}>⏸ Suppressed: Studio Monthly Budget Cap Reached ($20.00)</div>
+                ) : (
+                  <div style={{ color: '#2B5329', fontWeight: 600 }}>✓ Allowed (Active Consent &amp; Budget OK)</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={consentMarketingDevRevoked ? 'primary' : 'outline'}
+              onClick={() => {
+                setConsentMarketingDevRevoked(!consentMarketingDevRevoked);
+                setConsentBudgetCapReached(false);
+              }}
+            >
+              {consentMarketingDevRevoked ? 'Re-grant Marketing Consent' : 'Simulate Client "STOP" Text (Revoke Marketing)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setConsentBudgetCapReached(!consentBudgetCapReached);
+                setConsentMarketingDevRevoked(false);
+              }}
+            >
+              {consentBudgetCapReached ? 'Reset Studio SMS Budget' : 'Simulate Spend Cap Reached ($20/mo)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F112: Metric Dictionary and Governed Data Model */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Scale size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Metric Dictionary &amp; Governed Data Model (F112)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Single Source of Truth</Badge>
+              <Badge variant="muted">Lineage: Accounts 4000/4100/2100/2300</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Canonical metric formulas shared identically across dashboards, payroll statements, and QuickBooks journals to permanently eliminate metric divergence.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '14px' }}>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div>Net Service Revenue:</div>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>$170.00</strong>
+              <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>Account 4000 (Gross $200 - $30 refunds/disc)</div>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div>Net Retail Revenue:</div>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>$45.00</strong>
+              <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>Account 4100 ($50 - $5 returns)</div>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div>Average Ticket Value:</div>
+              <strong style={{ fontSize: '1.2rem', color: '#2B5329' }}>$107.50</strong>
+              <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>($170 + $45) / 2 visits</div>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div>60-Day Rebooking Rate:</div>
+              <strong style={{ fontSize: '1.2rem', color: '#2B5329' }}>50.0%</strong>
+              <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>1 of 2 clients rebooked</div>
+            </div>
+          </div>
+
+          {metricLineageInspectOpen && (
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', fontSize: '0.8rem', color: '#555', marginBottom: '14px' }}>
+              <strong>Verifiable Metric Lineage &amp; Freshness:</strong>
+              <div style={{ marginTop: '4px' }}>
+                • <code>net_service_revenue</code> → Account 4000 (Freshness: Verified Live UTC)<br />
+                • <code>tips_collected</code> → Account 2300 (100% Pass-Through)<br />
+                • <code>deferred_gift_card_liability</code> → Account 2100 (Liability Delta: +$30.00)
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMetricLineageInspectOpen(!metricLineageInspectOpen)}
+            >
+              {metricLineageInspectOpen ? 'Hide Metric Lineage' : 'Inspect Source Lineage & Freshness'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F113: Role-Based Dashboards & Renter Privacy Firewall */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Role-Based Dashboards &amp; Renter Privacy Firewall (F113)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={dashboardRoleDev === 'owner' ? 'sage' : 'muted'}>
+                Viewing Mode: {dashboardRoleDev === 'owner' ? 'Studio Owner (Full P&L)' : 'Commission Practitioner (Maya Lin)'}
+              </Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Enforces strict privacy firewalls so booth renters and practitioners cannot snoop on studio net profit or another colleague&apos;s earnings. Surfaces private non-punitive goals without toxic public rankings.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            {dashboardRoleDev === 'owner' ? (
+              <div>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+                  Owner / General Manager Overview (Full Studio P&amp;L)
+                </strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                  <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Gross Studio Sales:</div>
+                    <strong>$10,000.00</strong>
+                  </div>
+                  <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Labor Cost (40.0%):</div>
+                    <strong>$4,000.00</strong>
+                  </div>
+                  <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Net Operating Margin:</div>
+                    <strong style={{ color: '#2B5329' }}>$3,500.00</strong>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#666' }}>
+                  Staff Summaries visible: Maya Lin ($3,200), Chloe Vance ($2,800).
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <strong style={{ color: 'var(--color-primary)' }}>
+                    Maya Lin — Personal Practitioner Cockpit
+                  </strong>
+                  <span style={{ fontSize: '0.76rem', color: '#2B5329', fontWeight: 600 }}>
+                    🔒 Studio P&amp;L &amp; Other Staff Earnings Firewalled
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                  <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>My Personal Service Sales:</div>
+                    <strong>$3,200.00</strong>
+                  </div>
+                  <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>My Pass-Through Tips:</div>
+                    <strong style={{ color: '#2B5329' }}>$680.00</strong>
+                  </div>
+                  <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Personal Weekly Goal:</div>
+                    <strong>106.7% Achieved</strong> ($3,000 goal)
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#666' }}>
+                  Growth trend: +12% vs last month. Chloe&apos;s earnings and studio profit are strictly inaccessible.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={dashboardRoleDev === 'owner' ? 'outline' : 'primary'}
+              onClick={() => setDashboardRoleDev(dashboardRoleDev === 'owner' ? 'practitioner' : 'owner')}
+            >
+              Switch Role: {dashboardRoleDev === 'owner' ? 'Simulate Practitioner (Maya Lin)' : 'Simulate Studio Owner'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F114: Retention and Return Cohorts */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Retention and Return Cohorts (F114)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Cohort: Nov 2024 (66.7% Retained)</Badge>
+              <Badge variant="muted">Same-Day Filter Active</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Segments repeat visits by monthly acquisition cohort. Filters out same-day add-on visits to prevent inflated retention figures, and highlights cadence-overdue lapsed clients.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Cohort Acquired:</div>
+                <strong>3 Clients (Nov 2024)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Distinct Return Visits:</div>
+                <strong style={{ color: '#2B5329' }}>2 Returned (66.7%)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Repeat Revenue:</div>
+                <strong>$205.00</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Average Return Cadence:</div>
+                <strong>29 Days</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', fontSize: '0.8rem', color: '#555' }}>
+              <strong>Cadence Lapsed Analysis:</strong>
+              <div style={{ marginTop: '4px' }}>
+                • <strong>Zendaya Coleman:</strong> Last visit 12 days ago (Cadence: 28 days) → <span style={{ color: '#2B5329', fontWeight: 600 }}>On Track</span><br />
+                • <strong>Lapsed Guest:</strong> Last visit 87 days ago (Cadence: 28 days) → <span style={{ color: '#8F4A3E', fontWeight: 600 }}>Overdue by 59 Days (Queued for Win-Back Flow)</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* F115: Service Contribution Analysis */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Scale size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Service Contribution Analysis (F115)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={contributionBackbarMapped ? 'sage' : 'rose'}>
+                {contributionBackbarMapped ? 'Meets Floor: $56.50 (37.7%)' : 'Missing Cost Warning: Backbar Unmapped'}
+              </Badge>
+              <Badge variant="muted">Rule R06 / R07</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Calculates unit-level contribution margin by subtracting direct backbar materials, practitioner compensation, and merchant fees from gross service revenue.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                Hydra-Dew Glass Facial (Retail: $150.00)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                Net Contribution Margin: {contributionBackbarMapped ? '$56.50 (37.7%)' : '$82.50 (Estimate - Missing Backbar)'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '10px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Labor Commission:</div>
+                <strong>-$67.50 (45%)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Backbar Supplies:</div>
+                <strong>{contributionBackbarMapped ? '-$12.00 (Serums)' : '⚠ Unmapped'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Merchant Fee:</div>
+                <strong>-$4.00 (2.6%)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Room &amp; Linens:</div>
+                <strong>-$10.00</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ⚖ <strong>Rule R06 Invariant:</strong> Operational estimate only. Reflects unit contribution margin (Revenue less direct costs) and does not constitute GAAP-audited CPA net studio profit.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setContributionBackbarMapped(!contributionBackbarMapped)}
+            >
+              Toggle Backbar Recipe ({contributionBackbarMapped ? 'Simulate Unmapped Supplies' : 'Map Backbar Serums'})
             </Button>
           </div>
         </Card>

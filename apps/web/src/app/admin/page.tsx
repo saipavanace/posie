@@ -26,10 +26,11 @@ import {
   Phone,
   MessageSquare,
   Send,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function PosieStudioAdminPage() {
-  const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials' | 'brand_migration' | 'inbox_calling' | 'automations_hub'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials' | 'brand_migration' | 'inbox_calling' | 'automations_hub' | 'analytics_insights'>('calendar');
 
   // POS State
   const [posTipSplit, setPosTipSplit] = useState<boolean>(true);
@@ -83,6 +84,11 @@ export default function PosieStudioAdminPage() {
   // F110 Telephony State
   const [adminCallIncoming, setAdminCallIncoming] = useState<boolean>(false);
   const [adminCallRecordingActive, setAdminCallRecordingActive] = useState<boolean>(true);
+
+  // F111-F115 Analytics & Insights State
+  const [adminAnalyticsRole, setAdminAnalyticsRole] = useState<'owner' | 'practitioner'>('owner');
+  const [adminContributionMissingCost, setAdminContributionMissingCost] = useState<boolean>(false);
+  const [adminConsentStopSimulated, setAdminConsentStopSimulated] = useState<boolean>(false);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8F6F2' }}>
@@ -159,7 +165,7 @@ export default function PosieStudioAdminPage() {
                 background: '#FFF5F3',
               }}
             >
-              🧪 Feature Lab (F001–F110)
+              🧪 Feature Lab (F001–F115)
             </a>
           </div>
         </div>
@@ -180,6 +186,7 @@ export default function PosieStudioAdminPage() {
               { id: 'brand_migration', label: 'Brand & Migration', icon: Sparkles },
               { id: 'inbox_calling', label: 'Client Inbox & Calling', icon: Phone },
               { id: 'automations_hub', label: 'Visit Hub & Flows', icon: MessageSquare },
+              { id: 'analytics_insights', label: 'Analytics & Cohorts', icon: TrendingUp },
             ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = activeTab === tab.id;
@@ -1564,6 +1571,237 @@ export default function PosieStudioAdminPage() {
               </Card>
             </div>
           )}
+
+          {/* 10. ANALYTICS & GOVERNED METRICS (F111, F112, F113, F114, F115) */}
+          {activeTab === 'analytics_insights' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.6rem', color: 'var(--color-primary)', margin: 0 }}>
+                    Studio Analytics &amp; Governed Insights
+                  </h2>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    Metric Dictionary (F112), Role Dashboards (F113), Cohorts (F114), Contribution (F115), and Consent (F111)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Badge variant="sage">Metric Lineage: Live UTC</Badge>
+                  <Badge variant="muted">Double-Entry Reconciled</Badge>
+                </div>
+              </div>
+
+              {/* F112: Governed Metric Dictionary (Single Source of Truth) */}
+              <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Scale size={18} color="var(--color-primary)" />
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                      Governed Metric Dictionary (F112)
+                    </strong>
+                  </div>
+                  <Badge variant="sage">Single Source of Truth</Badge>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '0.82rem', marginBottom: '12px' }}>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <div>Net Service Revenue:</div>
+                    <strong style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>$8,500.00</strong>
+                    <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>Account 4000 (Gross minus refunds)</div>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <div>Net Retail Boutique:</div>
+                    <strong style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>$1,500.00</strong>
+                    <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>Account 4100 (Skincare sales)</div>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <div>Pass-Through Tips:</div>
+                    <strong style={{ fontSize: '1.2rem', color: '#2B5329' }}>$1,800.00</strong>
+                    <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>Account 2300 (100% staff pass-through)</div>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <div>Average Ticket Value:</div>
+                    <strong style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>$133.33</strong>
+                    <div style={{ fontSize: '0.72rem', color: '#777', marginTop: '2px' }}>75 Completed visits</div>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '0.78rem', color: '#666', background: '#FFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid #EAE6DF' }}>
+                  🔒 <strong>Consistency Guarantee:</strong> Executive summary, practitioner statements, and QuickBooks journals query identical underlying ledger accounts.
+                </div>
+              </Card>
+
+              {/* F113: Role-Based Dashboard Switcher */}
+              <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Users size={18} color="var(--color-primary)" />
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                      Role-Based Cockpit &amp; Privacy Firewall (F113)
+                    </strong>
+                  </div>
+                  <Badge variant={adminAnalyticsRole === 'owner' ? 'sage' : 'muted'}>
+                    Active Cockpit: {adminAnalyticsRole === 'owner' ? 'Studio Owner' : 'Maya Lin (Practitioner)'}
+                  </Badge>
+                </div>
+
+                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+                  {adminAnalyticsRole === 'owner' ? (
+                    <div>
+                      <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+                        Studio P&amp;L Executive Summary
+                      </strong>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                        <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                          <div>Gross Sales:</div>
+                          <strong>$10,000.00</strong>
+                        </div>
+                        <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                          <div>Labor Cost (40.0%):</div>
+                          <strong>$4,000.00</strong>
+                        </div>
+                        <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                          <div>Net Operating Profit:</div>
+                          <strong style={{ color: '#2B5329' }}>$3,500.00</strong>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#666' }}>
+                        Staff Earnings Visible: Maya Lin ($3,200), Chloe Vance ($2,800).
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <strong style={{ color: 'var(--color-primary)' }}>
+                          Maya Lin — Personal Practitioner Performance
+                        </strong>
+                        <span style={{ fontSize: '0.76rem', color: '#2B5329', fontWeight: 600 }}>
+                          🔒 Studio Net Profit &amp; Colleague Earnings Firewalled
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                        <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                          <div>My Service Revenue:</div>
+                          <strong>$3,200.00</strong>
+                        </div>
+                        <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                          <div>My Pass-Through Tips:</div>
+                          <strong style={{ color: '#2B5329' }}>$680.00</strong>
+                        </div>
+                        <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                          <div>Personal Weekly Goal:</div>
+                          <strong>106.7% Achieved</strong> ($3,000 goal)
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#666' }}>
+                        Non-punitive private growth target. Chloe&apos;s earnings and studio profit are strictly inaccessible.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    size="sm"
+                    variant={adminAnalyticsRole === 'owner' ? 'outline' : 'primary'}
+                    onClick={() => setAdminAnalyticsRole(adminAnalyticsRole === 'owner' ? 'practitioner' : 'owner')}
+                  >
+                    Switch Cockpit: {adminAnalyticsRole === 'owner' ? 'Simulate Practitioner (Maya Lin)' : 'Simulate Studio Owner'}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* F114: Retention Cohorts & F115: Service Contribution Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                {/* F114 Cohort Summary */}
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                      Retention &amp; Return Cohorts (F114)
+                    </strong>
+                    <Badge variant="sage">Nov 2024: 66.7% Retained</Badge>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#555', marginBottom: '10px' }}>
+                    <div>• <strong>Initial Acquired:</strong> 3 Clients (Nov 2024)</div>
+                    <div>• <strong>Distinct Return Visits:</strong> 2 Clients (Same-day visits excluded)</div>
+                    <div>• <strong>Repeat Revenue:</strong> $205.00 • Avg Interval: 29 Days</div>
+                  </div>
+                  <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', padding: '10px', borderRadius: '6px', fontSize: '0.76rem', color: '#666' }}>
+                    <strong>Cadence Overdue Triage:</strong> 1 client 59 days past normal return cycle. Queued for gentle win-back outreach.
+                  </div>
+                </Card>
+
+                {/* F115 Service Contribution */}
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                      Service Contribution Margin (F115)
+                    </strong>
+                    <Badge variant={adminContributionMissingCost ? 'rose' : 'sage'}>
+                      {adminContributionMissingCost ? 'Missing Backbar Warning' : 'Margin: $56.50 (37.7%)'}
+                    </Badge>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#555', marginBottom: '10px' }}>
+                    <div>• <strong>Hydra-Dew Glass Facial:</strong> $150.00 Gross Retail</div>
+                    <div>• <strong>Labor Commission (45%):</strong> -$67.50</div>
+                    <div>• <strong>Direct Supplies &amp; Merchant:</strong> {adminContributionMissingCost ? '⚠ Unmapped' : '-$16.00'}</div>
+                    <div>• <strong>Room &amp; Linens:</strong> -$10.00</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAdminContributionMissingCost(!adminContributionMissingCost)}
+                    >
+                      Toggle Cost Mapping
+                    </Button>
+                    <span style={{ fontSize: '0.72rem', color: '#888' }}>Rule R06: Operational Estimate</span>
+                  </div>
+                </Card>
+              </div>
+
+              {/* F111: Message Consent & Spend Cap */}
+              <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck size={18} color="var(--color-primary)" />
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                      Message Consent &amp; Budget Controls (F111)
+                    </strong>
+                  </div>
+                  <Badge variant={adminConsentStopSimulated ? 'rose' : 'sage'}>
+                    {adminConsentStopSimulated ? 'STOP Text Processed (Marketing Suppressed)' : 'Consent: Full Compliance'}
+                  </Badge>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem', marginBottom: '12px' }}>
+                  <div style={{ background: '#FAF8F5', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Transactional Reminders:</div>
+                    <strong style={{ color: '#2B5329' }}>100% Active (Preserved)</strong>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Promotional Campaigns:</div>
+                    <strong style={{ color: adminConsentStopSimulated ? '#8F4A3E' : '#2B5329' }}>
+                      {adminConsentStopSimulated ? 'Suppressed (Rule DR05)' : 'Opted-In (710 Clients)'}
+                    </strong>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <div>Monthly SMS Budget:</div>
+                    <strong>$14.20 / $50.00 Spent</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    size="sm"
+                    variant={adminConsentStopSimulated ? 'primary' : 'outline'}
+                    onClick={() => setAdminConsentStopSimulated(!adminConsentStopSimulated)}
+                  >
+                    {adminConsentStopSimulated ? 'Reset Consent Demo' : 'Simulate Client "STOP" Text (Rule DR05)'}
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
 
@@ -1612,7 +1850,7 @@ export default function PosieStudioAdminPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F110)
+          🧪 Feature Lab (F001–F115)
         </a>
       </div>
     </div>

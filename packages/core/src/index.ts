@@ -108,4 +108,9 @@ export * from './visit_hub';
 export * from './automation_recipes';
 export * from './communication_inbox';
 export * from './calling_and_voicemail';
+export * from './message_consent';
+export * from './metric_dictionary';
+export * from './role_dashboards';
+export * from './retention_cohorts';
+export * from './service_contribution';
 

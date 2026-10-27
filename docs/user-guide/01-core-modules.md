@@ -654,6 +654,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** In-app business telephony suite providing studio phone lines, caller ID with instant client profile popups, voicemail-to-text automated transcription, and after-hours call routing.
 * **Key Invariant (Basis: B; WB U19, Rules F060, F072, F110, F130):** **Approved recording controls & human escalation truth.** Staff and callers can clearly distinguish recorded, transcribed, and unrecorded calls. Audible two-party recording consent disclosures are strictly enforced before any recording activates. Publishes clear, staffed operating hours (e.g., Mon–Sat 9:00 AM – 7:00 PM) and transparent voicemail callback expectations, strictly prohibiting fraudulent or unstaffed claims of 24/7 live telephone support.
 
+---
+
+## F111 — Message Consent and Delivery System (Rules DR05, DR07, DR10, R03)
+* **What it is:** Purpose-specific communication consent engine managing transactional confirmations, promotional campaigns, digital aftercare, carrier sender registration (A2P 10DLC), opt-out enforcement, and monthly SMS budget spend caps.
+* **Key Invariant (Basis: Foundation; R03, Rules DR05, DR07, DR10):** **Instant marketing suppression & transactional protection.** Consent is purpose-specific: accepting an appointment or signing a treatment consent never automatically enrolls a client in marketing blasts (Rule DR05). When a client sends "STOP" or revokes marketing consent, promotional sends across all automation flows and broadcast campaigns are instantly suppressed, while critical transactional visit itineraries, reschedules, and receipts remain strictly preserved. Enforces hard monthly SMS budget caps to protect studios from unexpected carrier fees.
+
+---
+
+## F112 — Metric Dictionary and Governed Data Model
+* **What it is:** Canonical analytics dictionary defining appointments, service lines, retail products, money, time, and cohorts with transparent source lineage and calculation freshness.
+* **Key Invariant (Basis: Foundation; analytics chapter):** **Single Source of Truth & verifiable lineage.** Every screen (executive dashboard, practitioner pay stub, daily drawer close, QuickBooks journal sync) calculates financial and operational metrics from the exact same canonical formulas. Every calculated metric exposes underlying ledger accounts (e.g., Accounts 4000, 4100, 2100, 2300) and UTC freshness timestamps, completely eliminating contradictory totals across studio views.
+
+---
+
+## F113 — Role-Based Dashboards & Renter Privacy Firewall (WB F57, F58)
+* **What it is:** Tailored performance and operational cockpits providing appropriate granularity for studio owners, general managers, commission practitioners, and independent booth renters.
+* **Key Invariant (Basis: Launch candidate (L); WB F57, F58, Rules F020, F113, F127):** **Independent privacy firewall & non-punitive goals.** Booth renters and commission practitioners can view only their own personal sales, tip earnings, retention rates, and assigned clients. They are strictly firewalled from viewing studio net profit, overhead expenses, or another practitioner's financial earnings or client notes. Features private personal milestone goals and contextual growth trends, intentionally avoiding toxic public staff leaderboards or punitive rankings.
+
+---
+
+## F114 — Retention and Return Cohorts (WB F58)
+* **What it is:** Acquisition cohort analytics engine tracking first-to-second visit conversion rates, return intervals, repeat revenue contribution, and cadence-based lapsed client outreach.
+* **Key Invariant (Basis: Growth (G); WB F58, Rules F019, F049, F114, F165):** **Same-day repeat filter & immature cohort disclosure.** Same-day add-on services or emergency adjustments never count as repeat visits; retention strictly measures return appointments on distinct calendar dates. Cohorts under 60 days old are explicitly stamped as `immature_in_progress` to prevent premature panic over active return windows. Tracks individualized return cadences (e.g., 28 days for lash refills vs. 45 days for facials) to identify overdue lapsed clients for gentle, proactive rebooking.
+
+---
+
+## F115 — Service Contribution Analysis (Rules R06, R07)
+* **What it is:** Unit-level service profitability engine calculating net operational contribution margin (Gross Revenue minus direct backbar supplies, practitioner compensation, and merchant processing fees).
+* **Key Invariant (Basis: Growth (G); Rules R06, R07, F143, F152, F177):** **Operational contribution truth & missing cost coverage.** Estimated contribution is strictly labeled as unit operational margin and explicitly disclaims GAAP CPA-audited net profit. If backbar recipes or payment fees are unmapped, the system flags `hasMissingCostCoverage: true` and identifies missing cost inputs. Evaluates third-party discount promotions (e.g. ClassPass off-peak rates) against owner-defined dollar and percentage contribution floors to prevent margin cannibalization.
+
+
 
 
 
