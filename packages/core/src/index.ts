@@ -57,3 +57,6 @@ export * from './expenses';
 export * from './data_export';
 export * from './daily_close';
 export * from './complaints';
+export * from './support_escalation';
+export * from './billing_preview';
+export * from './communication_preferences';

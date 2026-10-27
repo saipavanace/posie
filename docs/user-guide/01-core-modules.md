@@ -343,3 +343,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F059 — Client Complaint Resolution & Redo Record (Document D18)
 * **What it is:** Structured dispute management and service recovery workflow for tracking client complaints, appointment re-dos, and goodwill resolutions.
 * **Key Invariant (D18):** Preserves an **immutable audit record** of the original client concern and factual chronological timeline. Consequential financial actions (refunds, store credits) strictly require named business owner sign-off, adverse reaction reports enforce qualified clinical lead triage, and complimentary re-dos track full business recovery costs (materials, labor, and goodwill).
+
+
+---
+
+## F060 — Human Support Escalation & Honest Staffed Hours
+* **What it is:** Direct escalation path to real human support specialists with defined operating hours, urgent priority routing, and scheduled callbacks.
+* **Key Invariant (WB C5, Row 70):** Bots and automated routing **strictly cannot promise immediate human responses outside staffed hours**. After-hours requests surface the next staffed window, place the ticket in the priority morning queue, and offer scheduled telephone callbacks to prevent unfulfilled 24/7 promises.
+
+---
+
+## F061 — Usage & Bill Preview
+* **What it is:** Real-time billing transparency tool showing accrued fixed plan costs, staff calendar licenses, metered marketing SMS broadcasts, and payment terminal rentals.
+* **Key Invariant (WB C7, C14):** Features owner-configured **spending caps with automated 80% and 100% threshold alerts**. Reaching 100% pauses non-essential metered variable marketing campaigns to prevent surprise end-of-month invoices while keeping essential booking operations running.
+
+---
+
+## F062 — Communication Preferences & Quiet Hours (Document DR05)
+* **What it is:** Granular messaging permissions system separating transactional appointment alerts, clinical aftercare instructions, and promotional marketing broadcasts, with client-defined quiet hours.
+* **Key Invariant (DR05):** Unsubscribing from promotional marketing **never disables essential appointment receipts or safety alerts**. Promotional text blasts respect local quiet hours (default 9:00 PM – 8:00 AM) and are deferred until morning, while all opt-in/opt-out actions append immutable timestamps to the client's consent audit trail.

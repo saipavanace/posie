@@ -75,6 +75,12 @@ import {
   appendChronologyEvent,
   attachRedoRecovery,
   resolveComplaintCase,
+  createSupportEscalation,
+  resolveSupportTicket,
+  generateBillingPreview,
+  initCommunicationPreferences,
+  updateChannelPreference,
+  evaluateMessageDispatch,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -1802,4 +1808,146 @@ describe('Posie Core Logic - F059 (Client Complaint Resolution & Redo Record - D
     expect(successClinical.resolvedRecord?.clinicalLeadName).toBe('Dr. Sarah Jenkins, MD');
   });
 });
+
+describe('Posie Core Logic - F060 (Human Support Escalation)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('provides immediate SLA during staffed hours and rejects fake immediate claims after hours', () => {
+    // 1. In-hours submission (e.g. 2:00 PM on Wednesday)
+    const inHoursTicket = createSupportEscalation({
+      businessId,
+      requesterStaffId: staffId,
+      requesterName: 'Elena Rostova',
+      contactPhone: '+15125550199',
+      urgency: 'critical_system_block',
+      summary: 'Card terminal offline during checkout rush',
+      details: 'Card reader reports SSL connection timeout when processing client debit card.',
+      submissionTime: '2026-11-04T14:00:00Z', // Wednesday 14:00 (within 8-19)
+    });
+
+    expect(inHoursTicket.submittedDuringStaffedHours).toBe(true);
+    expect(inHoursTicket.immediateHumanAvailable).toBe(true);
+    expect(inHoursTicket.slaTargetMinutes).toBe(15);
+    expect(inHoursTicket.statusNotice).toContain('respond within 15 minutes');
+
+    // 2. After-hours submission (e.g. 10:30 PM on Wednesday)
+    const afterHoursTicket = createSupportEscalation({
+      businessId,
+      requesterStaffId: staffId,
+      requesterName: 'Elena Rostova',
+      contactPhone: '+15125550199',
+      urgency: 'billing_or_payout',
+      summary: 'Question regarding weekend deposit payout schedule',
+      details: 'Want to confirm if Friday card transactions batch out on Saturday or Monday morning.',
+      submissionTime: '2026-11-04T22:30:00Z', // Wednesday 22:30 (outside 8-19)
+      callbackRequested: true,
+      preferredCallbackWindow: 'Thursday 9:00 AM - 11:00 AM',
+    });
+
+    expect(afterHoursTicket.submittedDuringStaffedHours).toBe(false);
+    expect(afterHoursTicket.immediateHumanAvailable).toBe(false);
+    expect(afterHoursTicket.nextStaffedWindowStart).toBeDefined();
+    expect(afterHoursTicket.statusNotice).toContain('human specialist team is currently off-duty');
+    expect(afterHoursTicket.status).toBe('callback_scheduled');
+
+    // 3. Resolve ticket
+    const resolved = resolveSupportTicket(inHoursTicket, {
+      assignedAgentName: 'Marcus Support Lead',
+      resolutionNotes: 'Terminal network reset executed remotely; test swipe approved cleanly.',
+    });
+    expect(resolved.status).toBe('resolved');
+    expect(resolved.assignedAgentName).toBe('Marcus Support Lead');
+  });
+});
+
+describe('Posie Core Logic - F061 (Usage & Bill Preview)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+
+  it('itemizes subscription and metered usage, triggering spend limit alerts at 100% threshold', () => {
+    // Studio Team ($79/mo, 3 included seats), 4 active staff (+1 seat = $20), 1 terminal ($15), 6,000 SMS ($120)
+    const preview = generateBillingPreview({
+      businessId,
+      planTier: 'studio_team',
+      billingCycleStart: '2026-11-01',
+      billingCycleEnd: '2026-11-30',
+      nextInvoiceDate: '2026-12-01',
+      includedStaffSeats: 3,
+      totalActiveStaffCount: 4,
+      activeTerminalsCount: 1,
+      meteredSmsSegmentsUsed: 6000, // 6,000 segments @ $0.02 = $120.00
+      spendingCapCents: 10000,      // $100.00 spend cap on variable usage
+    });
+
+    // Fixed subscription: $79 (base) + $20 (1 seat) + $15 (1 terminal) = $114.00 (11,400 cents)
+    expect(preview.fixedSubscriptionTotalCents).toBe(11400);
+
+    // Variable usage: 6000 * 2 cents = 12,000 cents ($120.00)
+    expect(preview.meteredUsageTotalCents).toBe(12000);
+
+    // Cap status should be exceeded
+    expect(preview.spendingCapStatus).toBe('cap_reached_100');
+    expect(preview.overageAlertMessage).toContain('Monthly variable spend cap reached');
+
+    // Grand total includes estimated 8.25% tax
+    expect(preview.estimatedGrandTotalCents).toBeGreaterThan(preview.fixedSubscriptionTotalCents + preview.meteredUsageTotalCents);
+    expect(preview.lineItems.length).toBe(4);
+  });
+});
+
+describe('Posie Core Logic - F062 (Communication Preferences & Quiet Hours - DR05)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+
+  it('separates marketing from transactional messaging and enforces quiet hours for promotional blasts', () => {
+    // 1. Initial preferences with marketing opted out by default
+    const prefs = initCommunicationPreferences({
+      clientId,
+      businessId,
+      phone: '+15125550199',
+      email: 'claire@example.com',
+      initialPromotionalOptIn: false,
+    });
+
+    expect(prefs.transactionalSmsEnabled).toBe(true);
+    expect(prefs.promotionalSmsEnabled).toBe(false);
+    expect(prefs.consentHistory.length).toBe(1);
+
+    // 2. Promotional message blocked due to lack of consent
+    const blockedPromo = evaluateMessageDispatch(prefs, {
+      channel: 'promotional_marketing',
+      proposedSendTimeIso: '2026-11-04T15:00:00Z',
+    });
+    expect(blockedPromo.canSendImmediately).toBe(false);
+    expect(blockedPromo.reason).toContain('Client has opted out of promotional marketing');
+
+    // 3. Client opts in via self-service portal
+    const optedInPrefs = updateChannelPreference(prefs, {
+      channel: 'promotional_marketing',
+      action: 'opt_in',
+      source: 'client_self_service_portal',
+      notes: 'Client enabled weekly salon glow-up tips and seasonal promo alerts.',
+    });
+    expect(optedInPrefs.promotionalSmsEnabled).toBe(true);
+    expect(optedInPrefs.consentHistory.length).toBe(2);
+
+    // 4. Promotional message during quiet hours (e.g. 23:00 / 11:00 PM) is deferred
+    const nightPromo = evaluateMessageDispatch(optedInPrefs, {
+      channel: 'promotional_marketing',
+      proposedSendTimeIso: '2026-11-04T23:00:00Z',
+    });
+    expect(nightPromo.canSendImmediately).toBe(false);
+    expect(nightPromo.isDeferredForQuietHours).toBe(true);
+    expect(nightPromo.reason).toContain('Deferred: Quiet hours active');
+
+    // 5. Critical transactional appointment confirmation during night hours is NOT deferred
+    const nightAppointmentAlert = evaluateMessageDispatch(optedInPrefs, {
+      channel: 'transactional_appointment',
+      proposedSendTimeIso: '2026-11-04T23:00:00Z',
+    });
+    expect(nightAppointmentAlert.canSendImmediately).toBe(true);
+    expect(nightAppointmentAlert.isDeferredForQuietHours).toBe(false);
+  });
+});
+
 

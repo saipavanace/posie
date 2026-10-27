@@ -52,6 +52,9 @@ import {
   Coins,
   MessageSquareWarning,
   Check,
+  Headphones,
+  CreditCard,
+  BellOff,
 } from 'lucide-react';
 
 // Brand Information
@@ -105,6 +108,17 @@ export default function PosieStudioPage() {
 
   // F059 Complaint & Redo State
   const [complaintStep, setComplaintStep] = useState<'intake' | 'redo_scheduled' | 'resolved'>('intake');
+
+  // F060 Support Escalation State
+  const [supportSubmittedAfterHours, setSupportSubmittedAfterHours] = useState(false);
+  const [callbackBooked, setCallbackBooked] = useState(false);
+
+  // F061 Billing & Usage Preview State
+  const [smsUsageCount, setSmsUsageCount] = useState(5500);
+
+  // F062 Communication Preferences State
+  const [promoSmsOptIn, setPromoSmsOptIn] = useState(false);
+  const [quietHoursSimulatedNight, setQuietHoursSimulatedNight] = useState(false);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -562,6 +576,209 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F060: Human Support Escalation Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Headphones size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Human Support Escalation & Staffed Hours (F060)
+              </h3>
+            </div>
+            <Badge variant="sage">Staffed Hours: Mon-Fri 8 AM - 7 PM CT</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            No endless robot loops or unkept 24/7 promises. When you need a human, you get genuine transparency: verified SLAs during open hours and guaranteed morning priority callbacks when off-duty.
+          </p>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            <Button
+              variant={!supportSubmittedAfterHours ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => { setSupportSubmittedAfterHours(false); setCallbackBooked(false); }}
+            >
+              Simulate Day Shift (Staffed Hours)
+            </Button>
+            <Button
+              variant={supportSubmittedAfterHours ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => { setSupportSubmittedAfterHours(true); setCallbackBooked(false); }}
+            >
+              Simulate Night Shift (After Hours: 10:30 PM)
+            </Button>
+          </div>
+
+          {!supportSubmittedAfterHours ? (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#3A523A', fontWeight: 600, marginBottom: '4px' }}>
+                <CheckCircle2 size={16} /> Urgent Escalation Active — 15 Minute Response SLA
+              </div>
+              <div style={{ color: 'var(--color-text)' }}>
+                Dedicated specialist <strong>Marcus</strong> is reviewing terminal network logs for your checkout station. Expected callback or live chat connect: &lt; 15 mins.
+              </div>
+            </div>
+          ) : (
+            <div style={{ background: '#FFF9F5', border: '1px solid #E2A76F', padding: '14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#B36B5C', fontWeight: 600, marginBottom: '6px' }}>
+                <AlertCircle size={16} /> Human Specialists Currently Off-Duty
+              </div>
+              <p style={{ margin: '0 0 10px', color: 'var(--color-text)' }}>
+                Our team is off-duty until 8:00 AM Central tomorrow. We do not use automated bots to fake live replies.
+              </p>
+              {callbackBooked ? (
+                <Badge variant="sage">✓ Priority Morning Callback Reserved: Thursday 9:00 AM</Badge>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setCallbackBooked(true)}>
+                  Schedule Guaranteed Morning Callback (9:00 AM)
+                </Button>
+              )}
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F061: Usage & Bill Preview Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CreditCard size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Live Usage & Upcoming Invoice Preview (F061)
+              </h3>
+            </div>
+            <Badge variant="sage">Billing Cycle: Nov 1 – Nov 30</Badge>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Fixed Plan (Studio Team + 1 Seat + Terminal)</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>$114.00</div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Metered SMS ({smsUsageCount.toLocaleString()} segments)</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: smsUsageCount >= 5000 ? '#B36B5C' : 'var(--color-primary)' }}>
+                ${(smsUsageCount * 0.02).toFixed(2)}
+              </div>
+            </div>
+            <div style={{ border: '1px solid var(--color-primary)', padding: '12px', borderRadius: '8px', background: '#F9FAF8' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)' }}>Estimated Next Invoice</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                ${((114 + smsUsageCount * 0.02) * 1.0825).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Spend Cap Protection Alert */}
+          {smsUsageCount * 0.02 >= 100 ? (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '12px 14px', borderRadius: '8px', fontSize: '0.84rem', marginBottom: '16px' }}>
+              <strong style={{ color: '#B36B5C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertTriangle size={15} /> 100% Variable Spend Cap Reached ($100.00):
+              </strong>
+              <p style={{ margin: '4px 0 0', color: 'var(--color-text)' }}>
+                Optional promotional SMS broadcasts are paused to protect against unexpected credit charges. Transactional booking confirmations remain fully active.
+              </p>
+            </div>
+          ) : (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#3A523A', marginBottom: '16px' }}>
+              ✓ Usage is within your $100.00 monthly variable safety limit.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)' }}>Simulate SMS Broadcast Volume:</span>
+            <Button size="sm" variant="outline" onClick={() => setSmsUsageCount(3500)}>
+              Normal (3,500 msgs / $70)
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSmsUsageCount(5500)}>
+              Peak Campaign (5,500 msgs / $110 - Cap Alert)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F062: Communication Preferences & Quiet Hours Showcase (Document DR05) */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BellOff size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Communication Channels & Quiet Hours (F062 / DR05)
+              </h3>
+            </div>
+            <Badge variant="sage">Quiet Hours: 9 PM – 8 AM</Badge>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ padding: '12px', borderRadius: '8px', border: '1px solid #E8E5E0', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.86rem' }}>Transactional Appointments</strong>
+                <Badge variant="sage">Always On</Badge>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                Booking receipts and urgent calendar reschedules. Cannot be disabled without full STOP.
+              </p>
+            </div>
+
+            <div style={{ padding: '12px', borderRadius: '8px', border: '1px solid #E8E5E0', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.86rem' }}>Clinical Care Reminders</strong>
+                <Badge variant="sage">Active</Badge>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                Post-peel aftercare instructions and patch test check-in prompts.
+              </p>
+            </div>
+
+            <div style={{ padding: '12px', borderRadius: '8px', border: '1px solid #E8E5E0', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.86rem' }}>Promotional & Perks</strong>
+                <Badge variant={promoSmsOptIn ? 'sage' : 'muted'}>
+                  {promoSmsOptIn ? 'Opted In' : 'Opted Out'}
+                </Badge>
+              </div>
+              <div style={{ marginTop: '8px' }}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPromoSmsOptIn(!promoSmsOptIn)}
+                >
+                  {promoSmsOptIn ? 'Turn Off Marketing SMS' : 'Opt-In to Glow Perks'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quiet Hours Evaluation Simulation */}
+          <div style={{ borderTop: '1px solid #E8E5E0', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.84rem', fontWeight: 600 }}>Outbound Dispatch Verification:</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setQuietHoursSimulatedNight(!quietHoursSimulatedNight)}
+              >
+                {quietHoursSimulatedNight ? 'Simulate Send at 2:00 PM (Day)' : 'Simulate Send at 11:00 PM (Night)'}
+              </Button>
+            </div>
+
+            {quietHoursSimulatedNight ? (
+              <div style={{ background: '#FFF9F5', border: '1px solid #E2A76F', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#8A531C' }}>
+                🌙 <strong>Night Hour Detected (11:00 PM):</strong> Promotional deals are strictly deferred until 8:00 AM to respect client sleep. Urgent booking confirmations still deliver instantly.
+              </div>
+            ) : (
+              <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#3A523A' }}>
+                ☀️ <strong>Day Hour (2:00 PM):</strong> Clear to send immediately to consented recipients.
+              </div>
+            )}
+          </div>
+        </Card>
+      </section>
+
 
 
       {/* Booking Box */}
