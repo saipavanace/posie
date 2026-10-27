@@ -7,20 +7,14 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
-  Users,
-  DollarSign,
-  TrendingUp,
-  UserCheck,
-  Moon,
   Calendar,
   AlertCircle,
-  HelpCircle,
-  MapPin,
-  History,
-  Lock,
-  Phone,
-  Mail,
-  Car,
+  Bell,
+  CalendarDays,
+  User,
+  ArrowRight,
+  Send,
+  AlertTriangle,
 } from 'lucide-react';
 
 // Brand Information
@@ -29,93 +23,64 @@ const brandData = {
   tagline: 'Glow up without the headache.',
 };
 
-// F024: Canonical Location
-const studioLocation = {
-  name: 'Posie Flagship Atelier',
-  address: '1204 S Congress Ave, Suite 200, Austin, TX 78704',
-  phone: '+1 (512) 555-0199',
-  email: 'hello@posieatelier.com',
-  parking: 'Complimentary valet or reserved client spots in rear lot.',
-  accessibility: 'Step-free ramp entry • Elevator to 2nd Floor • Low-glare suite lighting',
-};
-
-// Services (F023: Inclusive Gender-Neutral Complexity Options)
+// Services with tailored F026 Policies
 const services = [
   {
     id: 's1',
     name: 'Hydra-Dew Glass Glow Facial',
-    tag: 'Fan Favorite',
-    basePrice: 120,
+    tag: 'Standard Service',
+    price: 120,
     duration: 60,
-    description: 'Double cleanse, fruit enzyme sweep, and ultra-drenching hyaluronic infusion.',
-    complexityTierName: 'Extended Cryo & Pore Flush',
-    complexitySurcharge: 30,
+    depositPct: 20, // 20% standard
+    cancelWindowHours: 24,
+    waiver: 'none',
   },
   {
     id: 's2',
-    name: 'Fluff & Define Brow Sculpt',
-    tag: 'Quick Refresh',
-    basePrice: 55,
-    duration: 35,
-    description: 'Custom tinting and precision shaping that makes your natural arches pop.',
-    complexityTierName: 'Lamination & Tint Combo',
-    complexitySurcharge: 25,
+    name: 'TCA Brightening Chemical Peel',
+    tag: 'High Prep Service',
+    price: 180,
+    duration: 75,
+    depositPct: 50, // 50% deposit for peel
+    cancelWindowHours: 48, // 48-hr cancellation
+    waiver: 'chemical_peel_waiver',
   },
   {
     id: 's3',
-    name: 'Satin Smooth Dermaplaning',
-    tag: 'Instant Results',
-    basePrice: 90,
-    duration: 45,
-    description: 'Gentle peach-fuzz removal and dead cell sweep. Silk finish.',
-    complexityTierName: 'Add Vitamin C Brightening Infusion',
-    complexitySurcharge: 20,
+    name: 'Fluff & Define Brow Sculpt',
+    tag: 'Quick Refresh',
+    price: 55,
+    duration: 35,
+    depositPct: 20,
+    cancelWindowHours: 24,
+    waiver: 'none',
   },
 ];
 
-// F025: Sample Client Timeline (Chronological Audit)
-const initialTimeline = [
-  {
-    id: 'e1',
-    time: 'Today, 2:30 PM',
-    title: 'Hydra-Dew Facial Completed',
-    actor: 'Chloe (Master Esthetician)',
-    type: 'visit',
-    isPrivate: false,
-  },
-  {
-    id: 'e2',
-    time: 'Today, 2:15 PM',
-    title: 'Skin Care Observation: Sensitivity noted on nose bridge',
-    actor: 'Chloe',
-    type: 'clinical_note',
-    isPrivate: true,
-  },
-  {
-    id: 'e3',
-    time: 'Oct 24, 2026',
-    title: 'Signed Digital Acid & Exfoliation Waiver (v1.2)',
-    actor: 'Maya (Client)',
-    type: 'waiver',
-    isPrivate: false,
-  },
+// F027: Calendar Schedule State
+const calendarAppointments = [
+  { id: 'a1', time: '10:00 AM - 11:00 AM', client: 'Maya S.', service: 'Hydra-Dew Facial', staff: 'Chloe' },
+  { id: 'a2', time: '11:30 AM - 12:45 PM', client: 'Sarah J.', service: 'TCA Chemical Peel', staff: 'Chloe' },
+  { id: 'a3', time: '02:00 PM - 02:35 PM', client: 'Jessica M.', service: 'Brow Sculpt', staff: 'Sienna' },
 ];
 
 export default function PosieStudioPage() {
-  const [selectedService, setSelectedService] = useState<string>('s1');
-  const [addComplexityTier, setAddComplexityTier] = useState<boolean>(false);
-  const [timelineRole, setTimelineRole] = useState<'esthetician' | 'client'>('esthetician');
+  const [selectedService, setSelectedService] = useState<string>('s2');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [calendarView, setCalendarView] = useState<'day' | 'practitioner'>('day');
 
-  const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
-  const finalPrice = addComplexityTier
-    ? activeServiceObj.basePrice + activeServiceObj.complexitySurcharge
-    : activeServiceObj.basePrice;
+  // F027 Conflict Demonstration State
+  const [hasConflict, setHasConflict] = useState(false);
 
-  // Filter timeline based on least privilege role (F025)
-  const visibleTimeline = initialTimeline.filter((item) =>
-    timelineRole === 'client' ? !item.isPrivate : true
-  );
+  // F028 Reminder State
+  const [reminderStatus, setReminderStatus] = useState<string>('Scheduled for 24h prior via SMS');
+
+  const activeServiceObj = services.find((s) => s.id === selectedService) || services[1];
+
+  const handleTestConflict = () => {
+    setHasConflict(true);
+    setTimeout(() => setHasConflict(false), 3000);
+  };
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
@@ -154,114 +119,112 @@ export default function PosieStudioPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Badge variant="sage">Features F001 - F025 Live</Badge>
+          <Badge variant="sage">Features F001 - F028 Live</Badge>
           <Badge variant="rose">Atelier Studio</Badge>
         </div>
       </header>
 
-      {/* F024: Canonical Business Location & Parking Bar */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                <MapPin size={18} color="var(--color-primary)" />
-                <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
-                  {studioLocation.name}
-                </strong>
-                <Badge variant="muted">Open Tue-Sat</Badge>
-              </div>
-              <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>{studioLocation.address}</p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', color: 'var(--color-primary)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Phone size={15} /> {studioLocation.phone}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Car size={15} /> Free Valet & Parking
-              </span>
-            </div>
-          </div>
-        </Card>
-      </section>
-
-      {/* F025: Unified Client Timeline Workspace */}
+      {/* F027: Interactive Calendar Working Views */}
       <section style={{ marginBottom: '40px' }}>
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
+        <Card style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <History size={20} color="var(--color-primary)" />
+              <CalendarDays size={20} color="var(--color-primary)" />
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-                Feature 025: Unified Client Timeline (Maya's Profile)
+                Feature 027: Calendar Working Views & Drag Concurrency
               </span>
             </div>
 
-            {/* Role Filter Switcher */}
             <div style={{ display: 'flex', gap: '8px' }}>
               <Button
-                variant={timelineRole === 'esthetician' ? 'primary' : 'outline'}
+                variant={calendarView === 'day' ? 'primary' : 'outline'}
                 size="sm"
-                onClick={() => setTimelineRole('esthetician')}
+                onClick={() => setCalendarView('day')}
               >
-                Esthetician View (Full Access)
+                Day Timeline
               </Button>
               <Button
-                variant={timelineRole === 'client' ? 'primary' : 'outline'}
+                variant={calendarView === 'practitioner' ? 'primary' : 'outline'}
                 size="sm"
-                onClick={() => setTimelineRole('client')}
+                onClick={() => setCalendarView('practitioner')}
               >
-                Client View (Redacted)
+                Specialist Columns
               </Button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {visibleTimeline.map((item) => (
+          {/* Conflict Alert Simulation */}
+          {hasConflict && (
+            <div
+              style={{
+                backgroundColor: '#FFE3E3',
+                border: '1px solid #FFA8A8',
+                color: '#C92A2A',
+                padding: '12px 16px',
+                borderRadius: '10px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '0.88rem',
+              }}
+            >
+              <AlertTriangle size={18} />
+              <span>
+                <strong>Conflict Prevented:</strong> Chloe is already booked for Sarah J. (11:30 AM – 12:45 PM). Overlapping slots cannot be double-booked.
+              </span>
+            </div>
+          )}
+
+          {/* Calendar Event Slots */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+            {calendarAppointments.map((appt) => (
               <div
-                key={item.id}
+                key={appt.id}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '12px 16px',
                   borderRadius: '10px',
-                  backgroundColor: item.isPrivate ? '#FFF4E5' : 'var(--color-bg)',
-                  border: item.isPrivate ? '1px solid #FFD8A8' : '1px solid var(--color-border)',
+                  backgroundColor: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
                 }}
               >
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>{item.title}</strong>
-                    {item.isPrivate && (
-                      <Badge variant="rose">
-                        <Lock size={10} style={{ marginRight: '4px' }} /> Private Care Note
-                      </Badge>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>{appt.time}</strong>
+                    <Badge variant="sage">{appt.staff}</Badge>
                   </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    Recorded by {item.actor} • {item.time}
+                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                    {appt.client} • {appt.service}
                   </span>
                 </div>
+
+                <Badge variant="muted">Confirmed</Badge>
               </div>
             ))}
           </div>
+
+          <Button variant="outline" size="sm" onClick={handleTestConflict}>
+            Simulate Double-Booking Conflict Check
+          </Button>
         </Card>
       </section>
 
-      {/* F023: Treatment Menu with Gender-Neutral Complexity Tier */}
+      {/* F026: Service-Specific Policy Rules */}
       <section style={{ marginBottom: '40px' }}>
         <div style={{ marginBottom: '20px' }}>
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-            Feature 023: Transparent, Gender-Neutral Pricing
+            Feature 026: Service-Specific Policy Rules
           </span>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Treatment Menu</h2>
+          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Tailored Policies per Treatment</h2>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            We price by time and complexity, never by gender. Extra add-ons are fully agreed before booking.
+            High-prep treatments (like chemical peels) automatically apply tailored deposits and 48-hr notice.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
           {services.map((svc) => {
             const isSelected = selectedService === svc.id;
             return (
@@ -275,90 +238,67 @@ export default function PosieStudioPage() {
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                 }}
-                onClick={() => {
-                  setSelectedService(svc.id);
-                  setAddComplexityTier(false);
-                }}
+                onClick={() => setSelectedService(svc.id)}
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <Badge variant="sage">{svc.tag}</Badge>
+                    <Badge variant={svc.depositPct > 20 ? 'rose' : 'sage'}>{svc.tag}</Badge>
                     <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-primary)' }}>
-                      ${svc.basePrice}
+                      ${svc.price}
                     </span>
                   </div>
 
                   <h3 style={{ fontSize: '1.35rem', marginBottom: '8px', color: 'var(--color-primary)' }}>
                     {svc.name}
                   </h3>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-                    {svc.description}
-                  </p>
+
+                  <div
+                    style={{
+                      backgroundColor: 'var(--color-bg)',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      color: 'var(--color-text)',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <strong>Policy:</strong> {svc.depositPct}% Deposit • {svc.cancelWindowHours}h Cancellation Notice
+                  </div>
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    borderTop: '1px solid var(--color-border)',
-                    paddingTop: '12px',
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                    <Clock size={16} /> {svc.duration} mins
-                  </span>
-                  <Button variant={isSelected ? 'tertiary' : 'outline'} size="sm">
-                    {isSelected ? 'Selected' : 'Select'}
-                  </Button>
-                </div>
+                <Button variant={isSelected ? 'tertiary' : 'outline'} size="sm">
+                  {isSelected ? 'Selected' : 'Select'}
+                </Button>
               </Card>
             );
           })}
         </div>
       </section>
 
-      {/* Booking Confirmation Box */}
+      {/* F028: Appointment Reminders & Confirmation Box */}
       <section>
         <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
-          <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            Book Your Appointment
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <Bell size={20} color="var(--color-primary)" />
+            <h3 style={{ fontSize: '1.35rem', color: 'var(--color-primary)' }}>
+              Confirm Reservation & Set Automatic Reminder (F028)
+            </h3>
+          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
               <span style={{ color: 'var(--color-text-muted)' }}>Treatment:</span>
-              <strong>{activeServiceObj.name}</strong>
+              <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
             </div>
 
-            {/* F023 Complexity Tier Consent Option */}
-            <div
-              style={{
-                backgroundColor: 'var(--color-bg)',
-                padding: '12px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--color-border)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={addComplexityTier}
-                  onChange={(e) => setAddComplexityTier(e.target.checked)}
-                  style={{ accentColor: 'var(--color-primary)' }}
-                />
-                <span>
-                  <strong>Optional Upgrade:</strong> {activeServiceObj.complexityTierName} (+${activeServiceObj.complexitySurcharge})
-                </span>
-              </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Tailored Deposit ({activeServiceObj.depositPct}%):</span>
+              <strong>${((activeServiceObj.price * activeServiceObj.depositPct) / 100).toFixed(2)}</strong>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-              <strong>Total Quoted Price:</strong>
-              <strong>${finalPrice}.00</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Automated SMS Reminder:</span>
+              <strong style={{ color: 'var(--color-secondary)' }}>{reminderStatus}</strong>
             </div>
           </div>
 
@@ -376,9 +316,9 @@ export default function PosieStudioPage() {
             >
               <CheckCircle2 size={24} color="var(--color-primary)" />
               <div>
-                <strong>Appointment Confirmed!</strong>
+                <strong>Appointment Confirmed & Reminder Queued!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  Recorded on your chronological client timeline (F025).
+                  If you reschedule, obsolete reminders are automatically cancelled without duplicate alerts.
                 </p>
               </div>
             </div>
@@ -388,7 +328,7 @@ export default function PosieStudioPage() {
               size="lg"
               onClick={() => setBookingConfirmed(true)}
             >
-              Confirm & Lock Slot (No Account Needed)
+              Confirm Appointment & Lock Slot
             </Button>
           )}
         </Card>

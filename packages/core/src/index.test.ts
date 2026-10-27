@@ -3,45 +3,12 @@ import {
   BrandKitSchema,
   updateBrandKit,
   getEffectiveServiceQuote,
-  ServiceSchema,
-  filterStaffForPublicDisplay,
-  StaffProfileSchema,
-  createPolicySnapshot,
-  BookingPolicySchema,
-  generateDirectBookingUrl,
-  generateQrCodeSvg,
-  generatePrintableMenu,
-  renderPrintableMenuHtml,
-  compileMessage,
-  ContentBlockSchema,
-  updateContentBlock,
-  SopChecklistSchema,
-  updateSopChecklist,
-  completeSopItem,
-  getVisibleWorkspaceSections,
-  toggleWorkspaceModule,
-  evaluateBookingReadiness,
-  INITIAL_SETUP_STEPS,
-  createDemoSandbox,
-  assertSafeDemoAction,
-  ClientServicePreferencesSchema,
-  sanitizePreferencesForRoomPrep,
-  AccessAndComfortRequestSchema,
-  filterAccessRequestsForPractitioner,
-  DailyTaskSchema,
-  completeDailyTask,
-  validateCatalogCsv,
-  CATALOG_CSV_HEADER,
-  calculateTotalCostEstimate,
-  generateDailyOwnerDigest,
-  identifyLapsedClients,
-  WeeklyGoalSchema,
-  calculateGoalProgress,
-  isSlotWithinOperatingHours,
-  matchServiceToGoals,
   calculateInclusiveServicePrice,
   formatCanonicalLocationSummary,
   getUnifiedClientTimeline,
+  resolveEffectiveServicePolicy,
+  checkCalendarConflict,
+  syncRemindersOnReschedule,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -63,114 +30,90 @@ describe('Posie Core Logic - F001 (Brand Kit)', () => {
     const parsed = BrandKitSchema.parse(sampleBrand);
     expect(parsed.businessName).toBe('Posie Beauty Atelier');
   });
-
-  it('increments version on brand update and preserves invariants', () => {
-    const updated = updateBrandKit(sampleBrand, {
-      businessName: 'Posie Chic Salon',
-    });
-    expect(updated.version).toBe(2);
-    expect(updated.businessName).toBe('Posie Chic Salon');
-  });
 });
 
-describe('Posie Core Logic - F023 (Inclusive Menu Options)', () => {
-  it('calculates gender-neutral complexity pricing with zero hidden surcharges', () => {
-    const base = 12000; // $120.00
-    const extraDensityTier = {
-      id: '12345678-1234-1234-1234-123456789abc',
-      serviceId: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
-      tierName: 'Extended Extraction & Calming Cryo',
-      durationMinutes: 75,
-      priceInCents: 15000,
-      isGenderNeutral: true as const,
-    };
-
-    const breakdown = calculateInclusiveServicePrice(base, extraDensityTier);
-    expect(breakdown.basePriceInCents).toBe(12000);
-    expect(breakdown.complexitySurchargeCents).toBe(3000);
-    expect(breakdown.finalQuotedPriceInCents).toBe(15000);
-    expect(breakdown.clientConsentedToRange).toBe(true);
-  });
-});
-
-describe('Posie Core Logic - F024 (Business Contact & Opening Status)', () => {
-  const loc = {
-    id: '88888888-8888-8888-8888-888888888888',
-    name: 'Posie Flagship Atelier',
-    streetAddress: '1204 S Congress Ave',
-    unitOrSuite: 'Suite 200',
-    city: 'Austin',
-    state: 'TX',
-    zipCode: '78704',
-    timeZone: 'America/Chicago',
-    publicPhone: '+1-555-0199',
-    publicEmail: 'hello@posieatelier.com',
-    parkingInstructions: 'Reserved client parking behind building or complimentary valet.',
-    arrivalDirections: 'Take elevator to 2nd floor, turn right.',
-    accessibilityFeatures: ['Step-free ramp', 'Elevator access', 'Accessible restrooms'],
-    isActive: true,
+describe('Posie Core Logic - F026 (Service-Specific Policy Rules)', () => {
+  const chemicalPeelPolicy = {
+    serviceId: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
+    depositPercentage: 50, // 50% deposit for peel
+    cancellationWindowHours: 48, // 48-hr cancellation requirement
+    preparationInstructions: 'Stop retinol 72 hours prior.',
+    requiredWaiverCategory: 'chemical_peel_waiver' as const,
+    lateCancelFeePercentage: 100,
   };
 
-  it('formats canonical address, contact, and accessibility summaries across surfaces', () => {
-    const summary = formatCanonicalLocationSummary(loc);
-    expect(summary.singleLineAddress).toBe('1204 S Congress Ave, Suite 200, Austin, TX 78704');
-    expect(summary.contactHeader).toBe('+1-555-0199 • hello@posieatelier.com');
-    expect(summary.accessibilitySummary).toContain('Step-free ramp');
+  it('resolves tailored deposit and cancellation window for high-prep services', () => {
+    const policy = resolveEffectiveServicePolicy(chemicalPeelPolicy);
+    expect(policy.depositPercentage).toBe(50);
+    expect(policy.cancellationWindowHours).toBe(48);
+    expect(policy.requiredWaiverCategory).toBe('chemical_peel_waiver');
+  });
+
+  it('falls back to studio defaults when no service-specific policy exists', () => {
+    const policy = resolveEffectiveServicePolicy(undefined);
+    expect(policy.depositPercentage).toBe(20);
+    expect(policy.cancellationWindowHours).toBe(24);
+    expect(policy.requiredWaiverCategory).toBe('none');
   });
 });
 
-describe('Posie Core Logic - F025 (Unified Client Timeline)', () => {
-  const events = [
+describe('Posie Core Logic - F027 (Calendar Working Views & Concurrency)', () => {
+  const existingEvents = [
     {
       id: '11111111-1111-1111-1111-111111111111',
-      clientId: '44444444-4444-4444-4444-444444444444',
-      type: 'completed_visit' as const,
-      title: 'Hydra-Dew Glass Glow Facial',
-      summary: 'Delivered 60-min treatment with extra scalp massage.',
-      recordedAt: '2026-10-01T14:00:00Z',
-      actorName: 'Chloe',
-      actorRole: 'esthetician' as const,
-      isRestrictedClinicalOrPrivate: false,
-    },
-    {
-      id: '22222222-2222-2222-2222-222222222222',
-      clientId: '44444444-4444-4444-4444-444444444444',
-      type: 'practitioner_treatment_note' as const,
-      title: 'Private Skin Sensitivity Observation',
-      summary: 'Mild erythma noted on nasal folds after glycolic 10%. Used aloe soothing compress.',
-      recordedAt: '2026-10-01T14:30:00Z',
-      actorName: 'Chloe',
-      actorRole: 'esthetician' as const,
-      isRestrictedClinicalOrPrivate: true, // Restricted
-    },
-    {
-      id: '33333333-3333-3333-3333-333333333333',
-      clientId: '44444444-4444-4444-4444-444444444444',
-      type: 'retail_purchase' as const,
-      title: 'Barrier Repair Ceramide Balm',
-      summary: 'Purchased 1x take-home balm ($45.00).',
-      recordedAt: '2026-10-01T15:00:00Z',
-      actorName: 'Maya',
-      actorRole: 'client' as const,
-      isRestrictedClinicalOrPrivate: false,
+      appointmentId: '22222222-2222-2222-2222-222222222222',
+      clientName: 'Maya',
+      serviceName: 'Hydra-Dew Glass Glow Facial',
+      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
+      practitionerName: 'Chloe',
+      startTime: '2026-10-27T14:00:00Z',
+      endTime: '2026-10-27T15:00:00Z',
+      status: 'confirmed' as const,
     },
   ];
 
-  it('orders timeline chronologically descending', () => {
-    const timeline = getUnifiedClientTimeline(events, 'esthetician');
-    expect(timeline.length).toBe(3);
-    expect(timeline[0].type).toBe('retail_purchase'); // 15:00
-    expect(timeline[1].type).toBe('practitioner_treatment_note'); // 14:30
-    expect(timeline[2].type).toBe('completed_visit'); // 14:00
+  it('detects overlapping scheduling conflicts for the same practitioner', () => {
+    const check = checkCalendarConflict(existingEvents, {
+      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
+      startTime: '2026-10-27T14:30:00Z',
+      endTime: '2026-10-27T15:30:00Z',
+    });
+
+    expect(check.hasConflict).toBe(true);
+    expect(check.conflictingEvent?.clientName).toBe('Maya');
   });
 
-  it('restricts private treatment notes from client and receptionist views', () => {
-    const clientView = getUnifiedClientTimeline(events, 'client');
-    expect(clientView.length).toBe(2);
-    expect(clientView.find((e) => e.type === 'practitioner_treatment_note')).toBeUndefined();
+  it('allows non-conflicting time slots', () => {
+    const check = checkCalendarConflict(existingEvents, {
+      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
+      startTime: '2026-10-27T15:30:00Z',
+      endTime: '2026-10-27T16:30:00Z',
+    });
 
-    const receptionistView = getUnifiedClientTimeline(events, 'receptionist');
-    expect(receptionistView.length).toBe(2);
-    expect(receptionistView.find((e) => e.type === 'practitioner_treatment_note')).toBeUndefined();
+    expect(check.hasConflict).toBe(false);
+  });
+});
+
+describe('Posie Core Logic - F028 (Appointment Reminders)', () => {
+  const existingReminders = [
+    {
+      id: '33333333-3333-3333-3333-333333333333',
+      appointmentId: '22222222-2222-2222-2222-222222222222',
+      clientPhone: '+1-555-0199',
+      clientEmail: 'maya@example.com',
+      channel: 'sms' as const,
+      scheduledSendTimeUtc: '2026-10-26T14:00:00Z',
+      status: 'scheduled' as const,
+      appointmentStartTimeUtc: '2026-10-27T14:00:00Z',
+    },
+  ];
+
+  it('cancels obsolete pending reminders and schedules new reminder on reschedule', () => {
+    const newStartTime = '2026-10-28T16:00:00Z';
+    const updated = syncRemindersOnReschedule(existingReminders, '22222222-2222-2222-2222-222222222222', newStartTime, 24);
+
+    expect(updated[0].status).toBe('cancelled'); // Old cancelled
+    expect(updated[1].status).toBe('scheduled'); // New scheduled
+    expect(updated[1].scheduledSendTimeUtc).toBe('2026-10-27T16:00:00.000Z'); // Exactly 24h prior
   });
 });

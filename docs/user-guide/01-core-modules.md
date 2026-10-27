@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F025)
+# Posie App User Guide: Core Modules (F001 - F028)
 
-Welcome to **Posie**! This guide details features **F001 through F025** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F028** active across the platform.
 
 ---
 
@@ -127,16 +127,31 @@ Welcome to **Posie**! This guide details features **F001 through F025** active a
 
 ## F023 — Inclusive Menu Options (Gender-Neutral Pricing)
 * **What it is:** Transparent, gender-neutral service pricing based strictly on time and treatment complexity.
-* **Key Invariant:** Any possible extra charges (such as extended cryo or pore extractions) appear before client acceptance with explicit consent.
 
 ---
 
 ## F024 — Business Contact & Opening Status
 * **What it is:** Canonical studio address, parking directions, and accessibility descriptions.
-* **Key Invariant:** Every client touchpoint (website, booking links, emails, PDFs) displays identical verified address, parking, and timezone details.
 
 ---
 
 ## F025 — Unified Client Timeline
-* **What it is:** A chronological history combining past visits, retail purchases, signed waivers, and care notes.
-* **Key Invariant (WB F19):** Chronologically sorted with role-based privacy (private treatment notes are strictly hidden from clients and receptionists).
+* **What it is:** A chronological history combining past visits, retail purchases, signed waivers, and care notes with role-based clinical privacy.
+
+---
+
+## F026 — Service-Specific Policy Rules
+* **What it is:** Tailored booking rules, required deposit percentages, and cancellation windows mapped per service.
+* **Key Invariant (WB U21):** High-prep treatments (such as chemical peels) automatically mandate 50% deposits and 48-hour cancellation windows without forcing universal restrictions across quick refresh visits.
+
+---
+
+## F027 — Calendar Working Views & Concurrency
+* **What it is:** Multi-practitioner day timelines and resource scheduling views with real-time overlap validation.
+* **Key Invariant (WB F14):** Validates double-booking conflicts before saving appointment mutations, preventing overlapping staff commitments.
+
+---
+
+## F028 — Appointment Reminders
+* **What it is:** Timezone-aware SMS and email reminder orchestration with automated reschedule synchronization.
+* **Key Invariant (WB F48 F49):** Rescheduling an appointment automatically cancels obsolete pending reminders and schedules a new alert matching the revised date without dispatching duplicate notifications.
