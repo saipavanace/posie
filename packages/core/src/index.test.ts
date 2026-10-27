@@ -15,6 +15,16 @@ import {
   approveAftercareTemplate,
   deliverAftercare,
   formatAftercareClientSummary,
+  createTreatmentNoteDraft,
+  signTreatmentNote,
+  addNoteAmendment,
+  registerBaseTreatmentImage,
+  addAnnotationLayer,
+  grantMediaPublicationConsent,
+  revokeMediaPublicationConsent,
+  createHomeCarePlan,
+  reviseHomeCarePlan,
+  formatHomeCarePrintableCard,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -350,5 +360,171 @@ describe('Posie Core Logic - F037 (Approved Aftercare Delivery)', () => {
     });
 
     expect(delivery.snapshotInstructions.length).toBe(2);
+  });
+});
+
+
+describe('Posie Core Logic - F038 (Structured Treatment Notes & SOAP Charting)', () => {
+  const noteDraft = createTreatmentNoteDraft({
+    appointmentId: '15151515-1515-1515-1515-151515151515',
+    clientId: '16161616-1616-1616-1616-161616161616',
+    serviceId: '17171717-1717-1717-1717-171717171717',
+    domain: 'facial',
+    authorStaffId: '99999999-9999-9999-9999-999999999999',
+    soap: {
+      subjective: 'Client reports dehydration and slight congestion around chin.',
+      objective: 'Fitzpatrick Type II skin, mild comedones on chin, no active inflammatory acne.',
+      assessment: 'Skin tolerated ultrasonic extractions and enzyme peel well with no erythema.',
+      plan: 'Follow up in 4 weeks for maintenance; prescribed ceramide barrier serum.',
+    },
+    productsUsed: [
+      { productName: 'Papaya Enzyme Polish', brand: 'Posie Professional', amountUsed: '5ml' },
+      { productName: 'Hyaluronic Quench Gel', brand: 'Posie Professional', amountUsed: '3 pumps' },
+    ],
+    clientStatedResponse: 'Client felt immediate cooling and comfort during treatment.',
+  });
+
+  it('manages draft lifecycle and locks on sign', () => {
+    expect(noteDraft.status).toBe('draft');
+    expect(noteDraft.productsUsed.length).toBe(2);
+
+    // Amending unfinalized draft throws
+    expect(() =>
+      addNoteAmendment(noteDraft, {
+        amendedByStaffId: '99999999-9999-9999-9999-999999999999',
+        reason: 'Add note',
+        contentAddition: 'Extra detail',
+      })
+    ).toThrow(/Amendments are only for finalized/);
+
+    const signed = signTreatmentNote(noteDraft, '99999999-9999-9999-9999-999999999999');
+    expect(signed.status).toBe('signed');
+    expect(signed.signedAt).toBeDefined();
+
+    // Re-signing throws
+    expect(() => signTreatmentNote(signed, '99999999-9999-9999-9999-999999999999')).toThrow(
+      /already been signed/
+    );
+
+    // Appending amendment
+    const amended = addNoteAmendment(signed, {
+      amendedByStaffId: '99999999-9999-9999-9999-999999999999',
+      reason: 'Post-treatment follow-up call at 24h',
+      contentAddition: 'Client confirmed zero peeling or redness the next morning.',
+    });
+
+    expect(amended.amendments.length).toBe(1);
+    expect(amended.amendments[0].contentAddition).toContain('zero peeling');
+  });
+});
+
+describe('Posie Core Logic - F039 (Image Annotation Tools & Face Mapping)', () => {
+  const originalUrl = 'https://posie-storage.internal/photos/client-1616-before.jpg';
+  const checksum = 'sha256-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+
+  const baseImage = registerBaseTreatmentImage({
+    clientId: '16161616-1616-1616-1616-161616161616',
+    appointmentId: '15151515-1515-1515-1515-151515151515',
+    originalImageUrl: originalUrl,
+    originalImageChecksum: checksum,
+    authorStaffId: '99999999-9999-9999-9999-999999999999',
+  });
+
+  it('adds non-destructive annotation layer preserving raw photo', () => {
+    expect(baseImage.permissionScope).toBe('internal_charting_only');
+    expect(baseImage.originalImageChecksum).toBe(checksum);
+
+    const annotated = addAnnotationLayer(baseImage, {
+      layerType: 'face_zones',
+      title: 'Chemical Peel Sensitivity Zones',
+      authorStaffId: '99999999-9999-9999-9999-999999999999',
+      markers: [
+        {
+          id: 'm1',
+          zone: 'T-Zone',
+          xPercent: 50,
+          yPercent: 35,
+          label: 'Avoid extra acid pass here due to mild rosacea',
+        },
+      ],
+    });
+
+    // Original image remains unaltered
+    expect(annotated.originalImageUrl).toBe(originalUrl);
+    expect(annotated.originalImageChecksum).toBe(checksum);
+    expect(annotated.annotationLayers.length).toBe(1);
+    expect(annotated.annotationLayers[0].markers[0].zone).toBe('T-Zone');
+
+    // Grant separate explicit media consent
+    const consented = grantMediaPublicationConsent(annotated, new Date().toISOString());
+    expect(consented.permissionScope).toBe('marketing_consented');
+
+    // Revocation resets to internal charting
+    const revoked = revokeMediaPublicationConsent(consented);
+    expect(revoked.permissionScope).toBe('internal_charting_only');
+    expect(revoked.consentRevokedAt).toBeDefined();
+  });
+});
+
+describe('Posie Core Logic - F040 (Home-Care Regimen Plans)', () => {
+  const plan = createHomeCarePlan({
+    clientId: '16161616-1616-1616-1616-161616161616',
+    title: 'Post-Peel Gentle Barrier Recovery Routine',
+    prescribedByStaffId: '99999999-9999-9999-9999-999999999999',
+    routineSteps: [
+      {
+        stepNumber: 1,
+        timeOfDay: 'morning',
+        productName: 'Milky Oat Cleanser',
+        purpose: 'Non-stripping cleanse',
+        usageInstructions: 'Massage gently with lukewarm water. Pat dry.',
+      },
+      {
+        stepNumber: 2,
+        timeOfDay: 'morning',
+        productName: 'Mineral Barrier Zinc SPF 50',
+        purpose: 'Broad spectrum UV defense',
+        usageInstructions: 'Apply 2 finger lengths to face and neck every morning.',
+      },
+      {
+        stepNumber: 1,
+        timeOfDay: 'evening',
+        productName: 'Lipid Repair Night Balm',
+        purpose: 'Deep moisture replenishment',
+        usageInstructions: 'Warm pea-sized amount between palms and press into skin.',
+      },
+    ],
+    clientPreferencesHonored: ['Fragrance-Free Only', 'Minimalist (Under 3 steps)'],
+  });
+
+  it('creates versioned home-care plan and bathroom mirror printable card', () => {
+    expect(plan.version).toBe(1);
+    expect(plan.routineSteps.length).toBe(3);
+
+    const card = formatHomeCarePrintableCard(plan);
+    expect(card).toContain('MORNING ROUTINE');
+    expect(card).toContain('Milky Oat Cleanser');
+    expect(card).toContain('EVENING ROUTINE');
+    expect(card).toContain('Fragrance-Free Only');
+
+    // Revise plan to version 2
+    const revised = reviseHomeCarePlan(plan, {
+      prescribedByStaffId: '99999999-9999-9999-9999-999999999999',
+      changeReason: 'Client transitioned from healing phase to active brightening.',
+      routineSteps: [
+        ...plan.routineSteps,
+        {
+          stepNumber: 2,
+          timeOfDay: 'evening',
+          productName: 'Gentle Azelaic 10% Treatment',
+          purpose: 'Target residual post-inflammatory redness',
+          usageInstructions: 'Apply 3 nights per week after cleansing.',
+        },
+      ],
+    });
+
+    expect(revised.version).toBe(2);
+    expect(revised.changeSummaryFromPreviousVersion).toContain('Version 1 -> 2');
+    expect(revised.routineSteps.length).toBe(4);
   });
 });

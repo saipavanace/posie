@@ -35,3 +35,6 @@ export * from './inquiries';
 export * from './intake';
 export * from './docgen';
 export * from './aftercare';
+export * from './charting';
+export * from './annotations';
+export * from './homecare';

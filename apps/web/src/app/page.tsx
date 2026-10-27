@@ -21,6 +21,12 @@ import {
   Download,
   PhoneCall,
   HeartPulse,
+  Lock,
+  Sun,
+  Moon,
+  MapPin,
+  Pencil,
+  Eye,
 } from 'lucide-react';
 
 // Brand Information
@@ -55,7 +61,6 @@ export default function PosieStudioPage() {
 
   // F032 Custom Website Theme State
   const [websiteTheme, setWebsiteTheme] = useState<'editorial_atelier' | 'calm_minimal'>('editorial_atelier');
-  const [customDomainActive, setCustomDomainActive] = useState(true);
 
   // F034 Consultation Inquiry State
   const [inquiryText, setInquiryText] = useState('');
@@ -67,11 +72,13 @@ export default function PosieStudioPage() {
   const [intakeCompleted, setIntakeCompleted] = useState(false);
   const [intakeError, setIntakeError] = useState<string | null>(null);
 
-  // F036 Document Generation State
-  const [docIssued, setDocIssued] = useState(true);
+  // F038 Note Amendment State
+  const [amendmentText, setAmendmentText] = useState('');
+  const [amendmentAdded, setAmendmentAdded] = useState(false);
 
-  // F037 Aftercare State
-  const [aftercareDelivered, setAftercareDelivered] = useState(true);
+  // F039 Photo Markup State
+  const [activeZone, setActiveZone] = useState<string>('T-Zone');
+  const [permissionScope, setPermissionScope] = useState<'internal' | 'marketing'>('internal');
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -93,6 +100,12 @@ export default function PosieStudioPage() {
       return;
     }
     setIntakeCompleted(true);
+  };
+
+  const handleAddAmendment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!amendmentText) return;
+    setAmendmentAdded(true);
   };
 
   return (
@@ -171,61 +184,225 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* F032: Brandable Booking Website Studio */}
+      {/* F038: Structured Treatment Notes & SOAP Charting */}
       <section style={{ marginBottom: '36px' }}>
-        <Card style={{ backgroundColor: '#FAF8F5' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Globe size={18} color="var(--color-primary)" />
+              <Lock size={18} color="var(--color-primary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Brandable Booking Studio
+                Feature 038: Treatment Note & SOAP Charting
               </strong>
             </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-              Feature 032
-            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Signed by Chloe V., LE</Badge>
+              <Badge variant="muted">Immutable Audit Log</Badge>
+            </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Pick your layout aesthetic and publish to your custom domain without third-party platform branding.
+            Permanent clinical record with products used, skin response, and append-only amendments.
           </p>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setWebsiteTheme('editorial_atelier')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--color-primary)',
-                backgroundColor: websiteTheme === 'editorial_atelier' ? 'var(--color-primary)' : 'transparent',
-                color: websiteTheme === 'editorial_atelier' ? '#FFF' : 'var(--color-primary)',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-              }}
-            >
-              Editorial Atelier Theme
-            </button>
-            <button
-              onClick={() => setWebsiteTheme('calm_minimal')}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--color-primary)',
-                backgroundColor: websiteTheme === 'calm_minimal' ? 'var(--color-primary)' : 'transparent',
-                color: websiteTheme === 'calm_minimal' ? '#FFF' : 'var(--color-primary)',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-              }}
-            >
-              Calm Minimalist Theme
-            </button>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Verified Custom Domain:</span>
-              <code style={{ background: '#ECE6DF', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>
-                glow.posieatelier.com
-              </code>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>SUBJECTIVE</span>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Client noted chin dehydration and tightness after flights.</p>
             </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>OBJECTIVE</span>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Fitzpatrick II. Mild comedones on chin. Tolerated extractions well.</p>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>ASSESSMENT</span>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Healthy epidermal barrier, ideal candidate for hydrating enzyme peel.</p>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>PLAN</span>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Maintenance visit in 4 weeks. Prescribed barrier repair regimen.</p>
+            </div>
+          </div>
+
+          <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.85rem' }}>
+            <strong>Products & Lots Used:</strong> Papaya Enzyme Polish (Lot #2409-A, 5ml), Hyaluronic Quench Gel (3 pumps).
+          </div>
+
+          {amendmentAdded ? (
+            <div style={{ background: 'var(--color-secondary-light)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <strong>✓ Signed Amendment Logged:</strong> "{amendmentText}" (Recorded with author timestamp).
+            </div>
+          ) : (
+            <form onSubmit={handleAddAmendment} style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="Append clinical amendment (e.g. 24h follow-up phone call confirmed zero erythema)..."
+                value={amendmentText}
+                onChange={(e) => setAmendmentText(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.85rem',
+                }}
+              />
+              <Button variant="outline" size="sm" type="submit">
+                <Pencil size={12} style={{ marginRight: '4px' }} /> Append Amendment
+              </Button>
+            </form>
+          )}
+        </Card>
+      </section>
+
+      {/* F039: Image Annotation Tools & Treatment Zone Mapping */}
+      <section style={{ marginBottom: '36px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={18} color="var(--color-secondary)" />
+              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                Feature 039: Non-Destructive Face Mapping & Annotations
+              </strong>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={permissionScope === 'marketing' ? 'rose' : 'muted'}>
+                {permissionScope === 'marketing' ? 'Marketing Consented' : 'Internal Clinical Only'}
+              </Badge>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
+            Original client photos are preserved immutably. Markup overlays store clinical notes by treatment zone.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', alignItems: 'center' }}>
+            {/* Visual Zone Grid */}
+            <div
+              style={{
+                height: '180px',
+                backgroundColor: '#FAF8F5',
+                border: '2px dashed var(--color-secondary)',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'relative',
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>Interactive Face Map</span>
+                <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                  Selected Zone: <strong>{activeZone}</strong>
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
+                {['Forehead', 'T-Zone', 'Cheeks', 'Chin'].map((z) => (
+                  <button
+                    key={z}
+                    onClick={() => setActiveZone(z)}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '0.75rem',
+                      borderRadius: '4px',
+                      border: '1px solid var(--color-border)',
+                      background: activeZone === z ? 'var(--color-secondary)' : '#FFF',
+                      color: activeZone === z ? '#FFF' : 'var(--color-primary)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {z}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Zone Details */}
+            <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>
+                  Zone Notes: {activeZone}
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Layer: Peel Contraindications</span>
+              </div>
+              <p style={{ fontSize: '0.85rem', margin: 0, color: 'var(--color-text)' }}>
+                {activeZone === 'T-Zone' && 'Mild redness reported. Use 1 layer of glycolic peel; do not perform double pass.'}
+                {activeZone === 'Forehead' && 'Healthy skin barrier. Full 2-minute peel contact time.'}
+                {activeZone === 'Cheeks' && 'Hydration target: apply ultra-quenching hyaluronic serum with cold globe roll.'}
+                {activeZone === 'Chin' && 'Ultrasonic pore sweep performed. Extra botanical calming balm applied.'}
+              </p>
+              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                  onClick={() => setPermissionScope(permissionScope === 'internal' ? 'marketing' : 'internal')}
+                  style={{
+                    fontSize: '0.78rem',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-secondary)',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {permissionScope === 'internal' ? 'Enable Client Marketing Consent' : 'Revoke Marketing Consent'}
+                </button>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>SHA-256 Base Image Verified</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* F040: Home-Care Regimen Plan */}
+      <section style={{ marginBottom: '36px' }}>
+        <Card style={{ backgroundColor: '#FAF8F5' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sun size={18} color="var(--color-tertiary)" />
+              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                Feature 040: Home-Care Regimen & Bathroom Guide
+              </strong>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Prescribed v1</Badge>
+              <Badge variant="muted">Fragrance-Free</Badge>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Practitioner-approved daily routine aligned with client preferences. Versioned so clients can track routine evolution.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--color-primary)' }}>
+                <Sun size={15} color="var(--color-tertiary)" />
+                <strong style={{ fontSize: '0.9rem' }}>Morning (AM) Routine</strong>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.83rem', lineHeight: '1.5' }}>
+                <li><strong>Step 1:</strong> Milky Oat Cleanser (Cleanse gently with lukewarm water)</li>
+                <li><strong>Step 2:</strong> Mineral Barrier Zinc SPF 50 (Apply 2 finger lengths)</li>
+              </ul>
+            </div>
+            <div style={{ background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--color-primary)' }}>
+                <Moon size={15} color="var(--color-secondary)" />
+                <strong style={{ fontSize: '0.9rem' }}>Evening (PM) Routine</strong>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.83rem', lineHeight: '1.5' }}>
+                <li><strong>Step 1:</strong> Double Cleanse with Calming Camellia Oil</li>
+                <li><strong>Step 2:</strong> Lipid Repair Night Balm (Press pea-sized amount into skin)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+              Honored Preferences: Fragrance-Free Only • Minimalist (2 Steps AM / PM)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => alert('Printing bathroom mirror daily compliance card...')}
+            >
+              <Printer size={13} style={{ marginRight: '6px' }} /> Print Bathroom Mirror Card
+            </Button>
           </div>
         </Card>
       </section>
@@ -336,194 +513,6 @@ export default function PosieStudioPage() {
               <Button variant="primary" size="md" type="submit">
                 Complete & Validate Intake
               </Button>
-            </form>
-          )}
-        </Card>
-      </section>
-
-      {/* F036: Branded Document Generation */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={18} color="var(--color-primary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 036: Branded Document Studio
-              </strong>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Doc #EST-2026-0042</Badge>
-              <Badge variant="muted">Issued & Locked</Badge>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Itemized treatment plans, estimates, and receipts generated from approved ledger data. Downloadable in low-ink PDF or DOCX.
-          </p>
-
-          <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', backgroundColor: '#FAF8F5' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px', marginBottom: '12px' }}>
-              <div>
-                <h4 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--color-primary)' }}>Bespoke Bridal Radiance Plan</h4>
-                <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                  Prepared by Chloe V., Lead Aesthetician • Clara Oswald
-                </p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>$599.40</span>
-                <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Incl. 8% local sales tax</p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>2 Line Items • Locked Version 1 (Immutable)</span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.8rem',
-                    background: '#FFF',
-                    border: '1px solid var(--color-border)',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => alert('Exporting low-ink printable PDF...')}
-                >
-                  <Printer size={13} /> Print PDF
-                </button>
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.8rem',
-                    background: '#FFF',
-                    border: '1px solid var(--color-border)',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => alert('Downloading editable DOCX template...')}
-                >
-                  <Download size={13} /> Download DOCX
-                </button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </section>
-
-      {/* F037: Approved Aftercare Delivery */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card style={{ backgroundColor: '#FAF8F5' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <HeartPulse size={18} color="var(--color-secondary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 037: Approved Aftercare Delivery
-              </strong>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-secondary)' }}>
-              Practitioner Approved • Frozen Delivery
-            </span>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-            Service-specific recovery instructions verified by your esthetician. Delivered via SMS and portal with emergency contact route.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-            <div style={{ backgroundColor: '#FFF', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-              <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--color-primary)', marginBottom: '4px' }}>
-                Step 1: Gentle Cleansing Only (Days 1–3)
-              </strong>
-              <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--color-text-muted)' }}>
-                Cleanse with lukewarm water and oat cleanser. Do not use scrubs, glycolic acid, or cleansing brushes.
-              </p>
-            </div>
-            <div style={{ backgroundColor: '#FFF', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-              <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--color-primary)', marginBottom: '4px' }}>
-                Step 2: Mineral SPF 50 (Days 1–14)
-              </strong>
-              <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--color-text-muted)' }}>
-                Apply non-nano zinc oxide SPF 50 every 2 hours if outdoors or sitting near bright windows.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <PhoneCall size={13} color="var(--color-secondary)" /> Direct contact route: Text Chloe at (555) 234-5678
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-              ✓ Delivered to client at (555) 019-2834
-            </span>
-          </div>
-        </Card>
-      </section>
-
-      {/* F034: Consultation / Treatment Question */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <MessageCircleQuestion size={18} color="var(--color-primary)" />
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-              Feature 034: Treatment Question or Consultation Request
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Ask a Specialist Before You Book
-          </h2>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '18px' }}>
-            Have sensitive skin or unsure if a treatment is right for you? Submit a photo or question; our team replies within 24 hours.
-          </p>
-
-          {inquirySubmitted ? (
-            <div
-              style={{
-                backgroundColor: 'var(--color-secondary-light)',
-                padding: '16px',
-                borderRadius: '12px',
-                color: 'var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <CheckCircle2 size={24} />
-              <div>
-                <strong>Inquiry Sent to Chloe (Response SLA: 24h)!</strong>
-                <p style={{ fontSize: '0.85rem' }}>
-                  We'll review your notes and text you personalized guidance before booking.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSendInquiry}>
-              <textarea
-                value={inquiryText}
-                onChange={(e) => setInquiryText(e.target.value)}
-                placeholder="e.g. I recently started tretinoin and want to know which facial is safe for my skin barrier..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-border)',
-                  fontSize: '0.9rem',
-                  fontFamily: 'inherit',
-                  marginBottom: '14px',
-                }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Upload size={14} /> Optional: Inspiration photos can be uploaded after submission
-                </span>
-                <Button variant="primary" size="md" type="submit">
-                  <Send size={14} style={{ marginRight: '6px' }} /> Submit Consultation Inquiry
-                </Button>
-              </div>
             </form>
           )}
         </Card>

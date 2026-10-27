@@ -204,3 +204,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F037 — Approved Aftercare Delivery
 * **What it is:** Tailored, post-visit care protocols with step-by-step instructions (cleansing, SPF, active ingredient contraindications) and direct practitioner contact routes.
 * **Key Invariant (WB F29):** Must be approved by a qualified practitioner prior to dispatch. Delivery creates a frozen immutable snapshot of the instructions so that future template edits never rewrite what was delivered to the client.
+
+
+---
+
+## F038 — Structured Treatment Notes & SOAP Charting
+* **What it is:** Professional clinical charting specifically tailored for esthetics (facials, peels, lash, brow, massage) capturing Subjective, Objective, Assessment, and Plan (SOAP) fields, products/lots used, and client-reported skin reactions.
+* **Key Invariant (WB F23, F29):** Distinguishes mutable drafts from signed records. Once signed with practitioner attribution, historical records are locked and legally immutable; corrections require append-only amendments with timestamp and rationale.
+
+---
+
+## F039 — Image Annotation Tools & Face Mapping
+* **What it is:** Non-destructive visual markup for treatment zones, contraindication maps, lash mappings, and brow symmetry over original client photographs.
+* **Key Invariant (WB F25):** The raw original photograph checksum and image asset are **never** modified or overwritten. Annotation layers remain completely reversible. Separate explicit client consent is required before any treatment image may be shared beyond internal charting.
+
+---
+
+## F040 — Home-Care Regimen Plans
+* **What it is:** Practitioner-approved daily skincare routines (AM/PM/weekly) personalized to client skin goals, honoring client preferences (e.g., fragrance-free, minimalist under 3 steps), with printable bathroom mirror compliance guides.
+* **Key Invariant (WB F29):** Revisions generate incremental version numbers (e.g., v1 -> v2) alongside an automated change summary so clients always retain access to the exact routine prescribed during each visit.
