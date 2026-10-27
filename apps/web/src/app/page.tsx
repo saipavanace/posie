@@ -44,6 +44,10 @@ import {
   Tag,
   Percent,
   Share2,
+  Timer,
+  DollarSign,
+  Paperclip,
+  AlertTriangle,
 } from 'lucide-react';
 
 // Brand Information
@@ -76,28 +80,17 @@ export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // F051 Referral State
-  const [copiedReferral, setCopiedReferral] = useState(false);
+  // F054 Shift Cancellation Guard State
+  const [shiftCancelAttempted, setShiftCancelAttempted] = useState(false);
 
-  // F052 Promo State
-  const [promoCodeInput, setPromoCodeInput] = useState('SPRING20');
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [discountAmount, setDiscountAmount] = useState(24);
+  // F055 Time Clock State
+  const [clockedIn, setClockedIn] = useState(true);
+  const [correctionRequested, setCorrectionRequested] = useState(false);
+
+  // F056 Expense Duplicate State
+  const [duplicateWarningShown, setDuplicateWarningShown] = useState(false);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
-  const finalPrice = promoApplied ? activeServiceObj.price - discountAmount : activeServiceObj.price;
-
-  const handleApplyPromo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (promoCodeInput.trim().toUpperCase() === 'SPRING20') {
-      // 20% discount on selected service
-      const disc = Math.round(activeServiceObj.price * 0.2);
-      setDiscountAmount(Math.min(disc, 30)); // Capped at $30
-      setPromoApplied(true);
-    } else {
-      alert('Invalid promo code. Try "SPRING20" for 20% off.');
-    }
-  };
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
@@ -150,10 +143,7 @@ export default function PosieStudioPage() {
           {services.map((svc) => (
             <Card
               key={svc.id}
-              onClick={() => {
-                setSelectedService(svc.id);
-                setPromoApplied(false);
-              }}
+              onClick={() => setSelectedService(svc.id)}
               style={{
                 cursor: 'pointer',
                 borderColor: selectedService === svc.id ? 'var(--color-secondary)' : 'var(--color-border)',
@@ -178,130 +168,155 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* F051: Client Referral Program ("Give $20, Get $20") */}
+      {/* F054: Team Shifts & Availability Guard */}
       <section style={{ marginBottom: '36px' }}>
-        <Card style={{ borderLeft: '4px solid var(--color-secondary)' }}>
+        <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Gift size={18} color="var(--color-secondary)" />
+              <Calendar size={18} color="var(--color-primary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 051: Client Referral Program (Give $20, Get $20)
+                Feature 054: Team Shifts & Client Commitment Guard
               </strong>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Available Credit: $20.00</Badge>
-              <Badge variant="muted">Code: SARAH-GLOW</Badge>
+              <Badge variant="sage">Thursday Roster</Badge>
+              <Badge variant="muted">09:00 – 17:00</Badge>
             </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Friends get $20 off their first treatment; you get $20 credit when their visit completes. Self-referrals and cancellations are strictly safeguarded.
+            Working shifts and coverage requests are maintained independently. Staff schedule changes cannot silently drop client appointments.
           </p>
 
-          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block' }}>Your Personal Share Link</span>
-              <code style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-                https://glow.posieatelier.com/refer?code=SARAH-GLOW
-              </code>
+          <div style={{ background: '#FAF8F5', borderRadius: '8px', padding: '14px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong>Chloe V. (Lead Aesthetician)</strong>
+              <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Austin Flagship • Room 1</span>
             </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--color-text)' }}>
+              • <strong>Skills:</strong> Chemical Peels, Dermaplaning, Ultrasonic Extractions<br />
+              • <strong>Bookings on Shift:</strong> 2 confirmed clients (Jessica Day at 10:00 AM, Cece Parekh at 02:00 PM)
+            </div>
+          </div>
+
+          {shiftCancelAttempted ? (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#B36B5C', fontWeight: 600, marginBottom: '6px' }}>
+                <AlertTriangle size={16} />
+                <span>Shift Cancellation Blocked (Safety Invariant)</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text)' }}>
+                Cannot cancel this shift: <strong>2 client appointments</strong> are currently booked with Chloe. Reassign to another aesthetician or contact clients to reschedule before releasing this shift.
+              </p>
+            </div>
+          ) : (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setCopiedReferral(true);
-                setTimeout(() => setCopiedReferral(false), 2500);
-              }}
+              onClick={() => setShiftCancelAttempted(true)}
             >
-              <Share2 size={13} style={{ marginRight: '6px' }} />
-              {copiedReferral ? 'Copied to Clipboard!' : 'Copy Referral Link'}
+              Simulate Staff Shift Cancellation
             </Button>
-          </div>
+          )}
         </Card>
       </section>
 
-      {/* F052: Promotion Controls & Margin Safeguards */}
+      {/* F055: Time Clock & Manager Approvals */}
       <section style={{ marginBottom: '36px' }}>
         <Card style={{ backgroundColor: '#FAF8F5' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Tag size={18} color="var(--color-primary)" />
+              <Timer size={18} color="var(--color-secondary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 052: Promotion Controls & Margin Safeguards
+                Feature 055: Time Clock & Manager Approvals
               </strong>
             </div>
-            <Badge variant="sage">Anti-Stacking Protected</Badge>
+            <Badge variant="sage">Active Shift • 7.5 Paid Hours</Badge>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Coupons respect service eligibility, expiry dates, and owner margin floors. Discounts never stack silently.
+            Capture clock-ins, unpaid meal breaks, and staff correction requests with verifiable manager approval logs for payroll reconciliation.
           </p>
 
-          <form onSubmit={handleApplyPromo} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px' }}>
-            <input
-              type="text"
-              value={promoCodeInput}
-              onChange={(e) => setPromoCodeInput(e.target.value)}
-              placeholder="Enter promo code (e.g. SPRING20)..."
-              style={{
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid var(--color-border)',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                width: '200px',
-                textTransform: 'uppercase',
-              }}
-            />
-            <Button variant="primary" size="sm" type="submit">
-              Apply Coupon
-            </Button>
-            {promoApplied && (
-              <span style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-                ✓ SPRING20 Applied: -$24.00 (20% off, max $30 cap respected)
-              </span>
-            )}
-          </form>
-
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-            ℹ️ <em>Promotional discounts cannot be combined with existing service packages. Owner margin floor ($50.00) enforced.</em>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '14px' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Clock In</span>
+              <strong style={{ fontSize: '0.85rem' }}>09:00 AM (Verified Tablet)</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Meal Break</span>
+              <strong style={{ fontSize: '0.85rem' }}>1:00 PM – 1:30 PM (30m Unpaid)</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Payable Time</span>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>450 mins (7.5 hrs)</strong>
+            </div>
           </div>
+
+          {correctionRequested ? (
+            <div style={{ background: 'var(--color-secondary-light)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <strong>✓ Time Correction Request Submitted:</strong> "Adjust clock-in to 08:45 AM (prepped treatment room)." Manager notified for payroll sign-off.
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCorrectionRequested(true)}
+            >
+              <Pencil size={12} style={{ marginRight: '6px' }} /> Request Time Clock Correction
+            </Button>
+          )}
         </Card>
       </section>
 
-      {/* F053: Approved Document Repository & Governance */}
+      {/* F056: Expense & Receipt Capture with Duplicate Detection */}
       <section style={{ marginBottom: '36px' }}>
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileCheck2 size={18} color="var(--color-secondary)" />
+              <Receipt size={18} color="var(--color-primary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 053: Approved Document Repository & Governance
+                Feature 056: Expense & Receipt Capture with Duplicate Detection
               </strong>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Clinician Reviewed</Badge>
-              <Badge variant="muted">Version 1 (Locked)</Badge>
+              <Badge variant="sage">$145.00 Recorded</Badge>
+              <Badge variant="muted">Receipt PDF Attached</Badge>
             </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Governed clause repository. Legal and clinical consent terms require named specialist review before catalog publication.
+            Categorize backbar supplies and retail shipments. Built-in heuristics detect potential duplicate receipts before recording.
           </p>
 
-          <div style={{ background: '#FAF8F5', borderRadius: '8px', padding: '14px', border: '1px solid var(--color-border)' }}>
+          <div style={{ background: '#FAF8F5', borderRadius: '8px', padding: '14px', border: '1px solid var(--color-border)', marginBottom: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
-                TCA Chemical Peel Informed Consent & Contraindication Waiver
-              </strong>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                Reviewed by Dr. Evelyn Reed, MD (Clinical Advisor)
-              </span>
+              <strong>SalonCentric Austin — Backbar Supplies</strong>
+              <strong style={{ color: 'var(--color-primary)' }}>$145.00</strong>
             </div>
-            <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem', color: 'var(--color-text)', lineHeight: 1.5 }}>
-              "I understand that Level 2 TCA peels cause epidermal flaking for 5–7 days. I attest I have not used oral Accutane in the last 6 months or topical tretinoin in the last 5 days..."
+            <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem', color: 'var(--color-text)' }}>
+              Purpose: Ultrasonic conductive gel, disposable headbands & esthetician gauze rolls (Paid via Business Card • Nov 02).
             </p>
             <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              Mapped automatically to: <strong>Level 2 Chemical Peel</strong> & <strong>Glass Glow Facial with Peel Add-On</strong>
+              📎 <a href="#" style={{ color: 'var(--color-secondary)' }}>View Attached Receipt (receipt-145.pdf)</a> • <em>Bookkeeping tracking only (does not constitute formal CPA advice).</em>
             </div>
           </div>
+
+          {duplicateWarningShown ? (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '12px 14px', borderRadius: '8px', fontSize: '0.84rem' }}>
+              <strong style={{ color: '#B36B5C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertTriangle size={15} /> Potential Duplicate Detected:
+              </strong>
+              <p style={{ margin: '4px 0 0', color: 'var(--color-text)' }}>
+                An identical expense of $145.00 at "SalonCentric Austin" was already submitted within the last 48 hours. Please verify you are not double-submitting this receipt.
+              </p>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDuplicateWarningShown(true)}
+            >
+              Simulate Submitting Duplicate Receipt
+            </Button>
+          )}
         </Card>
       </section>
 
@@ -314,18 +329,7 @@ export default function PosieStudioPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: '20px' }}>
             <span style={{ color: 'var(--color-text-muted)' }}>Selected Treatment:</span>
-            <span>
-              {promoApplied ? (
-                <>
-                  <span style={{ textDecoration: 'line-through', color: 'var(--color-text-muted)', marginRight: '8px' }}>
-                    ${activeServiceObj.price}
-                  </span>
-                  <strong style={{ color: 'var(--color-primary)', fontSize: '1.15rem' }}>${finalPrice}</strong>
-                </>
-              ) : (
-                <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
-              )}
-            </span>
+            <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
           </div>
 
           {bookingConfirmed ? (

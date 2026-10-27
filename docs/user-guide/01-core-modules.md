@@ -305,3 +305,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F053 — Approved Document Repository & Governance
 * **What it is:** Governed policy and consent clause repository mapping versioned legal and clinical disclosures directly to salon service catalogs.
 * **Key Invariant (DR01, DR02):** Editing clinical or informed consent clauses requires **named specialist review** (differentiating business-supplied, counsel-reviewed, and clinician-reviewed content) prior to publication, without misleading blanket "compliant" stamps.
+
+
+---
+
+## F054 — Team Shifts & Availability
+* **What it is:** Staff scheduling and shift management system that tracks scheduled work hours, break blocks, and coverage requests across team members.
+* **Key Invariant (WB F52):** Deleting, reducing, or canceling a team shift **strictly blocks** if active client appointments are booked within that time window. To prevent client abandonment, the system requires reassignment or manual client contact before the shift can be canceled.
+
+---
+
+## F055 — Staff Time Clock & Manager Approvals
+* **What it is:** Digital punch clock capturing staff clock-in, clock-out, and unpaid meal breaks, calculating total worked hours and pay period summaries.
+* **Key Invariant (WB F53):** Edits to historical punch times create a traceable correction request that preserves original timestamps and requires designated manager review and sign-off before payroll reconciliation.
+
+---
+
+## F056 — Expense & Receipt Capture with Duplicate Detection
+* **What it is:** Salon operating expense tracker supporting receipt image attachments, tax-ready expense categorization, and smart duplicate detection.
+* **Key Invariant (WB F54):** Flags duplicate expense candidates matching the same merchant, amount, and approximate date to prevent double-counting. Displays explicit tax disclaimers ensuring business owners understand recorded categories serve operational bookkeeping and require professional tax advice.

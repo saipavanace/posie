@@ -59,6 +59,15 @@ import {
   recordClauseReview,
   publishDocumentClause,
   getApprovedClausesForService,
+  createStaffShift,
+  requestShiftCoverage,
+  cancelStaffShiftWithSafetyCheck,
+  clockInStaff,
+  clockOutStaff,
+  requestTimeCorrection,
+  approveTimeClockEntry,
+  recordBusinessExpense,
+  checkDuplicateExpense,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -1357,5 +1366,147 @@ describe('Posie Core Logic - F053 (Approved Document Repository & Governance)', 
     // Unrelated service gets empty list
     const unrelated = getApprovedClausesForService([published], '88888888-8888-8888-8888-888888888888');
     expect(unrelated.length).toBe(0);
+  });
+});
+
+
+describe('Posie Core Logic - F054 (Team Shifts & Availability)', () => {
+  const shift = createStaffShift({
+    staffId: '99999999-9999-9999-9999-999999999999',
+    staffName: 'Chloe V.',
+    locationId: '88888888-8888-8888-8888-888888888888',
+    shiftDate: '2026-11-05',
+    startTime: '09:00',
+    endTime: '17:00',
+    roleOrSkillTags: ['Esthetician', 'Chemical Peel Certified'],
+  });
+
+  it('requests coverage and blocks silent cancellation when client bookings exist', () => {
+    expect(shift.status).toBe('scheduled');
+
+    const coverage = requestShiftCoverage({
+      shift,
+      requestingStaffId: '99999999-9999-9999-9999-999999999999',
+      reason: 'Medical appointment',
+    });
+    expect(coverage.status).toBe('coverage_requested');
+    expect(coverage.coverageReason).toBe('Medical appointment');
+
+    // Attempting to cancel shift when 2 client appointments are booked on that shift
+    const conflicted = [
+      { appointmentId: 'apt-1', clientName: 'Jessica Day', serviceName: 'Hydra-Dew Facial', scheduledTime: '10:00 AM' },
+      { appointmentId: 'apt-2', clientName: 'Cece Parekh', serviceName: 'Glass Glow Facial', scheduledTime: '02:00 PM' },
+    ];
+
+    const cancelAttempt = cancelStaffShiftWithSafetyCheck({
+      shift,
+      appointmentsOnShift: conflicted,
+    });
+
+    // Cancellation is safely BLOCKED to protect client commitments
+    expect(cancelAttempt.canceledShift).toBeUndefined();
+    expect(cancelAttempt.blockedReason).toContain('2 client appointment(s) are booked');
+    expect(cancelAttempt.conflictedAppointments.length).toBe(2);
+
+    // After reassigning appointments, cancellation succeeds
+    const safeCancel = cancelStaffShiftWithSafetyCheck({
+      shift,
+      appointmentsOnShift: [],
+    });
+    expect(safeCancel.canceledShift?.status).toBe('canceled');
+  });
+});
+
+describe('Posie Core Logic - F055 (Staff Time Clock & Manager Approvals)', () => {
+  it('manages clock in, calculates break deductions, and processes manager correction approvals', () => {
+    const clockIn = clockInStaff({
+      staffId: '99999999-9999-9999-9999-999999999999',
+      staffName: 'Chloe V.',
+      payPeriodId: 'PP-2026-11-A',
+      clockInTime: '2026-11-05T09:00:00.000Z',
+    });
+
+    expect(clockIn.status).toBe('clocked_in');
+
+    // Add 30-min unpaid meal break
+    const withBreak = {
+      ...clockIn,
+      breaks: [
+        {
+          id: 'brk-1',
+          startTime: '2026-11-05T13:00:00.000Z',
+          endTime: '2026-11-05T13:30:00.000Z',
+          breakType: 'unpaid_meal' as const,
+        },
+      ],
+    };
+
+    // Clock out at 17:00 (8 hours = 480 mins, minus 30 mins break = 450 paid mins)
+    const clockedOut = clockOutStaff(withBreak, '2026-11-05T17:00:00.000Z');
+    expect(clockedOut.totalWorkedMinutes).toBe(480);
+    expect(clockedOut.totalUnpaidBreakMinutes).toBe(30);
+    expect(clockedOut.totalPaidMinutes).toBe(450); // 7.5 hours
+
+    // Staff requests correction (started 15 minutes earlier at 08:45)
+    const corrected = requestTimeCorrection({
+      entry: clockedOut,
+      requestedClockIn: '2026-11-05T08:45:00.000Z',
+      requestedClockOut: '2026-11-05T17:00:00.000Z',
+      reason: 'Forgot to tap clock-in tablet while prepping treatment room.',
+      requestedByStaffId: '99999999-9999-9999-9999-999999999999',
+    });
+
+    expect(corrected.status).toBe('correction_requested');
+    expect(corrected.correctionRequest?.reason).toContain('prepping treatment room');
+
+    // Manager approves correction
+    const approved = approveTimeClockEntry(corrected, '11111111-1111-1111-1111-111111111111');
+    expect(approved.status).toBe('approved');
+    expect(approved.clockInTime).toBe('2026-11-05T08:45:00.000Z');
+    expect(approved.totalPaidMinutes).toBe(465); // 450 + 15
+    expect(approved.approvedByStaffId).toBe('11111111-1111-1111-1111-111111111111');
+  });
+});
+
+describe('Posie Core Logic - F056 (Expense & Receipt Capture with Duplicate Detection)', () => {
+  const existingExpense = recordBusinessExpense({
+    expenseDate: '2026-11-02',
+    merchantName: 'SalonCentric Austin',
+    category: 'backbar_supplies',
+    businessPurpose: 'Ultrasonic conductive gel & disposable headbands',
+    amountCents: 14500, // $145.00
+    paymentMethod: 'business_card',
+    recordedByStaffId: '99999999-9999-9999-9999-999999999999',
+    receiptAttachmentUrl: 'https://storage.posieatelier.com/receipts/rec-145.pdf',
+  });
+
+  it('records verified expense with tax disclaimer and flags duplicate candidate', () => {
+    expect(existingExpense.amountCents).toBe(14500);
+    expect(existingExpense.taxDisclaimer).toContain('do not constitute formal tax');
+
+    // Duplicate candidate: same merchant, same amount, within 1 day
+    const duplicateCheck = checkDuplicateExpense(
+      {
+        merchantName: 'SalonCentric Austin',
+        amountCents: 14500,
+        expenseDate: '2026-11-03',
+      },
+      [existingExpense]
+    );
+
+    expect(duplicateCheck.hasPotentialDuplicate).toBe(true);
+    expect(duplicateCheck.warningPrompt).toContain('Potential duplicate detected');
+
+    // Distinct expense: different merchant or different amount
+    const cleanCheck = checkDuplicateExpense(
+      {
+        merchantName: 'Dermalogica Pro',
+        amountCents: 14500,
+        expenseDate: '2026-11-03',
+      },
+      [existingExpense]
+    );
+
+    expect(cleanCheck.hasPotentialDuplicate).toBe(false);
   });
 });
