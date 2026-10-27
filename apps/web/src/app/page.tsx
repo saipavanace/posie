@@ -29,6 +29,10 @@ import {
   Eye,
   CalendarCheck,
   BadgeCheck,
+  Calculator,
+  Receipt,
+  Package,
+  CheckCheck,
 } from 'lucide-react';
 
 // Brand Information
@@ -61,19 +65,6 @@ export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // F032 Custom Website Theme State
-  const [websiteTheme, setWebsiteTheme] = useState<'editorial_atelier' | 'calm_minimal'>('editorial_atelier');
-
-  // F034 Consultation Inquiry State
-  const [inquiryText, setInquiryText] = useState('');
-  const [inquirySubmitted, setInquirySubmitted] = useState(false);
-
-  // F035 Conditional Intake Form State
-  const [hasRetinoids, setHasRetinoids] = useState<boolean | null>(null);
-  const [retinoidDetails, setRetinoidDetails] = useState('');
-  const [intakeCompleted, setIntakeCompleted] = useState(false);
-  const [intakeError, setIntakeError] = useState<string | null>(null);
-
   // F038 Note Amendment State
   const [amendmentText, setAmendmentText] = useState('');
   const [amendmentAdded, setAmendmentAdded] = useState(false);
@@ -89,32 +80,42 @@ export default function PosieStudioPage() {
   // F043 Bundle Service Selection State
   const [selectedAddon, setSelectedAddon] = useState<boolean>(false);
 
+  // F044 & F045 Proposal State
+  const [proposalAccepted, setProposalAccepted] = useState(false);
+  const [proposalQuestion, setProposalQuestion] = useState('');
+  const [questionSent, setQuestionSent] = useState(false);
+
+  // F046 Retail Inventory State
+  const [stockOnHand, setStockOnHand] = useState(8);
+  const [stockMovements, setStockMovements] = useState<Array<{ type: string; delta: number; reason: string; time: string }>>([
+    { type: 'received_purchase', delta: 10, reason: 'Initial vendor batch receive', time: '10:00 AM' },
+    { type: 'retail_sale', delta: -2, reason: 'POS In-store checkout', time: '02:15 PM' },
+  ]);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
-
-  const handleSendInquiry = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inquiryText) return;
-    setInquirySubmitted(true);
-  };
-
-  const handleCompleteIntake = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIntakeError(null);
-    if (hasRetinoids === null) {
-      setIntakeError('Please let us know if you are currently using retinoids.');
-      return;
-    }
-    if (hasRetinoids && !retinoidDetails.trim()) {
-      setIntakeError('Please specify your retinoid or Accutane details so we can adjust exfoliation safely.');
-      return;
-    }
-    setIntakeCompleted(true);
-  };
 
   const handleAddAmendment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amendmentText) return;
     setAmendmentAdded(true);
+  };
+
+  const handleLogSale = () => {
+    if (stockOnHand <= 0) return;
+    setStockOnHand((prev) => prev - 1);
+    setStockMovements((prev) => [
+      { type: 'retail_sale', delta: -1, reason: 'Front desk retail checkout', time: 'Just now' },
+      ...prev,
+    ]);
+  };
+
+  const handleBackbarUse = () => {
+    if (stockOnHand <= 0) return;
+    setStockOnHand((prev) => prev - 1);
+    setStockMovements((prev) => [
+      { type: 'professional_backbar_use', delta: -1, reason: 'Dispensed to Treatment Room 1', time: 'Just now' },
+      ...prev,
+    ]);
   };
 
   return (
@@ -193,260 +194,192 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* F041: Changes Since Last Visit (Repeat Intake Delta) */}
+      {/* F044 & F045: Itemized Service Estimate & One-Link Proposal Approval */}
       <section style={{ marginBottom: '36px' }}>
         <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarCheck size={18} color="var(--color-primary)" />
+              <Receipt size={18} color="var(--color-primary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 041: Changes Since Last Visit (Quick Review)
+                Feature 044 & 045: Itemized Estimate & Proposal Approval
               </strong>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Repeat Client Visit</Badge>
-              <Badge variant="muted">Last Visit: Oct 12</Badge>
+              <Badge variant="sage">Quote #EST-9821</Badge>
+              <Badge variant="muted">Version 1 (Valid 14 Days)</Badge>
             </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Repeat clients review their previous verified answers. Confirm in 1-click or update only what changed—past health records are never overwritten.
+            Transparent range estimate for multi-service packages. Clients accept the exact version or ask questions before confirming.
           </p>
 
-          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', marginBottom: '14px' }}>
-            <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-              <strong>Verified Answers on File:</strong>
+          <div style={{ background: '#FAF8F5', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px', marginBottom: '10px' }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-primary)' }}>Bridal Party Radiance & Styling Series</h4>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Prepared by Chloe V., Lead Aesthetician</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-primary)' }}>$470.40 – $545.40</span>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>25% Deposit: $117.60</span>
+              </div>
             </div>
-            <div style={{ fontSize: '0.83rem', color: 'var(--color-text)', lineHeight: 1.6 }}>
-              • <strong>Medications:</strong> None reported on Oct 12<br />
-              • <strong>Allergies:</strong> No known cosmetic allergies<br />
-              • <strong>Primary Skin Goal:</strong> Barrier hydration
+
+            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.84rem', lineHeight: '1.6' }}>
+              <li>Bride Deluxe Glass Glow Facial — $150.00 fixed</li>
+              <li>Bridal Party Updo & Styling (3x) — $255.00 to $330.00 range</li>
+              <li>Touch-Up Lip & Powder Kit — $45.00</li>
+              <li style={{ color: 'var(--color-secondary)' }}>Less Bridal Welcome Promo — (-$20.00)</li>
+            </ul>
+
+            <div style={{ marginTop: '12px', fontSize: '0.78rem', color: 'var(--color-text-muted)', background: '#FFF', padding: '8px 12px', borderRadius: '6px' }}>
+              ℹ️ <em>This is an itemized estimate, not a final charge. Acceptance refers to Version 1 only.</em>
             </div>
           </div>
 
-          {repeatReviewMode === 'review' && (
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setRepeatReviewMode('confirmed_same')}
-              >
-                ✓ Everything is still the same (1-Click Confirm)
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRepeatReviewMode('reported_changes')}
-              >
-                ✏️ I have updates to report
-              </Button>
-            </div>
-          )}
-
-          {repeatReviewMode === 'confirmed_same' && (
-            <div style={{ background: 'var(--color-secondary-light)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <CheckCircle2 size={18} color="var(--color-primary)" />
-              <span>
-                <strong>Quick Confirmation Saved!</strong> Baseline intake verified for today's visit with zero duplicate entry.
-              </span>
-            </div>
-          )}
-
-          {repeatReviewMode === 'reported_changes' && (
-            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '14px', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#B36B5C', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>
-                <AlertCircle size={15} />
-                <span>Delta Detected: Practitioner Triage Triggered</span>
+          {proposalAccepted ? (
+            <div style={{ background: 'var(--color-secondary-light)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CheckCheck size={20} color="var(--color-primary)" />
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong>Proposal Accepted by Sophia Turner!</strong>
+                <p style={{ margin: '2px 0 0', color: 'var(--color-text)' }}>
+                  Locked to Version 1. Deposit link dispatched via SMS & email.
+                </p>
               </div>
-              <label style={{ display: 'block', fontSize: '0.82rem', marginBottom: '6px', fontWeight: 600 }}>
-                Update Prescription Medications / New Products:
-              </label>
-              <input
-                type="text"
-                value={newMedication}
-                onChange={(e) => setNewMedication(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem', marginBottom: '10px' }}
-              />
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => alert('New medication delta recorded! Chloe alerted to review Spironolactone before treatment.')}
-              >
-                Save Updates & Alert Practitioner
-              </Button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => setProposalAccepted(true)}
+                >
+                  <CheckCircle2 size={14} style={{ marginRight: '6px' }} /> Accept Proposal (v1)
+                </Button>
+                <button
+                  onClick={() => alert('Proposal link copied to clipboard: https://glow.posieatelier.com/proposals/est-9821')}
+                  style={{
+                    background: '#FFF',
+                    border: '1px solid var(--color-border)',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Share 1-Link Proposal
+                </button>
+              </div>
+
+              {questionSent ? (
+                <p style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', margin: 0 }}>
+                  ✓ Question logged to Chloe's triage inbox. Estimate remains open and valid.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder="Have a question before accepting? (e.g. Can we adjust timing for hair styling?)..."
+                    value={proposalQuestion}
+                    onChange={(e) => setProposalQuestion(e.target.value)}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!proposalQuestion) return;
+                      setQuestionSent(true);
+                    }}
+                  >
+                    Ask Specialist
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Card>
       </section>
 
-      {/* F042: Patch Test Record & Service Readiness */}
+      {/* F046: Retail Inventory Basics & Traceable Stock Ledger */}
       <section style={{ marginBottom: '36px' }}>
         <Card style={{ backgroundColor: '#FAF8F5' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldCheck size={18} color="var(--color-secondary)" />
+              <Package size={18} color="var(--color-secondary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 042: Patch Test & Safety Clearance Record
+                Feature 046: Retail Inventory & Traceable Stock Ledger
               </strong>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Cleared for Service</Badge>
-              <Badge variant="muted">Evaluated at 48h</Badge>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Professional-evaluated patch test tracking. Missing evidence or adverse reactions automatically flag readiness without guessing universal medical intervals.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '12px' }}>
-            <div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Product & Lot</span>
-              <strong style={{ fontSize: '0.85rem' }}>Lash Adhesive LOT-9821</strong>
-            </div>
-            <div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Test Location</span>
-              <strong style={{ fontSize: '0.85rem' }}>Behind Right Ear</strong>
-            </div>
-            <div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Observed Result</span>
-              <strong style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>Negative (No Erythema)</strong>
-            </div>
-            <div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Salon Validity Window</span>
-              <strong style={{ fontSize: '0.85rem' }}>180 Days (Expires Apr 2027)</strong>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-            <span>Evaluated by: Chloe V., Licensed Aesthetician</span>
-            <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>✓ Appointment Pre-Check: Safety Verified</span>
-          </div>
-        </Card>
-      </section>
-
-      {/* F043: Appointment-Matched Form Bundling & Dynamic Re-Evaluation */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BadgeCheck size={18} color="var(--color-primary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 043: Smart Appointment Form Bundle
-              </strong>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant={selectedAddon ? 'rose' : 'sage'}>
-                {selectedAddon ? '1 Form Outstanding' : 'All Required Forms Completed'}
+              <Badge variant={stockOnHand <= 3 ? 'rose' : 'sage'}>
+                {stockOnHand <= 3 ? 'Low Stock Alert' : 'In Stock'}
               </Badge>
+              <Badge variant="muted">SKU: POS-OAT-150ML</Badge>
             </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Bundles intake, consent, and prep documents specific to booked treatments. Adding or changing a service re-evaluates requirements instantly without losing completed work.
+            Track variants, barcodes, sellable stock, and backbar usage with an immutable movement ledger.
           </p>
 
-          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>
-                Booked Services: {activeServiceObj.name} {selectedAddon && '+ Level 2 Chemical Peel Add-On'}
-              </strong>
-              <label style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={selectedAddon}
-                  onChange={(e) => setSelectedAddon(e.target.checked)}
-                />
-                <span>Simulate Adding Chemical Peel</span>
-              </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '16px' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Product Name</span>
+              <strong style={{ fontSize: '0.85rem' }}>Soothing Oat Milk Cleanser</strong>
             </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>On Hand / Sellable</span>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>{stockOnHand} units</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Retail Price</span>
+              <strong style={{ fontSize: '0.85rem' }}>$32.00 (Cost: $12.00)</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Barcode (UPC)</span>
+              <code style={{ fontSize: '0.82rem', background: '#ECE6DF', padding: '2px 6px', borderRadius: '4px' }}>850012345678</code>
+            </div>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: '#FFF', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}>
-                <div>
-                  <strong>1. General Health & Skin Questionnaire</strong>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Required for all facial treatments</p>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            <Button variant="outline" size="sm" onClick={handleLogSale}>
+              -1 Retail Sale (POS)
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleBackbarUse}>
+              -1 Dispense to Backbar Room
+            </Button>
+          </div>
+
+          <div>
+            <strong style={{ fontSize: '0.85rem', color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+              Recent Stock Movement Audit Trail:
+            </strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {stockMovements.map((m, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '0.8rem',
+                    background: '#FFF',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <span>
+                    <strong style={{ color: m.delta > 0 ? 'var(--color-secondary)' : '#B36B5C' }}>
+                      {m.delta > 0 ? `+${m.delta}` : m.delta}
+                    </strong>{' '}
+                    — {m.reason} ({m.type})
+                  </span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{m.time}</span>
                 </div>
-                <Badge variant="sage">✓ Completed on File</Badge>
-              </div>
-
-              {selectedAddon && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', background: '#FFF7F5', padding: '10px 14px', borderRadius: '6px', border: '1px solid #C67D6E', fontSize: '0.85rem' }}>
-                  <div>
-                    <strong style={{ color: '#B36B5C' }}>2. Level 2 Chemical Peel Informed Consent</strong>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Newly required because Chemical Peel was added to appointment</p>
-                  </div>
-                  <Badge variant="rose">⚠️ Signature Required</Badge>
-                </div>
-              )}
+              ))}
             </div>
           </div>
-        </Card>
-      </section>
-
-      {/* F038: Structured Treatment Notes & SOAP Charting */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Lock size={18} color="var(--color-primary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 038: Treatment Note & SOAP Charting
-              </strong>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Signed by Chloe V., LE</Badge>
-              <Badge variant="muted">Immutable Audit Log</Badge>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Permanent clinical record with products used, skin response, and append-only amendments.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>SUBJECTIVE</span>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Client noted chin dehydration and tightness after flights.</p>
-            </div>
-            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>OBJECTIVE</span>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Fitzpatrick II. Mild comedones on chin. Tolerated extractions well.</p>
-            </div>
-            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>ASSESSMENT</span>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Healthy epidermal barrier, ideal candidate for hydrating enzyme peel.</p>
-            </div>
-            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>PLAN</span>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem' }}>Maintenance visit in 4 weeks. Prescribed barrier repair regimen.</p>
-            </div>
-          </div>
-
-          <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.85rem' }}>
-            <strong>Products & Lots Used:</strong> Papaya Enzyme Polish (Lot #2409-A, 5ml), Hyaluronic Quench Gel (3 pumps).
-          </div>
-
-          {amendmentAdded ? (
-            <div style={{ background: 'var(--color-secondary-light)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem' }}>
-              <strong>✓ Signed Amendment Logged:</strong> "{amendmentText}" (Recorded with author timestamp).
-            </div>
-          ) : (
-            <form onSubmit={handleAddAmendment} style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                placeholder="Append clinical amendment (e.g. 24h follow-up phone call confirmed zero erythema)..."
-                value={amendmentText}
-                onChange={(e) => setAmendmentText(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--color-border)',
-                  fontSize: '0.85rem',
-                }}
-              />
-              <Button variant="outline" size="sm" type="submit">
-                <Pencil size={12} style={{ marginRight: '4px' }} /> Append Amendment
-              </Button>
-            </form>
-          )}
         </Card>
       </section>
 

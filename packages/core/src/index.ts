@@ -41,3 +41,6 @@ export * from './homecare';
 export * from './intake_delta';
 export * from './patch_tests';
 export * from './form_bundles';
+export * from './estimates';
+export * from './proposals';
+export * from './inventory';

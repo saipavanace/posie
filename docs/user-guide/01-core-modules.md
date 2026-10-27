@@ -242,3 +242,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F043 — Forms Matched to Appointment & Dynamic Re-Evaluation
 * **What it is:** Automated bundling of required intake, informed consent, and preparation documents tailored to the exact booked service package.
 * **Key Invariant (WB U21):** Deduplicates shared questionnaires so multi-service appointments never prompt duplicate forms. When services change or add-ons are included, requirements are dynamically re-evaluated while preserving previously completed documents.
+
+
+---
+
+## F044 — Itemized Service Estimates
+* **What it is:** Granular price quotes supporting both fixed pricing and honest price ranges for complex services (e.g. bridal parties, multi-step color transformations), itemizing services, retail products, promotional discounts, estimated local sales taxes, and required deposits.
+* **Key Invariant (Doc D04):** Strictly distinguishes an estimate from a final confirmed charge or payment authorization. Estimates include an explicit validity period and visible disclaimer protecting clients from unexpected surprise billing.
+
+---
+
+## F045 — Client Approval of Service Plans & One-Link Proposals
+* **What it is:** Interactive, shareable proposal links enabling clients to review service options, submit clarifying questions directly to their specialist, or accept a treatment plan with digital signer attribution.
+* **Key Invariant:** Client acceptance strictly binds to **one exact proposal version**. If the practitioner modifies pricing, dates, or scope, the proposal transitions back to pending acceptance, voiding previous agreement and requiring renewed client confirmation.
+
+---
+
+## F046 — Retail Inventory Basics & Traceable Stock Movements
+* **What it is:** Inventory management tracking SKUs, barcodes, sellable stock, reserved appointment inventory, and reorder thresholds.
+* **Key Invariant (WB F51):** Stock levels are **never silently overwritten**; all receipts, sales, client returns, professional backbar room dispensing, and shrinkage write-offs create traceable, immutable records in the stock movement ledger with staff attribution and timestamps.

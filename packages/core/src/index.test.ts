@@ -33,6 +33,13 @@ import {
   compileAppointmentFormRequirements,
   evaluateAppointmentFormReadiness,
   reevaluateOnServiceChange,
+  createItemizedEstimate,
+  acceptProposalPlan,
+  submitProposalQuestion,
+  reviseProposalEstimate,
+  registerRetailProduct,
+  recordStockMovement,
+  reserveProductStock,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -753,5 +760,168 @@ describe('Posie Core Logic - F043 (Forms Matched to Appointment & Re-Evaluation)
     expect(reeval.newlyRequiredForms.length).toBe(1);
     expect(reeval.newlyRequiredForms[0].formId).toBe(formPeelConsentId);
     expect(reeval.newlyRequiredForms[0].formTitle).toContain('Chemical Peel');
+  });
+});
+
+
+describe('Posie Core Logic - F044 (Itemized Service Estimates)', () => {
+  it('creates transparent itemized estimate with range pricing and deposit breakdown', () => {
+    const estimate = createItemizedEstimate({
+      clientId: '66666666-6666-6666-6666-666666666666',
+      businessId: '77777777-7777-7777-7777-777777777777',
+      authorStaffId: '99999999-9999-9999-9999-999999999999',
+      title: 'Bridal Party Glow & Hair Package',
+      lineItems: [
+        {
+          itemType: 'service',
+          description: 'Bride Deluxe Radiance Facial',
+          minPriceCents: 15000,
+          maxPriceCents: 15000,
+        },
+        {
+          itemType: 'service',
+          description: 'Bridal Party Updo & Styling (x3)',
+          quantity: 3,
+          minPriceCents: 8500,
+          maxPriceCents: 11000,
+        },
+        {
+          itemType: 'product',
+          description: 'Touch-Up Lip & Powder Kit',
+          minPriceCents: 4500,
+        },
+      ],
+      discountCents: 2000, // $20 bridal promo
+      taxRatePercent: 8,
+      depositPercent: 25,
+      validityDays: 14,
+    });
+
+    // 15000 + 3*8500 (25500) + 4500 = 45000 raw min
+    // 15000 + 3*11000 (33000) + 4500 = 52500 raw max
+    // Subtotal min = 45000 - 2000 = 43000
+    // Subtotal max = 52500 - 2000 = 50500
+    // Tax = 8% of 50500 = 4040
+    // Total min = 43000 + 4040 = 47040 ($470.40)
+    // Total max = 50500 + 4040 = 54540 ($545.40)
+    expect(estimate.pricingMode).toBe('range');
+    expect(estimate.totalMinCents).toBe(47040);
+    expect(estimate.totalMaxCents).toBe(54540);
+    expect(estimate.depositRequiredCents).toBe(Math.round(47040 * 0.25));
+    expect(estimate.disclaimer).toContain('estimate, not a final charge');
+    expect(estimate.status).toBe('sent_to_client');
+  });
+});
+
+describe('Posie Core Logic - F045 (Client Approval of Service Plans & One-Link Proposals)', () => {
+  const estimate = createItemizedEstimate({
+    id: '12121212-3434-5656-7878-909090909090',
+    clientId: '66666666-6666-6666-6666-666666666666',
+    businessId: '77777777-7777-7777-7777-777777777777',
+    authorStaffId: '99999999-9999-9999-9999-999999999999',
+    title: 'Acne Clearing 3-Month Plan',
+    lineItems: [
+      { id: 'item-1', itemType: 'service', description: 'Monthly Salicylic Peel (x3)', minPriceCents: 30000 },
+      { id: 'item-2', itemType: 'product', description: 'Purifying Cleanser + Azelaic Duo', minPriceCents: 7500 },
+    ],
+    taxRatePercent: 8,
+  });
+
+  it('accepts proposal version 1 and rejects outdated version acceptance', () => {
+    const { acceptanceRecord, updatedEstimate } = acceptProposalPlan({
+      estimate,
+      expectedVersion: 1,
+      selectedLineItemIds: ['item-1', 'item-2'],
+      clientSignerName: 'Sophia Turner',
+    });
+
+    expect(acceptanceRecord.estimateVersionAccepted).toBe(1);
+    expect(acceptanceRecord.clientSignerName).toBe('Sophia Turner');
+    expect(updatedEstimate.status).toBe('accepted');
+
+    // Attempting to accept version 1 if estimate is revised to version 2 throws
+    const revised = reviseProposalEstimate(estimate, {
+      title: 'Acne Clearing 3-Month Plan (Revised)',
+      discountCents: 1500,
+    });
+    expect(revised.version).toBe(2);
+    expect(revised.status).toBe('sent_to_client');
+
+    expect(() =>
+      acceptProposalPlan({
+        estimate: revised,
+        expectedVersion: 1, // trying to accept obsolete v1
+        selectedLineItemIds: ['item-1'],
+        clientSignerName: 'Sophia Turner',
+      })
+    ).toThrow(/updated to version 2/);
+  });
+
+  it('submits a client question without changing proposal status', () => {
+    const inquiry = submitProposalQuestion({
+      estimateId: estimate.id,
+      question: 'Can I swap the salicylic peel for an enzyme peel if I am pregnant?',
+    });
+
+    expect(inquiry.clientQuestion).toContain('pregnant');
+    expect(inquiry.resolved).toBe(false);
+  });
+});
+
+describe('Posie Core Logic - F046 (Retail Inventory Basics & Traceable Stock Movements)', () => {
+  const { product } = registerRetailProduct({
+    sku: 'POS-OAT-150ML',
+    barcode: '850012345678',
+    productName: 'Soothing Oat Milk Cleanser',
+    variantName: '150ml Pump Bottle',
+    brand: 'Posie Skin',
+    retailPriceCents: 3200,
+    costPriceCents: 1200,
+    initialStock: 10,
+    reorderThreshold: 3,
+  });
+
+  it('maintains an append-only stock ledger for sales, usage, and restocking', () => {
+    expect(product.onHandQuantity).toBe(10);
+    expect(product.isLowStock).toBe(false);
+
+    // Record retail sale of 2 units
+    const saleResult = recordStockMovement(product, {
+      movementType: 'retail_sale',
+      quantityDelta: -2,
+      authorizedStaffId: '99999999-9999-9999-9999-999999999999',
+      reason: 'POS In-store checkout',
+      referenceId: 'REC-2026-0099',
+    });
+
+    expect(saleResult.updatedProduct.onHandQuantity).toBe(8);
+    expect(saleResult.movement.resultingOnHand).toBe(8);
+    expect(saleResult.movement.movementType).toBe('retail_sale');
+
+    // Backbar consumption of 6 units triggers low stock flag (2 remaining <= threshold 3)
+    const backbarResult = recordStockMovement(saleResult.updatedProduct, {
+      movementType: 'professional_backbar_use',
+      quantityDelta: -6,
+      authorizedStaffId: '99999999-9999-9999-9999-999999999999',
+      reason: 'Dispensed to Treatment Room 1 for daily facials',
+    });
+
+    expect(backbarResult.updatedProduct.onHandQuantity).toBe(2);
+    expect(backbarResult.updatedProduct.isLowStock).toBe(true);
+
+    // Cannot sell more stock than on hand
+    expect(() =>
+      recordStockMovement(backbarResult.updatedProduct, {
+        movementType: 'retail_sale',
+        quantityDelta: -5,
+        authorizedStaffId: '99999999-9999-9999-9999-999999999999',
+        reason: 'Attempted oversell',
+      })
+    ).toThrow(/insufficient inventory on hand/);
+
+    // Stock reservation
+    const reservedProduct = reserveProductStock(saleResult.updatedProduct, 3);
+    expect(reservedProduct.reservedQuantity).toBe(3);
+    expect(reservedProduct.sellableQuantity).toBe(5);
   });
 });
