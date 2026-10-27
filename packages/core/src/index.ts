@@ -32,3 +32,6 @@ export * from './portal';
 export * from './sites';
 export * from './discovery';
 export * from './inquiries';
+export * from './intake';
+export * from './docgen';
+export * from './aftercare';
