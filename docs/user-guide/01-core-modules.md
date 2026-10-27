@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F010)
+# Posie App User Guide: Core Modules (F001 - F013)
 
-Welcome to **Posie**! This guide details features **F001 through F010** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F013** active across the platform.
 
 ---
 
@@ -74,3 +74,23 @@ Welcome to **Posie**! This guide details features **F001 through F010** active a
 * **What it is:** A modular workspace switcher that keeps daily operations clean.
 * **How it works:** Solo practitioners start in an uncluttered view (schedule, clients, services, settings). Extra modules like team management and retail inventory remain hidden until explicitly enabled.
 * **Key Invariant:** A new solo practitioner can take bookings without ever having to configure unrelated team or inventory settings.
+
+---
+
+## F011 — Guided First-Day Setup
+* **What it is:** A resumable setup progress tracker that walks studio owners through configuring essential features.
+* **How it works:** Tracks business identity, operating hours, initial treatment catalog, and cancellation policies.
+* **Key Invariant:** Evaluates readiness to take bookings and shows the exact unresolved blockers (e.g., missing services or policies) without ambiguity.
+
+---
+
+## F012 — Contextual Help & Demo Sandbox
+* **What it is:** A fictional, fully isolated sandbox environment where new staff and studio owners can practice bookings, checkout, and client communication.
+* **Key Invariant:** Demo actions are strictly sandboxed: they never dispatch real client SMS messages, never initiate real bank charges, and are filtered out from production analytics.
+
+---
+
+## F013 — Client Service Preferences
+* **What it is:** Client-centered comfort preferences captured during booking or consultation.
+* **How it works:** Stores preferred names, pronunciation guides, conversation styles (`quiet_visit_only`, `gentle_small_talk`), and treatment room comfort requests (heated blankets, low ambient lighting).
+* **Key Invariant:** Private practitioner care notes remain isolated to the treatment staff and are never exported to public or marketing audiences.

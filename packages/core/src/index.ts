@@ -8,3 +8,6 @@ export * from './messages';
 export * from './documents';
 export * from './sops';
 export * from './modules';
+export * from './onboarding';
+export * from './demo';
+export * from './preferences';

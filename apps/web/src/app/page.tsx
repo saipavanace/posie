@@ -19,6 +19,12 @@ import {
   User,
   Users,
   Package,
+  Compass,
+  PlayCircle,
+  VolumeX,
+  Volume2,
+  HeartHandshake,
+  AlertCircle,
 } from 'lucide-react';
 
 // Brand Information
@@ -77,59 +83,37 @@ const staffMembers = [
   },
 ];
 
-// F008: Document Content Library Sample Data
-const contentBlocks = [
-  {
-    id: 'cb1',
-    title: 'Facial Exfoliation & Acid Waiver',
-    category: 'Consent Waiver',
-    reviewedBy: 'Dr. Lisa Vance (Licensed Esthetician Review)',
-    version: 'v2.1',
-    excerpt: 'I confirm I have not used Accutane within 6 months or topical retinoids within 48 hours. I understand mild pinkness is normal.',
-  },
-  {
-    id: 'cb2',
-    title: 'Post-Dermaplaning UV Advisory',
-    category: 'Aftercare Clause',
-    reviewedBy: 'Studio Owner Approved',
-    version: 'v1.4',
-    excerpt: 'Apply SPF 30+ generously. Avoid direct steam rooms, harsh scrubs, and heavy sweat sessions for 24 hours.',
-  },
-];
-
-// F009: Staff SOP Checklist
-const initialSopTasks = [
-  { id: 't1', text: 'Autoclave & ultrasonic tool cycle completed (270°F)', done: true, by: 'Chloe' },
-  { id: 't2', text: 'Sanitize treatment beds with EPA hospital-grade wipes', done: true, by: 'Chloe' },
-  { id: 't3', text: 'Restock fresh bamboo linens and botanical headbands', done: false, by: null },
-  { id: 't4', text: 'Verify cold-stored hyaluronic ampoules and ice globes', done: false, by: null },
+// F011: Guided Setup Checklist
+const initialSetupSteps = [
+  { key: 'brand', label: 'Studio Identity & Brand Colors', done: true },
+  { key: 'catalog', label: 'First Treatment Configured', done: true },
+  { key: 'policy', label: 'Booking & Cancellation Policies', done: true },
+  { key: 'bank', label: 'Connect Payout Bank Account', done: false, blocker: 'Pending Stripe Connect verification' },
 ];
 
 export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
   const [selectedStaff, setSelectedStaff] = useState<string>('st1');
-  const [quietVisit, setQuietVisit] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [messagePreviewType, setMessagePreviewType] = useState<'confirmation' | 'reschedule' | 'aftercare'>('confirmation');
 
-  // F009 State
-  const [sopTasks, setSopTasks] = useState(initialSopTasks);
-
-  // F010 State: Progressive Feature Modules
+  // F010 Progressive State
   const [teamModule, setTeamModule] = useState(false);
-  const [inventoryModule, setInventoryModule] = useState(false);
+
+  // F012 Demo Sandbox Mode State
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // F013 Client Service Preferences State
+  const [preferredName, setPreferredName] = useState('Maya');
+  const [pronunciation, setPronunciation] = useState('MY-uh');
+  const [conversationPref, setConversationPref] = useState<'gentle_small_talk' | 'quiet_visit_only' | 'loves_chatting'>('quiet_visit_only');
+  const [extraBlanket, setExtraBlanket] = useState(true);
+  const [dimLights, setDimLights] = useState(true);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
   const activeStaffObj = staffMembers.find((s) => s.id === selectedStaff) || staffMembers[0];
 
   const directLinkUrl = `https://posie.app/posie-austin/book?service=${selectedService}&specialist=${selectedStaff}&src=qr_card`;
-
-  const messagePreviews = {
-    confirmation: `Hey Maya! ✨ You're all set for ${activeServiceObj.name} on Thursday, Nov 12 at 2:30 PM with ${activeStaffObj.name}. Your deposit of $24.00 is locked in. Reminder: ${activeServiceObj.prep} See your visit details or adjust anytime: https://posie.app/portal/visit-123 Can't wait to see you! — Posie`,
-    reschedule: `Hey Maya! We've successfully shifted your ${activeServiceObj.name} to Friday, Nov 13 at 11:00 AM with ${activeStaffObj.name}. View your updated details here: https://posie.app/portal/visit-123 — Posie`,
-    aftercare: `Hey Maya! How are you glowing after your ${activeServiceObj.name} today? Remember to keep your skin hydrated and avoid direct sun today. Any questions? Text us at +1-555-0199! — Posie`,
-  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(directLinkUrl);
@@ -137,14 +121,36 @@ export default function PosieStudioPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const toggleTask = (id: string) => {
-    setSopTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done, by: !t.done ? 'Chloe' : null } : t))
-    );
-  };
-
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
+      {/* F012 Demo Sandbox Indicator Banner */}
+      {isDemoMode && (
+        <div
+          style={{
+            backgroundColor: '#FFF3CD',
+            border: '1px solid #FFE69C',
+            color: '#856404',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            marginBottom: '24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.9rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PlayCircle size={18} />
+            <span>
+              <strong>Demo Sandbox Active (F012):</strong> You are exploring safely with fictional clients. No real SMS messages or credit card charges will be sent.
+            </span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setIsDemoMode(false)}>
+            Exit Demo Mode
+          </Button>
+        </div>
+      )}
+
       {/* Brand Header */}
       <header
         style={{
@@ -179,254 +185,188 @@ export default function PosieStudioPage() {
           </div>
         </div>
 
-        {/* F010 Progressive Mode Indicator */}
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {!isDemoMode && (
+            <Button variant="outline" size="sm" onClick={() => setIsDemoMode(true)}>
+              <PlayCircle size={14} style={{ marginRight: '6px' }} />
+              Try Demo Sandbox (F012)
+            </Button>
+          )}
+
           <Badge variant={teamModule ? 'rose' : 'sage'}>
             {teamModule ? 'Team Studio Mode' : 'Solo Practitioner Mode'}
           </Badge>
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-            Austin, TX • Posie v1.0
-          </p>
         </div>
       </header>
 
-      {/* F010 Progressive Setup Controls Banner */}
-      <section
-        style={{
-          backgroundColor: 'var(--color-card)',
-          borderRadius: '16px',
-          padding: '20px 24px',
-          border: '1px solid var(--color-border)',
-          marginBottom: '40px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <Layers size={18} color="var(--color-tertiary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 010: Progressive Feature Setup
-            </span>
+      {/* F011: Guided First-Day Setup Progress Tracker */}
+      <section style={{ marginBottom: '40px' }}>
+        <Card style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Compass size={20} color="var(--color-tertiary)" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+                Feature 011: Guided First Day Setup
+              </span>
+            </div>
+            <Badge variant="sage">80% Ready to Take Bookings</Badge>
           </div>
-          <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)' }}>
-            Keep your workspace clean. Turn on extra tools only when you need them.
-          </h3>
-        </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <Button
-            variant={teamModule ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setTeamModule(!teamModule)}
-          >
-            <Users size={16} style={{ marginRight: '6px' }} />
-            {teamModule ? 'Team Mode (Active)' : '+ Enable Team Module'}
-          </Button>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '18px' }}>
+            Your setup progress is saved automatically. Below are the steps required to receive clients:
+          </p>
 
-          <Button
-            variant={inventoryModule ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setInventoryModule(!inventoryModule)}
-          >
-            <Package size={16} style={{ marginRight: '6px' }} />
-            {inventoryModule ? 'Retail Stock (Active)' : '+ Enable Retail Module'}
-          </Button>
-        </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px' }}>
+            {initialSetupSteps.map((step) => (
+              <div
+                key={step.key}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: step.done ? 'var(--color-secondary-light)' : 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                }}
+              >
+                {step.done ? (
+                  <CheckCircle2 size={18} color="var(--color-primary)" />
+                ) : (
+                  <AlertCircle size={18} color="var(--color-tertiary)" />
+                )}
+                <div>
+                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-primary)', display: 'block' }}>
+                    {step.label}
+                  </strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                    {step.done ? 'Configured & Active' : step.blocker}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </section>
 
-      {/* F008 & F009 Showcase Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '48px' }}>
-        {/* F008: Document Content Library */}
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <FileText size={20} color="var(--color-primary)" />
+      {/* F013: Client Service Preferences & Comfort Requests */}
+      <section style={{ marginBottom: '40px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <HeartHandshake size={20} color="var(--color-primary)" />
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-              Feature 008
+              Feature 013: Client Service Preferences
             </span>
           </div>
-          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Document Content Library
-          </h3>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Approved paragraphs and legal/clinical clauses with explicit reviewer attribution and immutable version tracking.
+          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Personalized Comfort & Care</h2>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+            Tell your specialist exactly how you prefer your visit. Saved privately in your treatment record.
           </p>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {contentBlocks.map((b) => (
-              <div
-                key={b.id}
-                style={{
-                  backgroundColor: 'var(--color-bg)',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>{b.title}</strong>
-                  <Badge variant="rose">{b.version}</Badge>
-                </div>
-                <p style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)', marginBottom: '8px', fontStyle: 'italic' }}>
-                  "{b.excerpt}"
-                </p>
-                <span style={{ fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
-                  ✓ {b.reviewedBy}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* F009: Staff SOPs and Checklists */}
         <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <ListTodo size={20} color="var(--color-tertiary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 009
-            </span>
-          </div>
-          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Staff SOPs & Sanitation Checklists
-          </h3>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Opening, closing, and hygiene tasks with staff attribution and version acknowledgment tracking.
-          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            {/* Preferred Name & Pronunciation */}
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                Preferred Name & Pronunciation:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={preferredName}
+                  onChange={(e) => setPreferredName(e.target.value)}
+                  placeholder="First name"
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.9rem',
+                    flex: 1,
+                  }}
+                />
+                <input
+                  type="text"
+                  value={pronunciation}
+                  onChange={(e) => setPronunciation(e.target.value)}
+                  placeholder="e.g. MY-uh"
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.9rem',
+                    width: '110px',
+                  }}
+                />
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {sopTasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => toggleTask(task.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  backgroundColor: task.done ? 'var(--color-secondary-light)' : 'var(--color-bg)',
-                  cursor: 'pointer',
-                  border: '1px solid var(--color-border)',
-                  transition: 'all 0.15s ease',
-                }}
-              >
+            {/* Conversation Style */}
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                Conversation Preference:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button
+                  variant={conversationPref === 'quiet_visit_only' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setConversationPref('quiet_visit_only')}
+                >
+                  <VolumeX size={14} style={{ marginRight: '6px' }} /> Quiet Visit
+                </Button>
+                <Button
+                  variant={conversationPref === 'gentle_small_talk' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setConversationPref('gentle_small_talk')}
+                >
+                  <Volume2 size={14} style={{ marginRight: '6px' }} /> Gentle Talk
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Treatment Room Comfort Requests */}
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block', marginBottom: '10px' }}>
+              Room Comfort Checklist (Staff Sanitized):
+            </strong>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
-                  checked={task.done}
-                  readOnly
-                  style={{ marginTop: '3px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                  checked={extraBlanket}
+                  onChange={(e) => setExtraBlanket(e.target.checked)}
+                  style={{ accentColor: 'var(--color-primary)' }}
                 />
-                <div style={{ flex: 1 }}>
-                  <p
-                    style={{
-                      fontSize: '0.88rem',
-                      color: 'var(--color-primary)',
-                      textDecoration: task.done ? 'line-through' : 'none',
-                      fontWeight: task.done ? 500 : 600,
-                    }}
-                  >
-                    {task.text}
-                  </p>
-                  {task.by && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>
-                      Completed by {task.by}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+                Heated Bed & Extra Plush Blanket
+              </label>
 
-      {/* F005 & F006 Showcase Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '48px' }}>
-        {/* F005: Direct Booking Link & QR Code */}
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <QrCode size={20} color="var(--color-tertiary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 005
-            </span>
-          </div>
-          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Direct Booking Link & QR Code
-          </h3>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Deep-link for social bios and physical cards.
-          </p>
-
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <svg width="90" height="90" viewBox="0 0 140 140" fill="none" style={{ borderRadius: '10px', border: '1px solid var(--color-border)' }}>
-              <rect width="140" height="140" rx="12" fill="#FAF8F5" />
-              <rect x="14" y="14" width="32" height="32" rx="6" fill="#2C3E30" />
-              <rect x="20" y="20" width="20" height="20" rx="3" fill="#FAF8F5" />
-              <rect x="24" y="24" width="12" height="12" rx="2" fill="#2C3E30" />
-              <rect x="94" y="14" width="32" height="32" rx="6" fill="#2C3E30" />
-              <rect x="100" y="20" width="20" height="20" rx="3" fill="#FAF8F5" />
-              <rect x="104" y="24" width="12" height="12" rx="2" fill="#2C3E30" />
-              <rect x="14" y="94" width="32" height="32" rx="6" fill="#2C3E30" />
-              <rect x="20" y="100" width="20" height="20" rx="3" fill="#FAF8F5" />
-              <rect x="24" y="104" width="12" height="12" rx="2" fill="#2C3E30" />
-              <rect x="56" y="24" width="8" height="12" rx="2" fill="#2C3E30" />
-              <rect x="46" y="60" width="16" height="16" rx="3" fill="#2C3E30" />
-            </svg>
-
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  backgroundColor: 'var(--color-bg)',
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  fontSize: '0.78rem',
-                  fontFamily: 'monospace',
-                  wordBreak: 'break-all',
-                  marginBottom: '8px',
-                }}
-              >
-                {directLinkUrl}
-              </div>
-              <Button variant="outline" size="sm" onClick={handleCopy}>
-                {copiedLink ? <><Check size={14} style={{ marginRight: '6px' }} /> Copied</> : <><Copy size={14} style={{ marginRight: '6px' }} /> Copy Link</>}
-              </Button>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={dimLights}
+                  onChange={(e) => setDimLights(e.target.checked)}
+                  style={{ accentColor: 'var(--color-primary)' }}
+                />
+                Dim Ambient Lighting (Zero Overhead Glare)
+              </label>
             </div>
           </div>
         </Card>
-
-        {/* F006: Printable Branded Materials */}
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <Printer size={20} color="var(--color-primary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-              Feature 006
-            </span>
-          </div>
-          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Printable Price Menus
-          </h3>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Generates high-res physical takeaway menus matching active catalog pricing.
-          </p>
-
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => window.print()}
-            style={{ width: '100%', marginTop: '14px' }}
-          >
-            <Printer size={16} style={{ marginRight: '8px' }} /> Print Studio Menu
-          </Button>
-        </Card>
-      </div>
+      </section>
 
       {/* Treatment Menu */}
       <section style={{ marginBottom: '56px' }}>
         <div style={{ marginBottom: '24px' }}>
           <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Transparent prices. No surprise checkout fees.</p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Transparent prices. No secret checkout fees.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
@@ -483,30 +423,27 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* Booking Policies & Confirmation */}
+      {/* Booking Confirmation Box */}
       <section>
         <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            Book Your Visit Now
+            Book Your Visit for {preferredName}
           </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
               <span style={{ color: 'var(--color-text-muted)' }}>Treatment:</span>
               <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-              <input
-                type="checkbox"
-                id="quietCheck"
-                checked={quietVisit}
-                onChange={(e) => setQuietVisit(e.target.checked)}
-                style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-              />
-              <label htmlFor="quietCheck" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
-                <strong>Request a Quiet Visit:</strong> Let the team know you just want to relax without small talk.
-              </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Specialist:</span>
+              <strong>{activeStaffObj.name}</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Atmosphere:</span>
+              <strong>{conversationPref === 'quiet_visit_only' ? 'Quiet Visit (No small talk)' : 'Gentle Small Talk'}</strong>
             </div>
           </div>
 
@@ -524,9 +461,9 @@ export default function PosieStudioPage() {
             >
               <CheckCircle2 size={24} color="var(--color-primary)" />
               <div>
-                <strong>Appointment Snapshot Created!</strong>
+                <strong>Appointment Snapshot Created for {preferredName}!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  Confirmation sent using the Message Template Library (F007) and Content Block Waivers (F008).
+                  Preferences for room comfort have been logged for {activeStaffObj.name}.
                 </p>
               </div>
             </div>

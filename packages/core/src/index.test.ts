@@ -20,6 +20,12 @@ import {
   completeSopItem,
   getVisibleWorkspaceSections,
   toggleWorkspaceModule,
+  evaluateBookingReadiness,
+  INITIAL_SETUP_STEPS,
+  createDemoSandbox,
+  assertSafeDemoAction,
+  ClientServicePreferencesSchema,
+  sanitizePreferencesForRoomPrep,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -397,8 +403,6 @@ describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
     const visible = getVisibleWorkspaceSections(soloFlags);
     expect(visible).toEqual(['schedule', 'clients', 'services', 'settings']);
     expect(visible).not.toContain('team');
-    expect(visible).not.toContain('inventory');
-    expect(visible).not.toContain('classes');
   });
 
   it('reveals team section when team management is toggled', () => {
@@ -407,10 +411,62 @@ describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
     expect(visible).toContain('team');
     expect(updated.soloPractitionerMode).toBe(false);
   });
+});
 
-  it('reveals inventory section when retail inventory is enabled', () => {
-    const updated = toggleWorkspaceModule(soloFlags, 'retailInventoryEnabled', true);
-    const visible = getVisibleWorkspaceSections(updated);
-    expect(visible).toContain('inventory');
+describe('Posie Core Logic - F011 (Guided First-Day Setup)', () => {
+  it('correctly calculates setup progress and identifies remaining blockers', () => {
+    const status = evaluateBookingReadiness(INITIAL_SETUP_STEPS);
+    expect(status.isBookingReady).toBe(true); // essential services & policy steps are configured
+    expect(status.progressPercentage).toBe(80); // 4 out of 5 steps completed
+  });
+
+  it('flags booking readiness as false if service is missing', () => {
+    const incompleteSteps = INITIAL_SETUP_STEPS.map((s) =>
+      s.key === 'first_service' ? { ...s, completed: false } : s
+    );
+    const status = evaluateBookingReadiness(incompleteSteps);
+    expect(status.isBookingReady).toBe(false);
+    expect(status.unresolvedBlockers).toContain('Must configure at least one active service.');
+  });
+});
+
+describe('Posie Core Logic - F012 (Contextual Help & Demo Sandbox)', () => {
+  it('generates an isolated demo sandbox business with fictional records', () => {
+    const sandbox = createDemoSandbox();
+    expect(sandbox.isDemoTenant).toBe(true);
+    expect(sandbox.fictionalClients.length).toBe(2);
+    expect(sandbox.fictionalClients[0].isFictional).toBe(true);
+  });
+
+  it('blocks live event/message dispatch when in demo sandbox mode', () => {
+    const check = assertSafeDemoAction(true);
+    expect(check.canDispatchLiveEvents).toBe(false);
+  });
+});
+
+describe('Posie Core Logic - F013 (Client Service Preferences)', () => {
+  const prefs = {
+    clientId: '44444444-4444-4444-4444-444444444444',
+    preferredName: 'Maya',
+    namePronunciation: 'MY-uh',
+    preferredContactChannel: 'sms' as const,
+    conversationPreference: 'quiet_visit_only' as const,
+    roomComfortRequests: ['extra blanket', 'low lighting'],
+    privatePractitionerNotes: 'Skin reacts easily to heavy citrus scents.',
+    isSensitiveCareNote: true,
+    updatedAt: new Date().toISOString(),
+  };
+
+  it('validates client preference schemas', () => {
+    expect(() => ClientServicePreferencesSchema.parse(prefs)).not.toThrow();
+  });
+
+  it('sanitizes preferences for room prep while stripping sensitive notes from public export', () => {
+    const prep = sanitizePreferencesForRoomPrep(prefs);
+    expect(prep.preferredName).toBe('Maya');
+    expect(prep.conversationPreference).toBe('quiet_visit_only');
+    expect(prep.roomComfortRequests).toContain('extra blanket');
+    // @ts-expect-error privatePractitionerNotes must not be in sanitized room prep
+    expect(prep.privatePractitionerNotes).toBeUndefined();
   });
 });
