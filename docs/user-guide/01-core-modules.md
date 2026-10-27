@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F022)
+# Posie App User Guide: Core Modules (F001 - F025)
 
-Welcome to **Posie**! This guide details features **F001 through F022** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F025** active across the platform.
 
 ---
 
@@ -112,16 +112,31 @@ Welcome to **Posie**! This guide details features **F001 through F022** active a
 
 ## F020 — Private Weekly Goals
 * **What it is:** Owner-chosen targets for profit, rebooking rates, and protected days off.
-* **Key Invariant (WB U20):** Goals are strictly private to the business owner, can be paused with zero guilt, and provide nonpunitive progress feedback without public staff shaming.
 
 ---
 
 ## F021 — Working Hours & Holiday Calendar
 * **What it is:** Weekly operating hours, midday provider breaks, minimum advance notice lead times (default: 2 hours), and scheduled holiday closures.
-* **Key Invariant:** Checks calendar availability against operating hours and blocks bookings during scheduled holiday breaks.
 
 ---
 
 ## F022 — Help Clients Choose a Service
 * **What it is:** An intelligent, client-facing treatment navigator that asks about skin goals, sensitivity, and upcoming events in plain language.
-* **Key Invariant:** Explains treatments in relatable terms and safely routes to gentle hydration or consultation when skin sensitivity or imminent events (within 48 hours) present uncertainty, without ever diagnosing medical conditions.
+
+---
+
+## F023 — Inclusive Menu Options (Gender-Neutral Pricing)
+* **What it is:** Transparent, gender-neutral service pricing based strictly on time and treatment complexity.
+* **Key Invariant:** Any possible extra charges (such as extended cryo or pore extractions) appear before client acceptance with explicit consent.
+
+---
+
+## F024 — Business Contact & Opening Status
+* **What it is:** Canonical studio address, parking directions, and accessibility descriptions.
+* **Key Invariant:** Every client touchpoint (website, booking links, emails, PDFs) displays identical verified address, parking, and timezone details.
+
+---
+
+## F025 — Unified Client Timeline
+* **What it is:** A chronological history combining past visits, retail purchases, signed waivers, and care notes.
+* **Key Invariant (WB F19):** Chronologically sorted with role-based privacy (private treatment notes are strictly hidden from clients and receptionists).

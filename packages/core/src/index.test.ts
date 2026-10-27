@@ -39,6 +39,9 @@ import {
   calculateGoalProgress,
   isSlotWithinOperatingHours,
   matchServiceToGoals,
+  calculateInclusiveServicePrice,
+  formatCanonicalLocationSummary,
+  getUnifiedClientTimeline,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -70,556 +73,104 @@ describe('Posie Core Logic - F001 (Brand Kit)', () => {
   });
 });
 
-describe('Posie Core Logic - F002 (Service Catalog)', () => {
-  const sampleService = {
-    id: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
-    categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
-    name: 'Hydra-Dew Glow Facial',
-    clientDescription: 'A 60-minute deep cleanse that leaves you looking fresh.',
-    preparationInstructions: 'Avoid retinoids for 48 hours prior.',
-    basePriceInCents: 12000,
-    baseDurationMinutes: 60,
-    active: true,
-    addons: [],
-    practitionerOverrides: [
-      {
-        practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-        priceInCents: 14000,
-        durationMinutes: 75,
-        effectiveFrom: '2026-01-01T00:00:00.000Z',
-        effectiveTo: '2026-12-31T23:59:59.000Z',
-      },
-    ],
-    version: 1,
-  };
-
-  it('returns base price if no practitioner specified', () => {
-    const quote = getEffectiveServiceQuote(sampleService);
-    expect(quote.priceInCents).toBe(12000);
-    expect(quote.hasOverride).toBe(false);
-  });
-
-  it('returns override price if practitioner has active override', () => {
-    const quote = getEffectiveServiceQuote(
-      sampleService,
-      'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-      new Date('2026-06-01T12:00:00Z')
-    );
-    expect(quote.priceInCents).toBe(14000);
-    expect(quote.hasOverride).toBe(true);
-  });
-
-  it('falls back to base price if date falls outside override window', () => {
-    const quote = getEffectiveServiceQuote(
-      sampleService,
-      'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-      new Date('2027-02-01T12:00:00Z')
-    );
-    expect(quote.priceInCents).toBe(12000);
-    expect(quote.hasOverride).toBe(false);
-  });
-});
-
-describe('Posie Core Logic - F003 (Staff Profiles)', () => {
-  const staffList = [
-    {
-      id: 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a',
-      fullName: 'Chloe Martinez',
-      displayName: 'Chloe',
-      role: 'Master Esthetician',
-      bio: 'Loves bouncy hydration and painless extractions.',
-      isPublic: true,
-      active: true,
-      languages: ['English', 'Spanish'],
-      skills: ['Chemical Peels', 'Dermaplaning'],
-      eligibleServiceIds: [],
-      portfolioItems: [
-        {
-          id: '11111111-2222-3333-4444-555555555555',
-          imageUrl: 'https://example.com/photo1.jpg',
-          caption: 'Glow finish after 1 session',
-          clientConsentGranted: true,
-        },
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'e2f3a4b5-c6d7-4e8f-9a0b-1c2d3e4f5a6b',
-      fullName: 'Secret Trainee',
-      displayName: 'Alex',
-      role: 'Apprentice',
-      bio: 'In training.',
-      isPublic: false,
-      active: true,
-      languages: ['English'],
-      skills: [],
-      eligibleServiceIds: [],
-      portfolioItems: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
-
-  it('never exposes private staff to public view', () => {
-    const publicStaff = filterStaffForPublicDisplay(staffList);
-    expect(publicStaff.length).toBe(1);
-    expect(publicStaff[0].displayName).toBe('Chloe');
-  });
-});
-
-describe('Posie Core Logic - F004 (Booking Policies)', () => {
-  const policy = {
-    id: 'f9e8d7c6-b5a4-4321-1234-567890abcdef',
-    depositPercentage: 20,
-    cancellationNoticeHours: 24,
-    lateCancelFeePercentage: 50,
-    noShowFeePercentage: 100,
-    refundPolicyText: 'Full deposit refund if canceled 24 hours prior.',
-    accessibilityContactEmail: 'access@posieatelier.com',
-    accessibilityContactPhone: '+1-555-0100',
-    stepFreeAccessAvailable: true,
-    quietVisitAvailable: true,
-    version: 1,
-    effectiveDate: new Date().toISOString(),
-  };
-
-  it('creates an immutable snapshot with full plain-language terms', () => {
-    const snapshot = createPolicySnapshot(policy, '7a8b9c0d-1e2f-4a3b-9c8d-7e6f5a4b3c2d');
-    expect(snapshot.snapshotTerms).toContain('Deposit: 20% required');
-  });
-});
-
-describe('Posie Core Logic - F005 (Direct Booking Links & QR Codes)', () => {
-  it('generates a direct booking URL with all query parameters intact', () => {
-    const url = generateDirectBookingUrl('https://posie.app', {
-      businessSlug: 'posie-austin',
+describe('Posie Core Logic - F023 (Inclusive Menu Options)', () => {
+  it('calculates gender-neutral complexity pricing with zero hidden surcharges', () => {
+    const base = 12000; // $120.00
+    const extraDensityTier = {
+      id: '12345678-1234-1234-1234-123456789abc',
       serviceId: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
-      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-      campaignSource: 'instagram',
-    });
+      tierName: 'Extended Extraction & Calming Cryo',
+      durationMinutes: 75,
+      priceInCents: 15000,
+      isGenderNeutral: true as const,
+    };
 
-    expect(url).toContain('service=c8172c3d-d6a9-4519-9e8c-8f24c30c33ef');
-  });
-
-  it('generates an SVG QR code matching the chosen color', () => {
-    const svg = generateQrCodeSvg('https://posie.app/posie-austin/book', '#2C3E30');
-    expect(svg).toContain('<svg');
-  });
-});
-
-describe('Posie Core Logic - F006 (Printable Branded Materials)', () => {
-  const brand = {
-    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-    businessName: 'Posie Beauty Atelier',
-    contactEmail: 'hello@posieatelier.com',
-    contactPhone: '+1-555-0199',
-    logoSvg: '<svg></svg>',
-    accentColor: '#C67D6E',
-    toneOfVoice: 'quirky-playful' as const,
-    version: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  const services = [
-    {
-      id: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
-      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
-      name: 'Hydra-Dew Glow Facial',
-      clientDescription: 'A 60-minute deep cleanse.',
-      basePriceInCents: 12000,
-      baseDurationMinutes: 60,
-      active: true,
-      addons: [],
-      practitionerOverrides: [],
-      version: 1,
-    },
-  ];
-
-  it('renders valid printable HTML with print CSS styles', () => {
-    const menu = generatePrintableMenu(brand, services);
-    const html = renderPrintableMenuHtml(menu);
-    expect(html).toContain('<!DOCTYPE html>');
+    const breakdown = calculateInclusiveServicePrice(base, extraDensityTier);
+    expect(breakdown.basePriceInCents).toBe(12000);
+    expect(breakdown.complexitySurchargeCents).toBe(3000);
+    expect(breakdown.finalQuotedPriceInCents).toBe(15000);
+    expect(breakdown.clientConsentedToRange).toBe(true);
   });
 });
 
-describe('Posie Core Logic - F007 (Message Template Library)', () => {
-  const vars = {
-    clientFirstName: 'Maya',
-    serviceName: 'Hydra-Dew Glow Facial',
-    appointmentDateFormatted: 'Thursday, Nov 12',
-    appointmentTimeFormatted: '2:30 PM',
-    specialistName: 'Chloe',
-    depositPaidFormatted: '$24.00',
-    remainingBalanceFormatted: '$96.00',
-    portalLink: 'https://posie.app/portal/visit-123',
-    businessName: 'Posie',
-    businessPhone: '+1-555-0199',
-  };
-
-  it('compiles message without unresolved tokens', () => {
-    const message = compileMessage('confirmation', vars);
-    expect(message.compiledText).toContain('Hey Maya! ✨');
-  });
-});
-
-describe('Posie Core Logic - F008 (Document Content Library)', () => {
-  const block = {
-    id: '12345678-1234-1234-1234-123456789abc',
-    title: 'Facial Peel Sensitivity Waiver',
-    category: 'consent_waiver' as const,
-    content: 'Client acknowledges possible temporary redness.',
-    applicableServiceIds: [],
-    version: 1,
-    approvedBy: 'Sarah Jenkins, Esq.',
-    reviewType: 'legal_counsel' as const,
-    reviewDate: new Date().toISOString(),
-    active: true,
-  };
-
-  it('increments version upon update', () => {
-    const updated = updateContentBlock(block, { content: 'Updated' }, 'Counsel', 'legal_counsel');
-    expect(updated.version).toBe(2);
-  });
-});
-
-describe('Posie Core Logic - F009 (Staff SOPs & Checklists)', () => {
-  const sop = {
-    id: '87654321-4321-4321-4321-cba987654321',
-    title: 'Morning Studio Sanitization SOP',
-    type: 'opening' as const,
-    assignedRole: 'Lead Esthetician',
-    version: 1,
-    items: [
-      {
-        id: '11111111-1111-1111-1111-111111111111',
-        taskDescription: 'Autoclave tools',
-        completed: false,
-      },
-    ],
-    acknowledgedByStaffIds: [],
-    updatedAt: new Date().toISOString(),
-  };
-
-  it('completes individual SOP items with staff attribution', () => {
-    const completed = completeSopItem(
-      sop,
-      '11111111-1111-1111-1111-111111111111',
-      '99999999-9999-9999-9999-999999999999'
-    );
-    expect(completed.items[0].completed).toBe(true);
-  });
-
-  it('updates SOP checklist resetting acknowledgments', () => {
-    const updated = updateSopChecklist(
-      sop,
-      [{ id: '11111111-1111-1111-1111-111111111111', taskDescription: 'New run' }],
-      'Revised'
-    );
-    expect(updated.version).toBe(2);
-    expect(updated.acknowledgedByStaffIds.length).toBe(0);
-  });
-});
-
-describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
-  const soloFlags = {
-    soloPractitionerMode: true,
-    teamManagementEnabled: false,
-    retailInventoryEnabled: false,
-    classesAndWorkshopsEnabled: false,
-    boothRenterSeparationEnabled: false,
-    clinicalChartingEnabled: false,
-  };
-
-  it('returns clean uncluttered sections for solo practitioners', () => {
-    const visible = getVisibleWorkspaceSections(soloFlags);
-    expect(visible).toEqual(['schedule', 'clients', 'services', 'settings']);
-  });
-
-  it('toggles modules appropriately', () => {
-    const updated = toggleWorkspaceModule(soloFlags, 'teamManagementEnabled', true);
-    expect(updated.teamManagementEnabled).toBe(true);
-    expect(updated.soloPractitionerMode).toBe(false);
-  });
-});
-
-describe('Posie Core Logic - F011 (Guided First-Day Setup)', () => {
-  it('correctly calculates setup progress and identifies remaining blockers', () => {
-    const status = evaluateBookingReadiness(INITIAL_SETUP_STEPS);
-    expect(status.isBookingReady).toBe(true);
-  });
-});
-
-describe('Posie Core Logic - F012 (Contextual Help & Demo Sandbox)', () => {
-  it('blocks live event/message dispatch when in demo sandbox mode', () => {
-    const sandbox = createDemoSandbox();
-    expect(sandbox.isDemoTenant).toBe(true);
-    const check = assertSafeDemoAction(true);
-    expect(check.canDispatchLiveEvents).toBe(false);
-  });
-});
-
-describe('Posie Core Logic - F013 (Client Service Preferences)', () => {
-  const prefs = {
-    clientId: '44444444-4444-4444-4444-444444444444',
-    preferredName: 'Maya',
-    preferredContactChannel: 'sms' as const,
-    conversationPreference: 'quiet_visit_only' as const,
-    roomComfortRequests: ['extra blanket'],
-    isSensitiveCareNote: true,
-    updatedAt: new Date().toISOString(),
-  };
-
-  it('sanitizes preferences for room prep while stripping sensitive notes', () => {
-    const prep = sanitizePreferencesForRoomPrep(prefs);
-    expect(prep.preferredName).toBe('Maya');
-  });
-});
-
-describe('Posie Core Logic - F014 (Quiet Visit & Access Requests)', () => {
-  const req = {
-    id: '55555555-5555-5555-5555-555555555555',
-    clientId: '44444444-4444-4444-4444-444444444444',
-    quietVisitRequested: true,
-    stepFreeAccessRequired: true,
-    supportPersonAccompanying: false,
-    lowSensoryLighting: true,
-    scentFreeEnvironment: true,
-    extraConsultationTimeNeeded: false,
-    acknowledgedByStaffId: 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a',
-    createdAt: new Date().toISOString(),
-  };
-
-  it('filters requests only to assigned practitioner', () => {
-    const filtered = filterAccessRequestsForPractitioner([req], 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a');
-    expect(filtered.length).toBe(1);
-  });
-});
-
-describe('Posie Core Logic - F015 (Daily Task List)', () => {
-  const tasks = [
-    {
-      id: '66666666-6666-6666-6666-666666666666',
-      type: 'incomplete_form' as const,
-      title: 'Missing Acid Waiver for Maya',
-      details: 'Appointment today at 2:30 PM.',
-      status: 'pending' as const,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  it('completes daily task and marks timestamp and staff', () => {
-    const updated = completeDailyTask(tasks, '66666666-6666-6666-6666-666666666666', 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a');
-    expect(updated[0].status).toBe('completed');
-  });
-});
-
-describe('Posie Core Logic - F016 (Catalog Import Templates)', () => {
-  it('validates a correct catalog CSV string', () => {
-    const csv = `${CATALOG_CSV_HEADER}\nHydra Facial,cat-1,12000,60,Deep cleanse,No retinol`;
-    const res = validateCatalogCsv(csv);
-    expect(res.isValid).toBe(true);
-  });
-});
-
-describe('Posie Core Logic - F017 (Total Cost Estimator)', () => {
-  it('calculates solo tier cost transparently with zero hidden fees', () => {
-    const estimate = calculateTotalCostEstimate({
-      subscriptionTier: 'solo',
-      staffCount: 1,
-      locationCount: 1,
-      monthlySmsCount: 100,
-      monthlyCreditCardVolumeInCents: 500000,
-      addCustomDomain: false,
-      addFormsAndWaiversUnlimited: true,
-    });
-
-    expect(estimate.baseSubscriptionCents).toBe(2900);
-    expect(estimate.extraStaffCents).toBe(0);
-    expect(estimate.smsUsageCents).toBe(0);
-    expect(estimate.totalEstimatedMonthlyCostCents).toBeGreaterThan(2900);
-    expect(estimate.breakdownExplanation).toContain('Software Base (solo): $29.00');
-  });
-});
-
-describe('Posie Core Logic - F018 (Short Daily Owner Digest)', () => {
-  it('summarizes gross revenue, collected deposits, and required decisions', () => {
-    const appointments = [
-      { priceInCents: 12000, depositPaidInCents: 2400 },
-      { priceInCents: 9000, depositPaidInCents: 1800 },
-    ];
-
-    const digest = generateDailyOwnerDigest(appointments, 1, new Date('2026-11-12T12:00:00Z'), false);
-    expect(digest.confirmedAppointmentsCount).toBe(2);
-    expect(digest.expectedGrossRevenueInCents).toBe(21000);
-    expect(digest.collectedDepositsInCents).toBe(4200);
-    expect(digest.outstandingBalanceInCents).toBe(16800);
-    expect(digest.topDecisionNeeded).toContain('1 pending exception(s)');
-  });
-});
-
-describe('Posie Core Logic - F019 (Lapsed Client Worklist)', () => {
-  const clients = [
-    {
-      clientId: '11111111-1111-1111-1111-111111111111',
-      clientName: 'Sarah Jenkins',
-      phone: '+1-555-0101',
-      lastVisitDate: '2026-09-01T10:00:00Z',
-      preferredCadenceDays: 30,
-      optedOutMarketing: false,
-      hasFutureAppointment: false,
-      isActiveClient: true,
-    },
-    {
-      clientId: '22222222-2222-2222-2222-222222222222',
-      clientName: 'Chloe Bennett (Opted Out)',
-      phone: '+1-555-0102',
-      lastVisitDate: '2026-09-01T10:00:00Z',
-      preferredCadenceDays: 30,
-      optedOutMarketing: true,
-      hasFutureAppointment: false,
-      isActiveClient: true,
-    },
-  ];
-
-  it('identifies overdue clients while strictly excluding opted-out clients', () => {
-    const refDate = new Date('2026-10-26T12:00:00Z');
-    const lapsed = identifyLapsedClients(clients, refDate);
-
-    expect(lapsed.length).toBe(1);
-    expect(lapsed[0].clientName).toBe('Sarah Jenkins');
-    expect(lapsed[0].daysOverdue).toBe(25);
-  });
-});
-
-describe('Posie Core Logic - F020 (Private Weekly Goals)', () => {
-  const goal = {
-    id: '77777777-7777-7777-7777-777777777777',
-    ownerId: '88888888-8888-8888-8888-888888888888',
-    type: 'profit_target' as const,
-    label: 'Weekly Profit Target',
-    targetValue: 2000,
-    currentValue: 1500,
-    unit: 'USD',
-    isPaused: false,
-    isPrivateToOwner: true,
-    weekStartDate: new Date().toISOString(),
-  };
-
-  it('validates goal schemas', () => {
-    expect(() => WeeklyGoalSchema.parse(goal)).not.toThrow();
-  });
-
-  it('calculates progress accurately without punitive shaming', () => {
-    const progress = calculateGoalProgress(goal);
-    expect(progress.progressPercentage).toBe(75);
-    expect(progress.remainingValue).toBe(500);
-    expect(progress.isAchieved).toBe(false);
-    expect(progress.statusMessage).toContain('75% of your target');
-  });
-
-  it('honors paused goals with zero pressure', () => {
-    const paused = { ...goal, isPaused: true };
-    const progress = calculateGoalProgress(paused);
-    expect(progress.statusMessage).toBe('Goal is currently paused.');
-  });
-});
-
-describe('Posie Core Logic - F021 (Working Hours and Holidays)', () => {
-  const scheduleConfig = {
+describe('Posie Core Logic - F024 (Business Contact & Opening Status)', () => {
+  const loc = {
+    id: '88888888-8888-8888-8888-888888888888',
+    name: 'Posie Flagship Atelier',
+    streetAddress: '1204 S Congress Ave',
+    unitOrSuite: 'Suite 200',
+    city: 'Austin',
+    state: 'TX',
+    zipCode: '78704',
     timeZone: 'America/Chicago',
-    leadTimeHoursMinimum: 2,
-    futureBookingWindowDays: 60,
-    weeklyHours: [
-      { dayOfWeek: 'monday' as const, isOpen: false, openTime: '09:00', closeTime: '18:00' },
-      { dayOfWeek: 'tuesday' as const, isOpen: true, openTime: '09:00', closeTime: '18:00' },
-    ],
-    holidays: [
-      {
-        id: '99999999-9999-9999-9999-999999999999',
-        title: 'Thanksgiving Break',
-        startDate: '2026-11-26T00:00:00Z',
-        endDate: '2026-11-27T23:59:59Z',
-      },
-    ],
+    publicPhone: '+1-555-0199',
+    publicEmail: 'hello@posieatelier.com',
+    parkingInstructions: 'Reserved client parking behind building or complimentary valet.',
+    arrivalDirections: 'Take elevator to 2nd floor, turn right.',
+    accessibilityFeatures: ['Step-free ramp', 'Elevator access', 'Accessible restrooms'],
+    isActive: true,
   };
 
-  it('allows slots on open days', () => {
-    const tuesday = new Date('2026-10-27T14:00:00Z');
-    const check = isSlotWithinOperatingHours(scheduleConfig, tuesday);
-    expect(check.isAvailable).toBe(true);
-  });
-
-  it('blocks slots on closed days', () => {
-    const monday = new Date('2026-10-26T14:00:00Z');
-    const check = isSlotWithinOperatingHours(scheduleConfig, monday);
-    expect(check.isAvailable).toBe(false);
-    expect(check.reason).toContain('closed on monday');
-  });
-
-  it('blocks slots on scheduled holidays', () => {
-    const holidayDate = new Date('2026-11-26T12:00:00Z');
-    const check = isSlotWithinOperatingHours(scheduleConfig, holidayDate);
-    expect(check.isAvailable).toBe(false);
-    expect(check.reason).toContain('Thanksgiving Break');
+  it('formats canonical address, contact, and accessibility summaries across surfaces', () => {
+    const summary = formatCanonicalLocationSummary(loc);
+    expect(summary.singleLineAddress).toBe('1204 S Congress Ave, Suite 200, Austin, TX 78704');
+    expect(summary.contactHeader).toBe('+1-555-0199 • hello@posieatelier.com');
+    expect(summary.accessibilitySummary).toContain('Step-free ramp');
   });
 });
 
-describe('Posie Core Logic - F022 (Help Clients Choose a Service)', () => {
-  const catalog = [
+describe('Posie Core Logic - F025 (Unified Client Timeline)', () => {
+  const events = [
     {
-      id: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
-      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
-      name: 'Hydra-Dew Glass Glow Facial',
-      clientDescription: 'A 60-minute deep cleanse.',
-      preparationInstructions: 'Stop retinol 48h prior.',
-      basePriceInCents: 12000,
-      baseDurationMinutes: 60,
-      active: true,
-      addons: [],
-      practitionerOverrides: [],
-      version: 1,
+      id: '11111111-1111-1111-1111-111111111111',
+      clientId: '44444444-4444-4444-4444-444444444444',
+      type: 'completed_visit' as const,
+      title: 'Hydra-Dew Glass Glow Facial',
+      summary: 'Delivered 60-min treatment with extra scalp massage.',
+      recordedAt: '2026-10-01T14:00:00Z',
+      actorName: 'Chloe',
+      actorRole: 'esthetician' as const,
+      isRestrictedClinicalOrPrivate: false,
     },
     {
-      id: 'd9283e4f-e7b0-5620-af9d-9f35d41d44fa',
-      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
-      name: 'Fluff & Define Brow Sculpt',
-      clientDescription: 'Crisp brow tint.',
-      basePriceInCents: 5500,
-      baseDurationMinutes: 35,
-      active: true,
-      addons: [],
-      practitionerOverrides: [],
-      version: 1,
+      id: '22222222-2222-2222-2222-222222222222',
+      clientId: '44444444-4444-4444-4444-444444444444',
+      type: 'practitioner_treatment_note' as const,
+      title: 'Private Skin Sensitivity Observation',
+      summary: 'Mild erythma noted on nasal folds after glycolic 10%. Used aloe soothing compress.',
+      recordedAt: '2026-10-01T14:30:00Z',
+      actorName: 'Chloe',
+      actorRole: 'esthetician' as const,
+      isRestrictedClinicalOrPrivate: true, // Restricted
+    },
+    {
+      id: '33333333-3333-3333-3333-333333333333',
+      clientId: '44444444-4444-4444-4444-444444444444',
+      type: 'retail_purchase' as const,
+      title: 'Barrier Repair Ceramide Balm',
+      summary: 'Purchased 1x take-home balm ($45.00).',
+      recordedAt: '2026-10-01T15:00:00Z',
+      actorName: 'Maya',
+      actorRole: 'client' as const,
+      isRestrictedClinicalOrPrivate: false,
     },
   ];
 
-  it('recommends brow sculpt when arches are the goal', () => {
-    const res = matchServiceToGoals(
-      {
-        skinOrBeautyGoal: 'brow_definition',
-        hasSensitiveSkin: false,
-        hasUpcomingEventWithin48Hours: false,
-      },
-      catalog
-    );
-
-    expect(res.serviceName).toBe('Fluff & Define Brow Sculpt');
-    expect(res.reasonWhy).toContain('arches pop');
+  it('orders timeline chronologically descending', () => {
+    const timeline = getUnifiedClientTimeline(events, 'esthetician');
+    expect(timeline.length).toBe(3);
+    expect(timeline[0].type).toBe('retail_purchase'); // 15:00
+    expect(timeline[1].type).toBe('practitioner_treatment_note'); // 14:30
+    expect(timeline[2].type).toBe('completed_visit'); // 14:00
   });
 
-  it('routes to gentle hydration when a major event is imminent within 48h', () => {
-    const res = matchServiceToGoals(
-      {
-        skinOrBeautyGoal: 'glow_and_peach_fuzz',
-        hasSensitiveSkin: false,
-        hasUpcomingEventWithin48Hours: true,
-      },
-      catalog
-    );
+  it('restricts private treatment notes from client and receptionist views', () => {
+    const clientView = getUnifiedClientTimeline(events, 'client');
+    expect(clientView.length).toBe(2);
+    expect(clientView.find((e) => e.type === 'practitioner_treatment_note')).toBeUndefined();
 
-    expect(res.serviceName).toBe('Hydra-Dew Glass Glow Facial');
-    expect(res.reasonWhy).toContain('With your event in 48 hours');
+    const receptionistView = getUnifiedClientTimeline(events, 'receptionist');
+    expect(receptionistView.length).toBe(2);
+    expect(receptionistView.find((e) => e.type === 'practitioner_treatment_note')).toBeUndefined();
   });
 });

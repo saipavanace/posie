@@ -20,3 +20,6 @@ export * from './retention';
 export * from './goals';
 export * from './hours';
 export * from './navigator';
+export * from './pricing';
+export * from './locations';
+export * from './timeline';
