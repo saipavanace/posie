@@ -9,12 +9,13 @@ import {
   CheckCircle2,
   Calendar,
   AlertCircle,
-  Bell,
-  CalendarDays,
-  User,
-  ArrowRight,
-  Send,
-  AlertTriangle,
+  Repeat,
+  ExternalLink,
+  KeyRound,
+  RotateCcw,
+  Check,
+  X,
+  FileText,
 } from 'lucide-react';
 
 // Brand Information
@@ -23,63 +24,44 @@ const brandData = {
   tagline: 'Glow up without the headache.',
 };
 
-// Services with tailored F026 Policies
-const services = [
-  {
-    id: 's1',
-    name: 'Hydra-Dew Glass Glow Facial',
-    tag: 'Standard Service',
-    price: 120,
-    duration: 60,
-    depositPct: 20, // 20% standard
-    cancelWindowHours: 24,
-    waiver: 'none',
-  },
-  {
-    id: 's2',
-    name: 'TCA Brightening Chemical Peel',
-    tag: 'High Prep Service',
-    price: 180,
-    duration: 75,
-    depositPct: 50, // 50% deposit for peel
-    cancelWindowHours: 48, // 48-hr cancellation
-    waiver: 'chemical_peel_waiver',
-  },
-  {
-    id: 's3',
-    name: 'Fluff & Define Brow Sculpt',
-    tag: 'Quick Refresh',
-    price: 55,
-    duration: 35,
-    depositPct: 20,
-    cancelWindowHours: 24,
-    waiver: 'none',
-  },
-];
+// Sample Active Service
+const activeService = {
+  name: 'Hydra-Dew Glass Glow Facial',
+  price: 120,
+  duration: 60,
+  specialist: 'Chloe Martinez',
+};
 
-// F027: Calendar Schedule State
-const calendarAppointments = [
-  { id: 'a1', time: '10:00 AM - 11:00 AM', client: 'Maya S.', service: 'Hydra-Dew Facial', staff: 'Chloe' },
-  { id: 'a2', time: '11:30 AM - 12:45 PM', client: 'Sarah J.', service: 'TCA Chemical Peel', staff: 'Chloe' },
-  { id: 'a3', time: '02:00 PM - 02:35 PM', client: 'Jessica M.', service: 'Brow Sculpt', staff: 'Sienna' },
+// F029 Recurring Occurrences
+const initialRecurringOccurrences = [
+  { date: 'Thursday, Nov 12 at 2:30 PM', status: 'Confirmed' },
+  { date: 'Thursday, Dec 10 at 2:30 PM (in 4 weeks)', status: 'Tentative' },
+  { date: 'Thursday, Jan 07 at 2:30 PM (in 8 weeks)', status: 'Tentative' },
 ];
 
 export default function PosieStudioPage() {
-  const [selectedService, setSelectedService] = useState<string>('s2');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [calendarView, setCalendarView] = useState<'day' | 'practitioner'>('day');
 
-  // F027 Conflict Demonstration State
-  const [hasConflict, setHasConflict] = useState(false);
+  // F029: Recurring Proposal Toggle
+  const [enableRecurring, setEnableRecurring] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState<'4w' | '6w'>('4w');
 
-  // F028 Reminder State
-  const [reminderStatus, setReminderStatus] = useState<string>('Scheduled for 24h prior via SMS');
+  // F030: Self-Service Action Simulation State
+  const [selfServiceMessage, setSelfServiceMessage] = useState<string | null>(null);
 
-  const activeServiceObj = services.find((s) => s.id === selectedService) || services[1];
+  // F031: Passwordless Portal State
+  const [showPortal, setShowPortal] = useState(false);
 
-  const handleTestConflict = () => {
-    setHasConflict(true);
-    setTimeout(() => setHasConflict(false), 3000);
+  const handleSimulateCancel = (isLate: boolean) => {
+    if (isLate) {
+      setSelfServiceMessage(
+        'Self-service cancel requested 3 hours prior. Notice given under the 24-hr window: a late fee of $12.00 applies to deposit.'
+      );
+    } else {
+      setSelfServiceMessage(
+        'Self-service cancel requested 48 hours prior. 100% of your $24.00 deposit has been refunded to your card.'
+      );
+    }
   };
 
   return (
@@ -119,186 +101,168 @@ export default function PosieStudioPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Badge variant="sage">Features F001 - F028 Live</Badge>
-          <Badge variant="rose">Atelier Studio</Badge>
+          <Button
+            variant={showPortal ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setShowPortal(!showPortal)}
+          >
+            <KeyRound size={14} style={{ marginRight: '6px' }} />
+            {showPortal ? 'Close Client Portal' : 'Open Passwordless Portal (F031)'}
+          </Button>
+          <Badge variant="sage">Features F001 - F031 Live</Badge>
         </div>
       </header>
 
-      {/* F027: Interactive Calendar Working Views */}
-      <section style={{ marginBottom: '40px' }}>
-        <Card style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarDays size={20} color="var(--color-primary)" />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-                Feature 027: Calendar Working Views & Drag Concurrency
-              </span>
+      {/* F031: Passwordless Client Portal Experience */}
+      {showPortal && (
+        <section style={{ marginBottom: '40px' }}>
+          <Card style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--color-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <KeyRound size={20} color="var(--color-primary)" />
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+                  Feature 031: Maya's Private Client Portal (Magic Link Session)
+                </span>
+              </div>
+              <Badge variant="rose">No App Download Required</Badge>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Button
-                variant={calendarView === 'day' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setCalendarView('day')}
-              >
-                Day Timeline
-              </Button>
-              <Button
-                variant={calendarView === 'practitioner' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setCalendarView('practitioner')}
-              >
-                Specialist Columns
-              </Button>
-            </div>
-          </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ backgroundColor: 'var(--color-bg)', padding: '16px', borderRadius: '12px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Upcoming Appointment</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)', display: 'block', margin: '4px 0' }}>
+                  Hydra-Dew Glass Glow Facial
+                </strong>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                  Thursday, Nov 12 at 2:30 PM with Chloe • $24 deposit paid ($96 remaining)
+                </p>
 
-          {/* Conflict Alert Simulation */}
-          {hasConflict && (
-            <div
-              style={{
-                backgroundColor: '#FFE3E3',
-                border: '1px solid #FFA8A8',
-                color: '#C92A2A',
-                padding: '12px 16px',
-                borderRadius: '10px',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '0.88rem',
-              }}
-            >
-              <AlertTriangle size={18} />
-              <span>
-                <strong>Conflict Prevented:</strong> Chloe is already booked for Sarah J. (11:30 AM – 12:45 PM). Overlapping slots cannot be double-booked.
-              </span>
-            </div>
-          )}
+                {/* F030 Self Service Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <Button variant="outline" size="sm" onClick={() => handleTestReschedule()}>
+                    Reschedule
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleSimulateCancel(false)}>
+                    Cancel (On-Time)
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleSimulateCancel(true)}>
+                    Cancel (Late)
+                  </Button>
+                </div>
+              </div>
 
-          {/* Calendar Event Slots */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-            {calendarAppointments.map((appt) => (
+              <div style={{ backgroundColor: 'var(--color-bg)', padding: '16px', borderRadius: '12px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Your Saved Preferences</span>
+                <div style={{ marginTop: '8px', fontSize: '0.88rem', color: 'var(--color-primary)' }}>
+                  <p>• Preferred name: <strong>Maya (MY-uh)</strong></p>
+                  <p>• Atmosphere: <strong>Quiet Visit (Silent recharge)</strong></p>
+                  <p>• Room comfort: <strong>Extra heated blanket, low lights</strong></p>
+                </div>
+              </div>
+            </div>
+
+            {/* F030 Action Feedback Message */}
+            {selfServiceMessage && (
               <div
-                key={appt.id}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  backgroundColor: 'var(--color-secondary-light)',
                   padding: '12px 16px',
                   borderRadius: '10px',
-                  backgroundColor: 'var(--color-bg)',
-                  border: '1px solid var(--color-border)',
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                    <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>{appt.time}</strong>
-                    <Badge variant="sage">{appt.staff}</Badge>
-                  </div>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                    {appt.client} • {appt.service}
-                  </span>
-                </div>
-
-                <Badge variant="muted">Confirmed</Badge>
-              </div>
-            ))}
-          </div>
-
-          <Button variant="outline" size="sm" onClick={handleTestConflict}>
-            Simulate Double-Booking Conflict Check
-          </Button>
-        </Card>
-      </section>
-
-      {/* F026: Service-Specific Policy Rules */}
-      <section style={{ marginBottom: '40px' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-            Feature 026: Service-Specific Policy Rules
-          </span>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Tailored Policies per Treatment</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            High-prep treatments (like chemical peels) automatically apply tailored deposits and 48-hr notice.
-          </p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          {services.map((svc) => {
-            const isSelected = selectedService === svc.id;
-            return (
-              <Card
-                key={svc.id}
-                style={{
-                  cursor: 'pointer',
-                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
-                  borderWidth: isSelected ? '2px' : '1px',
+                  color: 'var(--color-primary)',
+                  fontSize: '0.88rem',
                   display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '10px',
                 }}
-                onClick={() => setSelectedService(svc.id)}
               >
+                <CheckCircle2 size={18} />
+                <span>{selfServiceMessage}</span>
+              </div>
+            )}
+          </Card>
+        </section>
+      )}
+
+      {/* Booking Form with F029 Recurring Proposals */}
+      <section style={{ marginBottom: '40px' }}>
+        <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
+          <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
+            Book Your Treatment: {activeService.name}
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Treatment & Specialist:</span>
+              <strong>{activeService.name} (${activeService.price}) with {activeService.specialist}</strong>
+            </div>
+
+            {/* F029 Recurring Frequency Selector */}
+            <div
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: enableRecurring ? '12px' : '0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={enableRecurring}
+                    onChange={(e) => setEnableRecurring(e.target.checked)}
+                    style={{ accentColor: 'var(--color-primary)' }}
+                  />
+                  <span>
+                    <Repeat size={16} style={{ display: 'inline', marginRight: '6px' }} />
+                    <strong>Lock My Skincare Cadence:</strong> Schedule recurring visits (Feature 029)
+                  </span>
+                </label>
+              </div>
+
+              {enableRecurring && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <Badge variant={svc.depositPct > 20 ? 'rose' : 'sage'}>{svc.tag}</Badge>
-                    <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-primary)' }}>
-                      ${svc.price}
-                    </span>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                    <Button
+                      variant={recurringInterval === '4w' ? 'primary' : 'outline'}
+                      size="sm"
+                      onClick={() => setRecurringInterval('4w')}
+                    >
+                      Every 4 Weeks (Optimal Barrier Cadence)
+                    </Button>
+                    <Button
+                      variant={recurringInterval === '6w' ? 'primary' : 'outline'}
+                      size="sm"
+                      onClick={() => setRecurringInterval('6w')}
+                    >
+                      Every 6 Weeks
+                    </Button>
                   </div>
 
-                  <h3 style={{ fontSize: '1.35rem', marginBottom: '8px', color: 'var(--color-primary)' }}>
-                    {svc.name}
-                  </h3>
-
-                  <div
-                    style={{
-                      backgroundColor: 'var(--color-bg)',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.82rem',
-                      color: 'var(--color-text)',
-                      marginBottom: '14px',
-                    }}
-                  >
-                    <strong>Policy:</strong> {svc.depositPct}% Deposit • {svc.cancelWindowHours}h Cancellation Notice
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                    Proposed Recurring Dates (Overlapping dates flagged as tentative until approved):
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {initialRecurringOccurrences.map((occ, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#FFFFFF',
+                          fontSize: '0.82rem',
+                          border: '1px solid var(--color-border)',
+                        }}
+                      >
+                        <span>{occ.date}</span>
+                        <Badge variant={occ.status === 'Confirmed' ? 'sage' : 'muted'}>{occ.status}</Badge>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                <Button variant={isSelected ? 'tertiary' : 'outline'} size="sm">
-                  {isSelected ? 'Selected' : 'Select'}
-                </Button>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* F028: Appointment Reminders & Confirmation Box */}
-      <section>
-        <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Bell size={20} color="var(--color-primary)" />
-            <h3 style={{ fontSize: '1.35rem', color: 'var(--color-primary)' }}>
-              Confirm Reservation & Set Automatic Reminder (F028)
-            </h3>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Treatment:</span>
-              <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Tailored Deposit ({activeServiceObj.depositPct}%):</span>
-              <strong>${((activeServiceObj.price * activeServiceObj.depositPct) / 100).toFixed(2)}</strong>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Automated SMS Reminder:</span>
-              <strong style={{ color: 'var(--color-secondary)' }}>{reminderStatus}</strong>
+              )}
             </div>
           </div>
 
@@ -316,9 +280,9 @@ export default function PosieStudioPage() {
             >
               <CheckCircle2 size={24} color="var(--color-primary)" />
               <div>
-                <strong>Appointment Confirmed & Reminder Queued!</strong>
+                <strong>Appointment Snapshot Confirmed!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  If you reschedule, obsolete reminders are automatically cancelled without duplicate alerts.
+                  A secure self-service link (F030) has been generated and added to your passwordless portal (F031).
                 </p>
               </div>
             </div>
@@ -328,11 +292,15 @@ export default function PosieStudioPage() {
               size="lg"
               onClick={() => setBookingConfirmed(true)}
             >
-              Confirm Appointment & Lock Slot
+              Confirm Reservation (No Account Needed)
             </Button>
           )}
         </Card>
       </section>
     </main>
   );
+}
+
+function handleTestReschedule() {
+  alert('Self-Service Reschedule (F030): Choose a new slot from available calendar times.');
 }

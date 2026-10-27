@@ -26,3 +26,6 @@ export * from './timeline';
 export * from './service_policies';
 export * from './calendar';
 export * from './reminders';
+export * from './recurring';
+export * from './selfservice';
+export * from './portal';

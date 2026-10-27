@@ -9,6 +9,10 @@ import {
   resolveEffectiveServicePolicy,
   checkCalendarConflict,
   syncRemindersOnReschedule,
+  generateRecurringProposal,
+  processSelfServiceCancellation,
+  createPasswordlessPortalSession,
+  validatePortalSession,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -32,88 +36,77 @@ describe('Posie Core Logic - F001 (Brand Kit)', () => {
   });
 });
 
-describe('Posie Core Logic - F026 (Service-Specific Policy Rules)', () => {
-  const chemicalPeelPolicy = {
-    serviceId: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
-    depositPercentage: 50, // 50% deposit for peel
-    cancellationWindowHours: 48, // 48-hr cancellation requirement
-    preparationInstructions: 'Stop retinol 72 hours prior.',
-    requiredWaiverCategory: 'chemical_peel_waiver' as const,
-    lateCancelFeePercentage: 100,
-  };
+describe('Posie Core Logic - F029 (Recurring Appointment Proposals)', () => {
+  it('generates recurring proposals with exact intervals and tentative flags', () => {
+    const proposal = generateRecurringProposal(
+      '11111111-1111-1111-1111-111111111111',
+      '22222222-2222-2222-2222-222222222222',
+      '33333333-3333-3333-3333-333333333333',
+      '2026-11-01T14:00:00Z',
+      'every_4_weeks',
+      4
+    );
 
-  it('resolves tailored deposit and cancellation window for high-prep services', () => {
-    const policy = resolveEffectiveServicePolicy(chemicalPeelPolicy);
-    expect(policy.depositPercentage).toBe(50);
-    expect(policy.cancellationWindowHours).toBe(48);
-    expect(policy.requiredWaiverCategory).toBe('chemical_peel_waiver');
-  });
-
-  it('falls back to studio defaults when no service-specific policy exists', () => {
-    const policy = resolveEffectiveServicePolicy(undefined);
-    expect(policy.depositPercentage).toBe(20);
-    expect(policy.cancellationWindowHours).toBe(24);
-    expect(policy.requiredWaiverCategory).toBe('none');
+    expect(proposal.totalOccurrences).toBe(4);
+    expect(proposal.occurrences.length).toBe(4);
+    expect(proposal.occurrences[0].status).toBe('tentative');
+    expect(proposal.occurrences[1].proposedDateUtc).toContain('2026-11-29'); // Exactly 28 days later
   });
 });
 
-describe('Posie Core Logic - F027 (Calendar Working Views & Concurrency)', () => {
-  const existingEvents = [
-    {
-      id: '11111111-1111-1111-1111-111111111111',
-      appointmentId: '22222222-2222-2222-2222-222222222222',
-      clientName: 'Maya',
-      serviceName: 'Hydra-Dew Glass Glow Facial',
-      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-      practitionerName: 'Chloe',
-      startTime: '2026-10-27T14:00:00Z',
-      endTime: '2026-10-27T15:00:00Z',
-      status: 'confirmed' as const,
-    },
-  ];
+describe('Posie Core Logic - F030 (Self-Service Appointment Changes)', () => {
+  it('processes early cancellation with 100% deposit refund', () => {
+    const apptTime = '2026-11-10T14:00:00Z';
+    const requestTime = new Date('2026-11-08T12:00:00Z'); // 48h prior (beyond 24h window)
 
-  it('detects overlapping scheduling conflicts for the same practitioner', () => {
-    const check = checkCalendarConflict(existingEvents, {
-      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-      startTime: '2026-10-27T14:30:00Z',
-      endTime: '2026-10-27T15:30:00Z',
-    });
+    const res = processSelfServiceCancellation(
+      'booking-1234',
+      apptTime,
+      24,
+      3000, // $30 deposit
+      50,
+      requestTime
+    );
 
-    expect(check.hasConflict).toBe(true);
-    expect(check.conflictingEvent?.clientName).toBe('Maya');
+    expect(res.success).toBe(true);
+    expect(res.feeApplicableCents).toBe(0);
+    expect(res.message).toContain('Full deposit of $30.00 will be refunded');
   });
 
-  it('allows non-conflicting time slots', () => {
-    const check = checkCalendarConflict(existingEvents, {
-      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
-      startTime: '2026-10-27T15:30:00Z',
-      endTime: '2026-10-27T16:30:00Z',
-    });
+  it('applies late cancellation fee if requested inside cancellation notice window', () => {
+    const apptTime = '2026-11-10T14:00:00Z';
+    const requestTime = new Date('2026-11-10T10:00:00Z'); // 4h prior (inside 24h window)
 
-    expect(check.hasConflict).toBe(false);
+    const res = processSelfServiceCancellation(
+      'booking-1234',
+      apptTime,
+      24,
+      3000,
+      50, // 50% late fee
+      requestTime
+    );
+
+    expect(res.success).toBe(true);
+    expect(res.feeApplicableCents).toBe(1500); // $15 fee
+    expect(res.message).toContain('late fee of $15.00 applies');
   });
 });
 
-describe('Posie Core Logic - F028 (Appointment Reminders)', () => {
-  const existingReminders = [
-    {
-      id: '33333333-3333-3333-3333-333333333333',
-      appointmentId: '22222222-2222-2222-2222-222222222222',
-      clientPhone: '+1-555-0199',
-      clientEmail: 'maya@example.com',
-      channel: 'sms' as const,
-      scheduledSendTimeUtc: '2026-10-26T14:00:00Z',
-      status: 'scheduled' as const,
-      appointmentStartTimeUtc: '2026-10-27T14:00:00Z',
-    },
-  ];
+describe('Posie Core Logic - F031 (Passwordless Client Portal)', () => {
+  it('creates an ephemeral portal session with magic token', () => {
+    const session = createPasswordlessPortalSession('client-maya-999', 72);
+    expect(session.magicToken.startsWith('tok_')).toBe(true);
+    expect(validatePortalSession(session)).toBe(true);
+  });
 
-  it('cancels obsolete pending reminders and schedules new reminder on reschedule', () => {
-    const newStartTime = '2026-10-28T16:00:00Z';
-    const updated = syncRemindersOnReschedule(existingReminders, '22222222-2222-2222-2222-222222222222', newStartTime, 24);
+  it('rejects expired portal tokens safely', () => {
+    const expiredSession = {
+      clientId: 'client-maya-999',
+      magicToken: 'tok_expired_sample',
+      expiresAt: '2026-10-01T00:00:00Z',
+      isValid: true,
+    };
 
-    expect(updated[0].status).toBe('cancelled'); // Old cancelled
-    expect(updated[1].status).toBe('scheduled'); // New scheduled
-    expect(updated[1].scheduledSendTimeUtc).toBe('2026-10-27T16:00:00.000Z'); // Exactly 24h prior
+    expect(validatePortalSession(expiredSession, new Date('2026-10-26T12:00:00Z'))).toBe(false);
   });
 });

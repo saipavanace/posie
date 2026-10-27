@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F028)
+# Posie App User Guide: Core Modules (F001 - F031)
 
-Welcome to **Posie**! This guide details features **F001 through F028** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F031** active across the platform.
 
 ---
 
@@ -142,16 +142,31 @@ Welcome to **Posie**! This guide details features **F001 through F028** active a
 
 ## F026 — Service-Specific Policy Rules
 * **What it is:** Tailored booking rules, required deposit percentages, and cancellation windows mapped per service.
-* **Key Invariant (WB U21):** High-prep treatments (such as chemical peels) automatically mandate 50% deposits and 48-hour cancellation windows without forcing universal restrictions across quick refresh visits.
 
 ---
 
 ## F027 — Calendar Working Views & Concurrency
 * **What it is:** Multi-practitioner day timelines and resource scheduling views with real-time overlap validation.
-* **Key Invariant (WB F14):** Validates double-booking conflicts before saving appointment mutations, preventing overlapping staff commitments.
 
 ---
 
 ## F028 — Appointment Reminders
 * **What it is:** Timezone-aware SMS and email reminder orchestration with automated reschedule synchronization.
-* **Key Invariant (WB F48 F49):** Rescheduling an appointment automatically cancels obsolete pending reminders and schedules a new alert matching the revised date without dispatching duplicate notifications.
+
+---
+
+## F029 — Recurring Appointment Proposals
+* **What it is:** Automated recurring appointment proposals based on regular treatment cadences (every 2, 4, or 6 weeks).
+* **Key Invariant:** Proposed future occurrences with calendar conflicts remain flagged as tentative and require explicit owner review rather than silently double-booking.
+
+---
+
+## F030 — Self-Service Appointment Changes
+* **What it is:** Direct links allowing clients to confirm, reschedule, or cancel their bookings without calling the front desk.
+* **Key Invariant (WB F50):** Accurately computes cancellation fees or deposit refunds based on notice window policies before committing. Actions are idempotent against repeated clicks.
+
+---
+
+## F031 — Passwordless Client Portal
+* **What it is:** Direct access to appointments, signed waivers, saved preferences, and itemized receipts via secure magic links.
+* **Key Invariant (WB F6):** Eliminates app downloads and passwords. Ephemeral magic links grant instant, secure access with automatic session expiration.
