@@ -12,8 +12,13 @@ import {
   Copy,
   Check,
   CheckCircle2,
-  Info,
-  Share2,
+  FileText,
+  ListTodo,
+  Layers,
+  ChevronRight,
+  User,
+  Users,
+  Package,
 } from 'lucide-react';
 
 // Brand Information
@@ -63,31 +68,41 @@ const staffMembers = [
     name: 'Chloe Martinez',
     role: 'Licensed Master Esthetician',
     bio: 'Obsessed with barrier repair, scalp massages, and making sure extractions never feel like torture.',
-    skills: ['Hydra-Facials', 'Dermaplaning', 'Sensitive Skin'],
   },
   {
     id: 'st2',
     name: 'Sienna Brooks',
     role: 'Brow & Lash Specialist',
     bio: 'Queen of natural, fluffy brows. Believes your brows are sisters, not twins, but they should still hang out together.',
-    skills: ['Brow Mapping', 'Lash Lift & Tint'],
   },
 ];
 
-// Policies
-const bookingPolicies = [
+// F008: Document Content Library Sample Data
+const contentBlocks = [
   {
-    title: 'Hold Your Spot (Deposit)',
-    detail: 'A 20% deposit locks in your slot. It goes straight toward your final bill.',
+    id: 'cb1',
+    title: 'Facial Exfoliation & Acid Waiver',
+    category: 'Consent Waiver',
+    reviewedBy: 'Dr. Lisa Vance (Licensed Esthetician Review)',
+    version: 'v2.1',
+    excerpt: 'I confirm I have not used Accutane within 6 months or topical retinoids within 48 hours. I understand mild pinkness is normal.',
   },
   {
-    title: 'Life Happens (Cancellation)',
-    detail: 'Give us 24 hours notice to reschedule or cancel with 100% deposit refund.',
+    id: 'cb2',
+    title: 'Post-Dermaplaning UV Advisory',
+    category: 'Aftercare Clause',
+    reviewedBy: 'Studio Owner Approved',
+    version: 'v1.4',
+    excerpt: 'Apply SPF 30+ generously. Avoid direct steam rooms, harsh scrubs, and heavy sweat sessions for 24 hours.',
   },
-  {
-    title: 'Accessibility & Comfort',
-    detail: 'Step-free access available. Love silence during your appointment? Select "Quiet Visit" and we won’t chat your ear off.',
-  },
+];
+
+// F009: Staff SOP Checklist
+const initialSopTasks = [
+  { id: 't1', text: 'Autoclave & ultrasonic tool cycle completed (270°F)', done: true, by: 'Chloe' },
+  { id: 't2', text: 'Sanitize treatment beds with EPA hospital-grade wipes', done: true, by: 'Chloe' },
+  { id: 't3', text: 'Restock fresh bamboo linens and botanical headbands', done: false, by: null },
+  { id: 't4', text: 'Verify cold-stored hyaluronic ampoules and ice globes', done: false, by: null },
 ];
 
 export default function PosieStudioPage() {
@@ -98,13 +113,18 @@ export default function PosieStudioPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [messagePreviewType, setMessagePreviewType] = useState<'confirmation' | 'reschedule' | 'aftercare'>('confirmation');
 
+  // F009 State
+  const [sopTasks, setSopTasks] = useState(initialSopTasks);
+
+  // F010 State: Progressive Feature Modules
+  const [teamModule, setTeamModule] = useState(false);
+  const [inventoryModule, setInventoryModule] = useState(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
   const activeStaffObj = staffMembers.find((s) => s.id === selectedStaff) || staffMembers[0];
 
-  // F005: Direct Link
   const directLinkUrl = `https://posie.app/posie-austin/book?service=${selectedService}&specialist=${selectedStaff}&src=qr_card`;
 
-  // F007: Compiled Messages
   const messagePreviews = {
     confirmation: `Hey Maya! ✨ You're all set for ${activeServiceObj.name} on Thursday, Nov 12 at 2:30 PM with ${activeStaffObj.name}. Your deposit of $24.00 is locked in. Reminder: ${activeServiceObj.prep} See your visit details or adjust anytime: https://posie.app/portal/visit-123 Can't wait to see you! — Posie`,
     reschedule: `Hey Maya! We've successfully shifted your ${activeServiceObj.name} to Friday, Nov 13 at 11:00 AM with ${activeStaffObj.name}. View your updated details here: https://posie.app/portal/visit-123 — Posie`,
@@ -117,6 +137,12 @@ export default function PosieStudioPage() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const toggleTask = (id: string) => {
+    setSopTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done, by: !t.done ? 'Chloe' : null } : t))
+    );
+  };
+
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
       {/* Brand Header */}
@@ -125,7 +151,7 @@ export default function PosieStudioPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '40px',
+          marginBottom: '36px',
           borderBottom: '1px solid var(--color-border)',
           paddingBottom: '20px',
         }}
@@ -153,13 +179,168 @@ export default function PosieStudioPage() {
           </div>
         </div>
 
+        {/* F010 Progressive Mode Indicator */}
         <div style={{ textAlign: 'right' }}>
-          <Badge variant="rose">Atelier Studio</Badge>
+          <Badge variant={teamModule ? 'rose' : 'sage'}>
+            {teamModule ? 'Team Studio Mode' : 'Solo Practitioner Mode'}
+          </Badge>
           <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-            Austin, TX • Open Tue-Sat
+            Austin, TX • Posie v1.0
           </p>
         </div>
       </header>
+
+      {/* F010 Progressive Setup Controls Banner */}
+      <section
+        style={{
+          backgroundColor: 'var(--color-card)',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          border: '1px solid var(--color-border)',
+          marginBottom: '40px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <Layers size={18} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 010: Progressive Feature Setup
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)' }}>
+            Keep your workspace clean. Turn on extra tools only when you need them.
+          </h3>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Button
+            variant={teamModule ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setTeamModule(!teamModule)}
+          >
+            <Users size={16} style={{ marginRight: '6px' }} />
+            {teamModule ? 'Team Mode (Active)' : '+ Enable Team Module'}
+          </Button>
+
+          <Button
+            variant={inventoryModule ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setInventoryModule(!inventoryModule)}
+          >
+            <Package size={16} style={{ marginRight: '6px' }} />
+            {inventoryModule ? 'Retail Stock (Active)' : '+ Enable Retail Module'}
+          </Button>
+        </div>
+      </section>
+
+      {/* F008 & F009 Showcase Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+        {/* F008: Document Content Library */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <FileText size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 008
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Document Content Library
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Approved paragraphs and legal/clinical clauses with explicit reviewer attribution and immutable version tracking.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {contentBlocks.map((b) => (
+              <div
+                key={b.id}
+                style={{
+                  backgroundColor: 'var(--color-bg)',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>{b.title}</strong>
+                  <Badge variant="rose">{b.version}</Badge>
+                </div>
+                <p style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)', marginBottom: '8px', fontStyle: 'italic' }}>
+                  "{b.excerpt}"
+                </p>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-secondary)' }}>
+                  ✓ {b.reviewedBy}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* F009: Staff SOPs and Checklists */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <ListTodo size={20} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 009
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Staff SOPs & Sanitation Checklists
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Opening, closing, and hygiene tasks with staff attribution and version acknowledgment tracking.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {sopTasks.map((task) => (
+              <div
+                key={task.id}
+                onClick={() => toggleTask(task.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  backgroundColor: task.done ? 'var(--color-secondary-light)' : 'var(--color-bg)',
+                  cursor: 'pointer',
+                  border: '1px solid var(--color-border)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={task.done}
+                  readOnly
+                  style={{ marginTop: '3px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <p
+                    style={{
+                      fontSize: '0.88rem',
+                      color: 'var(--color-primary)',
+                      textDecoration: task.done ? 'line-through' : 'none',
+                      fontWeight: task.done ? 500 : 600,
+                    }}
+                  >
+                    {task.text}
+                  </p>
+                  {task.by && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>
+                      Completed by {task.by}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
 
       {/* F005 & F006 Showcase Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '48px' }}>
@@ -175,12 +356,11 @@ export default function PosieStudioPage() {
             Direct Booking Link & QR Code
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Pre-configures the exact treatment and specialist for Instagram bio, referral cards, or window signs.
+            Deep-link for social bios and physical cards.
           </p>
 
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
-            {/* SVG QR Code */}
-            <svg width="100" height="100" viewBox="0 0 140 140" fill="none" style={{ borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <svg width="90" height="90" viewBox="0 0 140 140" fill="none" style={{ borderRadius: '10px', border: '1px solid var(--color-border)' }}>
               <rect width="140" height="140" rx="12" fill="#FAF8F5" />
               <rect x="14" y="14" width="32" height="32" rx="6" fill="#2C3E30" />
               <rect x="20" y="20" width="20" height="20" rx="3" fill="#FAF8F5" />
@@ -192,31 +372,25 @@ export default function PosieStudioPage() {
               <rect x="20" y="100" width="20" height="20" rx="3" fill="#FAF8F5" />
               <rect x="24" y="104" width="12" height="12" rx="2" fill="#2C3E30" />
               <rect x="56" y="24" width="8" height="12" rx="2" fill="#2C3E30" />
-              <rect x="74" y="16" width="10" height="8" rx="2" fill="#2C3E30" />
-              <rect x="56" y="44" width="28" height="8" rx="2" fill="#2C3E30" />
               <rect x="46" y="60" width="16" height="16" rx="3" fill="#2C3E30" />
-              <rect x="72" y="62" width="20" height="8" rx="2" fill="#2C3E30" />
-              <rect x="102" y="56" width="16" height="24" rx="2" fill="#2C3E30" />
-              <rect x="56" y="86" width="24" height="12" rx="2" fill="#2C3E30" />
             </svg>
 
             <div style={{ flex: 1 }}>
               <div
                 style={{
                   backgroundColor: 'var(--color-bg)',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.8rem',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
                   fontFamily: 'monospace',
                   wordBreak: 'break-all',
-                  marginBottom: '10px',
-                  border: '1px solid var(--color-border)',
+                  marginBottom: '8px',
                 }}
               >
                 {directLinkUrl}
               </div>
               <Button variant="outline" size="sm" onClick={handleCopy}>
-                {copiedLink ? <><Check size={14} style={{ marginRight: '6px' }} /> Copied!</> : <><Copy size={14} style={{ marginRight: '6px' }} /> Copy Link</>}
+                {copiedLink ? <><Check size={14} style={{ marginRight: '6px' }} /> Copied</> : <><Copy size={14} style={{ marginRight: '6px' }} /> Copy Link</>}
               </Button>
             </div>
           </div>
@@ -231,104 +405,28 @@ export default function PosieStudioPage() {
             </span>
           </div>
           <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Printable Price Menus & Collateral
+            Printable Price Menus
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Auto-compiles print-ready sheets for physical studio reception or customer takeaway bags.
+            Generates high-res physical takeaway menus matching active catalog pricing.
           </p>
-
-          <div
-            style={{
-              backgroundColor: 'var(--color-bg)',
-              padding: '16px',
-              borderRadius: '12px',
-              border: '1px solid var(--color-border)',
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <strong style={{ fontSize: '0.9rem' }}>Posie Studio Menu (v1.3)</strong>
-              <Badge variant="sage">Letter / Print Ready</Badge>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-              3 Active treatments • Generated with live pricing & preparation guides.
-            </p>
-          </div>
 
           <Button
             variant="secondary"
             size="md"
             onClick={() => window.print()}
-            style={{ width: '100%' }}
+            style={{ width: '100%', marginTop: '14px' }}
           >
-            <Printer size={16} style={{ marginRight: '8px' }} /> Print Treatment Menu
+            <Printer size={16} style={{ marginRight: '8px' }} /> Print Studio Menu
           </Button>
         </Card>
       </div>
 
-      {/* F007: Message Template Library */}
-      <section style={{ marginBottom: '48px' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <MessageSquare size={20} color="var(--color-tertiary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 007
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Message Template Library</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            Quirky, warm, authoritative communication sent to your clients automatically without missing variables.
-          </p>
-        </div>
-
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
-          {/* Template Tabs */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--color-border)', paddingBottom: '14px' }}>
-            <Button
-              variant={messagePreviewType === 'confirmation' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setMessagePreviewType('confirmation')}
-            >
-              Booking Confirmation
-            </Button>
-            <Button
-              variant={messagePreviewType === 'reschedule' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setMessagePreviewType('reschedule')}
-            >
-              Reschedule Notice
-            </Button>
-            <Button
-              variant={messagePreviewType === 'aftercare' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={() => setMessagePreviewType('aftercare')}
-            >
-              Post-Visit Aftercare
-            </Button>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: 'var(--color-bg)',
-              borderRadius: '12px',
-              padding: '20px',
-              border: '1px solid var(--color-border)',
-              fontSize: '0.95rem',
-              lineHeight: 1.6,
-              color: 'var(--color-primary)',
-              fontFamily: 'var(--font-body)',
-            }}
-          >
-            {messagePreviews[messagePreviewType]}
-          </div>
-        </Card>
-      </section>
-
-      {/* Treatment Menu Selection */}
+      {/* Treatment Menu */}
       <section style={{ marginBottom: '56px' }}>
         <div style={{ marginBottom: '24px' }}>
           <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Select a treatment to update your direct link and message preview.</p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Transparent prices. No surprise checkout fees.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
@@ -385,76 +483,8 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* Specialists */}
-      <section style={{ marginBottom: '56px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Meet Your Specialists</h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-          {staffMembers.map((staff) => {
-            const isSelected = selectedStaff === staff.id;
-            return (
-              <Card
-                key={staff.id}
-                style={{
-                  cursor: 'pointer',
-                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
-                  borderWidth: isSelected ? '2px' : '1px',
-                }}
-                onClick={() => setSelectedStaff(staff.id)}
-              >
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                  <div
-                    style={{
-                      width: '54px',
-                      height: '54px',
-                      borderRadius: '50%',
-                      backgroundColor: 'var(--color-secondary-light)',
-                      color: 'var(--color-primary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '1.2rem',
-                      fontFamily: 'var(--font-headline)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {staff.name[0]}
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', color: 'var(--color-primary)' }}>{staff.name}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--color-tertiary)', fontWeight: 600, marginBottom: '8px' }}>
-                      {staff.role}
-                    </p>
-                    <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>{staff.bio}</p>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Booking Policies & Confirmation */}
       <section>
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Honest, Plain-Language Policies</h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-          {bookingPolicies.map((pol) => (
-            <Card key={pol.title} style={{ backgroundColor: 'var(--color-bg)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <ShieldCheck size={20} color="var(--color-primary)" />
-                <h4 style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>{pol.title}</h4>
-              </div>
-              <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>{pol.detail}</p>
-            </Card>
-          ))}
-        </div>
-
         <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
             Book Your Visit Now
@@ -466,11 +496,6 @@ export default function PosieStudioPage() {
               <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Specialist:</span>
-              <strong>{activeStaffObj.name}</strong>
-            </div>
-
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
               <input
                 type="checkbox"
@@ -480,7 +505,7 @@ export default function PosieStudioPage() {
                 style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
               />
               <label htmlFor="quietCheck" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
-                <strong>Request a Quiet Visit:</strong> Let the team know you just want to relax and enjoy the treatment without small talk.
+                <strong>Request a Quiet Visit:</strong> Let the team know you just want to relax without small talk.
               </label>
             </div>
           </div>
@@ -501,7 +526,7 @@ export default function PosieStudioPage() {
               <div>
                 <strong>Appointment Snapshot Created!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  Confirmation sent using the Message Template Library (F007).
+                  Confirmation sent using the Message Template Library (F007) and Content Block Waivers (F008).
                 </p>
               </div>
             </div>

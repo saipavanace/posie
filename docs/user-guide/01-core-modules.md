@@ -1,11 +1,11 @@
-# Posie App User Guide: Core Modules (F001 - F007)
+# Posie App User Guide: Core Modules (F001 - F010)
 
-Welcome to **Posie**! This guide details the features currently active in the studio platform.
+Welcome to **Posie**! This guide details features **F001 through F010** active across the platform.
 
 ---
 
 ## F001 — Reusable Brand Kit & Voice
-* **What it is:** A centralized branding configuration that controls colors, typography, logos, and tone of voice across web and mobile.
+* **What it is:** A centralized branding configuration controlling colors, typography, logos, and tone of voice.
 * **Palette (Sage & Linen Atelier):**
   * `Primary (#2C3E30)`: Deep Forest Sage for headlines and primary actions.
   * `Secondary (#8A9A86)`: Muted Linen Sage for soft tags and highlights.
@@ -19,10 +19,7 @@ Welcome to **Posie**! This guide details the features currently active in the st
 
 ## F002 — Clear Service Catalog
 * **What it is:** A transparent treatment menu with preparation instructions and duration breakdowns.
-* **Features:**
-  * Client-friendly language explaining actual treatment benefits.
-  * Pre-treatment care notes.
-  * Practitioner-specific price and duration overrides.
+* **Features:** Client-friendly descriptions, pre-treatment care notes, and date-bound practitioner price/duration overrides.
 
 ---
 
@@ -36,33 +33,44 @@ Welcome to **Posie**! This guide details the features currently active in the st
 
 ## F004 — Plain-Language Booking Policies
 * **What it is:** Clear policies governing deposits, cancellations, refunds, and accessibility.
-* **How it works:**
-  * 20% hold deposit.
-  * 24-hr cancellation window with 100% refund.
-  * Quiet visit toggle for a silent, peaceful treatment.
-  * Immutable policy snapshots created upon booking.
+* **How it works:** 20% hold deposit, 24-hr cancellation window with 100% refund, quiet visit toggle, and immutable booking snapshots.
 
 ---
 
 ## F005 — Direct Booking Links & QR Codes
 * **What it is:** Direct booking links and brand-colored QR codes for the studio, specific treatments, and individual specialists.
-* **How it works:**
-  * Generates URLs with campaign source tracking (`?src=instagram`, `?src=qr_card`) and pre-selected treatments.
-  * Generates lightweight, scannable SVG QR codes rendered in studio brand colors (`#2C3E30`).
-* **Key Invariant:** Opening a link preserves the selected service and business identity.
+* **How it works:** Generates campaign-tracked URLs (`?src=instagram`, `?src=qr_card`) and lightweight SVG QR codes rendered in `#2C3E30`.
 
 ---
 
 ## F006 — Printable Branded Materials
 * **What it is:** Generates clean, high-resolution physical print collateral directly from live data.
-* **How it works:**
-  * Produces Letter-size printable service menus with formatted pricing, treatment duration, and preparation notes.
-* **Key Invariant:** Printed prices strictly match the live catalog at generation time with version and date tags.
+* **How it works:** Produces Letter-size printable service menus with formatted pricing and preparation notes.
+* **Key Invariant:** Printed prices strictly match the live catalog at generation time.
 
 ---
 
 ## F007 — Message Template Library
 * **What it is:** Automated, quirky, warm, and authoritative messages sent to clients for confirmations, reschedules, and aftercare.
-* **How it works:**
-  * Injects appointment dates, times, specialist names, and deposit receipts automatically.
-* **Key Invariant:** The compiler throws validation errors if any placeholder token is missing, ensuring broken placeholders (e.g. `{{clientFirstName}}`) are never sent to a client.
+* **Key Invariant:** Throws validation errors if any placeholder token is missing, ensuring broken placeholders (e.g. `{{clientFirstName}}`) are never sent to a client.
+
+---
+
+## F008 — Document Content Library
+* **What it is:** A version-controlled library of approved clauses for service plans, consent waivers, and policies.
+* **How it works:** Every content block records the author/reviewer, review type (business owner, legal counsel, licensed esthetician), and review timestamp.
+* **Key Invariant (DR02):** Revisions create a new version while issued client documents preserve their exact signed text.
+
+---
+
+## F009 — Staff SOPs and Checklists
+* **What it is:** Standard operating procedure checklists for morning opening, evening closing, and autoclave sanitization.
+* **How it works:** Checkpoints can be marked complete with staff member attribution.
+* **Key Invariant:** Updating an SOP checklist increments the version and resets acknowledgment tracking so all staff review the new version.
+
+---
+
+## F010 — Progressive Feature Setup
+* **What it is:** A modular workspace switcher that keeps daily operations clean.
+* **How it works:** Solo practitioners start in an uncluttered view (schedule, clients, services, settings). Extra modules like team management and retail inventory remain hidden until explicitly enabled.
+* **Key Invariant:** A new solo practitioner can take bookings without ever having to configure unrelated team or inventory settings.

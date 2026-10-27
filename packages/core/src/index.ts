@@ -5,3 +5,6 @@ export * from './policies';
 export * from './links';
 export * from './materials';
 export * from './messages';
+export * from './documents';
+export * from './sops';
+export * from './modules';

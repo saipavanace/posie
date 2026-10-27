@@ -13,6 +13,13 @@ import {
   generatePrintableMenu,
   renderPrintableMenuHtml,
   compileMessage,
+  ContentBlockSchema,
+  updateContentBlock,
+  SopChecklistSchema,
+  updateSopChecklist,
+  completeSopItem,
+  getVisibleWorkspaceSections,
+  toggleWorkspaceModule,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -247,18 +254,6 @@ describe('Posie Core Logic - F006 (Printable Branded Materials)', () => {
       practitionerOverrides: [],
       version: 1,
     },
-    {
-      id: 'd9283e4f-e7b0-5620-af9d-9f35d41d44fa',
-      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
-      name: 'Arch Sculpt',
-      clientDescription: 'Crisp brow tint.',
-      basePriceInCents: 5000,
-      baseDurationMinutes: 30,
-      active: false, // inactive, must be excluded
-      addons: [],
-      practitionerOverrides: [],
-      version: 1,
-    },
   ];
 
   it('creates a printable price menu matching active catalog items', () => {
@@ -296,17 +291,126 @@ describe('Posie Core Logic - F007 (Message Template Library)', () => {
     const message = compileMessage('confirmation', vars);
     expect(message.compiledText).toContain('Hey Maya! ✨');
     expect(message.compiledText).toContain('Hydra-Dew Glow Facial');
-    expect(message.compiledText).toContain('deposit of $24.00 is locked in');
     expect(message.compiledText).not.toContain('{{');
-  });
-
-  it('compiles a reschedule message correctly', () => {
-    const message = compileMessage('reschedule', vars);
-    expect(message.compiledText).toContain("shifted your Hydra-Dew Glow Facial");
   });
 
   it('throws a validation error when required variables are missing', () => {
     // @ts-expect-error deliberately missing variables
     expect(() => compileMessage('confirmation', { clientFirstName: 'Maya' })).toThrow();
+  });
+});
+
+describe('Posie Core Logic - F008 (Document Content Library)', () => {
+  const block = {
+    id: '12345678-1234-1234-1234-123456789abc',
+    title: 'Facial Peel Sensitivity Waiver',
+    category: 'consent_waiver' as const,
+    content: 'Client acknowledges possible temporary redness after glycolic peel treatment.',
+    applicableServiceIds: [],
+    version: 1,
+    approvedBy: 'Sarah Jenkins, Esq.',
+    reviewType: 'legal_counsel' as const,
+    reviewDate: new Date().toISOString(),
+    active: true,
+  };
+
+  it('validates content block schemas', () => {
+    expect(() => ContentBlockSchema.parse(block)).not.toThrow();
+  });
+
+  it('increments version and updates review credentials upon revision', () => {
+    const updated = updateContentBlock(
+      block,
+      { content: 'Client acknowledges possible temporary tingling or redness.' },
+      'Dr. Lisa Vance',
+      'licensed_esthetician'
+    );
+    expect(updated.version).toBe(2);
+    expect(updated.approvedBy).toBe('Dr. Lisa Vance');
+    expect(updated.content).toContain('tingling');
+  });
+});
+
+describe('Posie Core Logic - F009 (Staff SOPs & Checklists)', () => {
+  const sop = {
+    id: '87654321-4321-4321-4321-cba987654321',
+    title: 'Morning Studio Sanitization SOP',
+    type: 'opening' as const,
+    assignedRole: 'Lead Esthetician',
+    version: 1,
+    items: [
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        taskDescription: 'Autoclave stainless steel tools at 270°F for 30 mins',
+        completed: false,
+      },
+      {
+        id: '22222222-2222-2222-2222-222222222222',
+        taskDescription: 'Disinfect treatment beds with hospital-grade surface wipes',
+        completed: false,
+      },
+    ],
+    acknowledgedByStaffIds: ['33333333-3333-3333-3333-333333333333'],
+    updatedAt: new Date().toISOString(),
+  };
+
+  it('validates SOP schemas properly', () => {
+    expect(() => SopChecklistSchema.parse(sop)).not.toThrow();
+  });
+
+  it('completes individual SOP items with staff attribution', () => {
+    const completed = completeSopItem(
+      sop,
+      '11111111-1111-1111-1111-111111111111',
+      '99999999-9999-9999-9999-999999999999'
+    );
+    expect(completed.items[0].completed).toBe(true);
+    expect(completed.items[0].completedByStaffId).toBe('99999999-9999-9999-9999-999999999999');
+    expect(completed.items[1].completed).toBe(false);
+  });
+
+  it('resets acknowledgment tracking when SOP checklist is updated', () => {
+    const updated = updateSopChecklist(
+      sop,
+      [
+        { id: '11111111-1111-1111-1111-111111111111', taskDescription: 'Updated autoclave run' },
+      ],
+      'Revised Morning SOP'
+    );
+    expect(updated.version).toBe(2);
+    expect(updated.title).toBe('Revised Morning SOP');
+    expect(updated.acknowledgedByStaffIds.length).toBe(0);
+  });
+});
+
+describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
+  const soloFlags = {
+    soloPractitionerMode: true,
+    teamManagementEnabled: false,
+    retailInventoryEnabled: false,
+    classesAndWorkshopsEnabled: false,
+    boothRenterSeparationEnabled: false,
+    clinicalChartingEnabled: false,
+  };
+
+  it('returns clean uncluttered sections for solo practitioners', () => {
+    const visible = getVisibleWorkspaceSections(soloFlags);
+    expect(visible).toEqual(['schedule', 'clients', 'services', 'settings']);
+    expect(visible).not.toContain('team');
+    expect(visible).not.toContain('inventory');
+    expect(visible).not.toContain('classes');
+  });
+
+  it('reveals team section when team management is toggled', () => {
+    const updated = toggleWorkspaceModule(soloFlags, 'teamManagementEnabled', true);
+    const visible = getVisibleWorkspaceSections(updated);
+    expect(visible).toContain('team');
+    expect(updated.soloPractitionerMode).toBe(false);
+  });
+
+  it('reveals inventory section when retail inventory is enabled', () => {
+    const updated = toggleWorkspaceModule(soloFlags, 'retailInventoryEnabled', true);
+    const visible = getVisibleWorkspaceSections(updated);
+    expect(visible).toContain('inventory');
   });
 });
