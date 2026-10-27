@@ -954,6 +954,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Enterprise multi-location identity and security administration console featuring SAML 2.0 / OpenID Connect Single Sign-On (SSO), automated SCIM user provisioning/deprovisioning, and cryptographically verifiable audit logging.
 * **Key Invariant (Basis: Trust (T); DATA SEC ENT, WB F160, Rule F160):** **SCIM Instant Session Kill & Scoped RBAC Delegation.** "Automated SCIM deprovisioning instantly invalidates enterprise credentials and terminates all active sessions across all locations; role delegations are location-scoped with verifiable audit exports." Deprovisioning an employee via SCIM immediately kills active session tokens across all studio branches in real time.
 
+---
+
+## F161 — Medical Practice Records and Signoff (WB F161, WB F26, WB F27, Rule F161)
+* **What it is:** Regulated medical aesthetics and clinical charting suite providing structured medical observations, mid-level practitioner delegation, medical director supervisory reviews, and governed clinical record access.
+* **Key Invariant (Basis: Expansion (X); CLIN LEG SEC, WB F161, Rule F161, Table 67/68):** **Medical Director Supervision & Governed Clinical Access.** "Structured charts, clinician review, medical director workflow and governed clinical record access." Distinguishes spa treatment notes from regulated EMR charts. High-risk medical aesthetics (neurotoxins, medical peels, lasers) performed by mid-level practitioners (RNs, PAs) mandate physician medical director review before final locking. Non-clinical front-desk staff are denied chart access with tamper-evident audit logging; amendments preserve prior notes and clinical justifications without overwriting historical data.
+
+---
+
+## F162 — Training and Qualification Records (WB F162, Table 79, Row 28)
+* **What it is:** Practitioner credential governance and service readiness manager tracking professional licenses, modality certifications, laser safety credentials, and expiration timelines.
+* **Key Invariant (Basis: Expansion (X); CLIN OPS, WB F162, Rule F162, Table 79):** **Prerequisite Enforcement & Automated Scheduling Blocks.** "Track certificates, expiration dates, equipment training and authorized services for staff; expired credentials trigger review, without claiming to certify legal competence." Blocks booking assignments and service execution when prerequisite qualifications expire or lapse, alerting management 30 days prior while strictly isolating personnel qualification records from renter commercial terms and client histories.
+
+---
+
+## F163 — Distributor and Scale Integrations (WB F163, D21, Table 81)
+* **What it is:** Precision hardware scale and supplier catalog integration linking Bluetooth/USB dispensing scales and distributor inventory feeds to appointment service costing.
+* **Key Invariant (Basis: Expansion (X); PART OPS, WB F163, Rule F163, Table 81):** **Gram-Level Precision Costing & Non-Fabricating Disconnect Fallbacks.** "Connect approved suppliers, inventory feeds and supported weighing devices to receiving and service costing; disconnects preserve manual operation and never fabricate stock counts." Smart scales capture actual grams dispensed (hair color, developer, toner), identifying backbar waste against baseline formulas. Distributor catalog disconnects gracefully allow manual data entry without ever guessing or synthesizing inventory counts. Generating purchase orders never places orders without authorized buyer signoff.
+
+---
+
+## F164 — Staff Coverage Exchanges (WB F164, Table 90, Table 105)
+* **What it is:** Governed shift coverage and peer replacement exchange allowing practitioners to offer shifts to qualified internal colleagues or vetted substitute providers.
+* **Key Invariant (Basis: Expansion (X); LEG OPS NET, WB F164, Rule F164, Table 105):** **Qualification Matching & Assignment-Limited Access Isolation.** "Invite qualified internal or approved substitute staff to cover a shift with access limited to that assignment; coverage does not expose the full client database to a substitute." Substitutes must hold active credentials matching the scheduled appointments. Accepted coverage strictly limits the substitute's visibility to the clients and timing on that specific shift, firewalling the rest of the studio's client book, unassigned appointments, and financial reports.
+
+---
+
+## F165 — Explainable Return Likelihood (WB F165, Table 90, Table 110, Row 18)
+* **What it is:** Transparent, cadence-driven client retention engine identifying lapsed or rebooking candidates based on verified historical visit intervals and explicit scheduling preferences.
+* **Key Invariant (Basis: Expansion (X); DATA LEG, WB F165, Rule F165, Table 110):** **Transparent Cadence Ranking & Absolute Opt-Out Respect.** "Rank optional outreach candidates using prior visit cadence and explicit preferences, with reasons and opt-outs; no sensitive characteristics or opaque client value labels are exposed." Analyzes visit intervals and preferred appointment days without black-box scores, opaque tiers, or demographic proxies. Clients with active marketing or rebooking opt-outs are strictly suppressed from outreach queues.
+
+
 
 
 

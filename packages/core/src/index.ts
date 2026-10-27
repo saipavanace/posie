@@ -158,4 +158,9 @@ export * from './care_passport';
 export * from './practitioner_relocation';
 export * from './recovery_operations';
 export * from './enterprise_admin';
+export * from './medical_records';
+export * from './training_qualifications';
+export * from './distributor_scale';
+export * from './coverage_exchanges';
+export * from './return_likelihood';
 

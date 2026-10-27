@@ -486,6 +486,26 @@ export default function PosieStudioPage() {
   const [scimDeprovisionTriggered, setScimDeprovisionTriggered] = useState<boolean>(false);
   const [ssoEnforced, setSsoEnforced] = useState<boolean>(true);
 
+  // F161 Medical Practice Records & Signoff State
+  const [medicalChartStatus, setMedicalChartStatus] = useState<'pending_supervisor' | 'signed_locked'>('signed_locked');
+  const [medicalAccessRole, setMedicalAccessRole] = useState<'treating_clinician' | 'front_desk'>('treating_clinician');
+
+  // F162 Training & Qualification Records State
+  const [qualificationAuditSimulated, setQualificationAuditSimulated] = useState<boolean>(false);
+  const [practitionerLaserCertified, setPractitionerLaserCertified] = useState<boolean>(true);
+
+  // F163 Distributor & Scale Integrations State
+  const [scaleHardwareConnected, setScaleHardwareConnected] = useState<boolean>(true);
+  const [dispensedWeightGrams, setDispensedWeightGrams] = useState<number>(34.5);
+
+  // F164 Staff Coverage Exchanges State
+  const [coverageShiftClaimed, setCoverageShiftClaimed] = useState<boolean>(true);
+  const [substituteResourceAccess, setSubstituteResourceAccess] = useState<'assigned_shift' | 'full_database'>('assigned_shift');
+
+  // F165 Explainable Return Likelihood State
+  const [outreachOptOutFiltered, setOutreachOptOutFiltered] = useState<boolean>(true);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>('client_claire_active');
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -506,7 +526,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F160)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F165)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -8791,6 +8811,329 @@ export default function PosieStudioPage() {
               onClick={() => setSsoEnforced(!ssoEnforced)}
             >
               {ssoEnforced ? 'SSO Enforcement Active' : 'Allow Password Fallback'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F161: Medical Practice Records and Signoff */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <HeartPulse size={18} color="var(--color-primary)" />
+                Medical Practice Records &amp; Physician Co-Sign (F161)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Structured clinical charts, mid-level practitioner delegation, and medical director review workflows.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={medicalChartStatus === 'signed_locked' ? 'sage' : 'muted'}>
+                {medicalChartStatus === 'signed_locked' ? 'Signed &amp; Co-Signed (Locked)' : 'Pending Medical Director'}
+              </Badge>
+              <Badge variant="muted">WB F161 / Rule F161</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Treating Clinician:</div>
+              <strong>Taylor Reed, RN (RN-CA-992144)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Supervisory Medical Director:</div>
+              <strong style={{ color: '#2B5329' }}>Dr. Sarah Vance, MD (MD-CA-402911)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Regulated Procedure:</div>
+              <strong>Botox Cosmetic 30u (Glabellar Complex)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Governed Access Role:</div>
+              <strong style={{ color: medicalAccessRole === 'treating_clinician' ? '#2B5329' : '#A65B32' }}>
+                {medicalAccessRole === 'treating_clinician' ? 'Clinician (Full Chart Access)' : 'Front Desk (Access Denied & Audited)'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🩺 <strong>WB F161 Invariant:</strong> Structured clinical charts distinguish medical records from non-medical treatment notes; mid-levels enforce medical director review; non-clinical front desk staff are denied chart access.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={medicalChartStatus === 'signed_locked' ? 'outline' : 'primary'}
+              onClick={() => setMedicalChartStatus(medicalChartStatus === 'signed_locked' ? 'pending_supervisor' : 'signed_locked')}
+            >
+              {medicalChartStatus === 'signed_locked' ? 'Revert to Pending Review' : 'Medical Director Sign & Lock (Dr. Vance, MD)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMedicalAccessRole(medicalAccessRole === 'treating_clinician' ? 'front_desk' : 'treating_clinician')}
+            >
+              Simulate Role ({medicalAccessRole === 'treating_clinician' ? 'Switch to Front Desk' : 'Switch to Clinician'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F162: Training and Qualification Records */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BadgeCheck size={18} color="var(--color-primary)" />
+                Practitioner Training, Qualifications &amp; Scheduling Blocks (F162)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Professional credential tracking, equipment certifications, and automated service scheduling blocks.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={practitionerLaserCertified ? 'sage' : 'rose'}>
+                {practitionerLaserCertified ? 'Laser Safety: Active' : 'Laser Safety: Expired (Blocked)'}
+              </Badge>
+              <Badge variant="muted">WB F162 / Rule F162</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Practitioner:</div>
+              <strong>Kendra Miller (Licensed Esthetician)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Prerequisite Credential:</div>
+              <strong>Class IV Laser Operator Safety (NLI-883921)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Service Booking Gate:</div>
+              <strong style={{ color: practitionerLaserCertified ? '#2B5329' : '#A65B32' }}>
+                {practitionerLaserCertified ? 'Eligible for Alexandrite Laser' : 'BLOCKED: Lapsed Laser Safety'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Renewal Audit Alert:</div>
+              <strong>{qualificationAuditSimulated ? '1 Renewal Due (16 Days Remaining)' : 'Active Monitor'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📜 <strong>WB F162 Invariant:</strong> Tracks practitioner prerequisites, equipment training, and expiration dates. Expired credentials block booking without claiming the software itself certifies legal competence.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={practitionerLaserCertified ? 'outline' : 'primary'}
+              onClick={() => setPractitionerLaserCertified(!practitionerLaserCertified)}
+            >
+              {practitionerLaserCertified ? 'Simulate Credential Expiration' : 'Renew Credential & Unblock Service'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setQualificationAuditSimulated(!qualificationAuditSimulated)}
+            >
+              {qualificationAuditSimulated ? 'Clear Audit View' : 'Run 30-Day Credential Audit'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F163: Distributor and Scale Integrations */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} color="var(--color-primary)" />
+                Smart Scale Product Dispensing &amp; Distributor Feeds (F163)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Precision Bluetooth scale weighing for color formulas, waste tracking, and supplier inventory feeds.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={scaleHardwareConnected ? 'sage' : 'muted'}>
+                {scaleHardwareConnected ? 'Vish Scale Connected (0.1g)' : 'Hardware Offline (Manual Fallback)'}
+              </Badge>
+              <Badge variant="muted">WB F163 / Rule F163</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Active Formula:</div>
+              <strong>Nordic Vanilla Pearl Glaze (Target: 30g + 60g)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Weighed Dispensed:</div>
+              <strong style={{ color: dispensedWeightGrams > 30 ? '#A65B32' : '#2B5329' }}>
+                {dispensedWeightGrams}g Color ({dispensedWeightGrams > 30 ? '+4.5g Over Target' : 'Exact Target'})
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Product Cost Variance:</div>
+              <strong style={{ color: dispensedWeightGrams > 30 ? '#A65B32' : '#2B5329' }}>
+                {dispensedWeightGrams > 30 ? '+$1.04 (+15% waste alert)' : '$0.00 (Standard)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Distributor Sync State:</div>
+              <strong>{scaleHardwareConnected ? 'SalonCentric NY (Connected)' : 'Offline (Real Counts Preserved)'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            ⚖️ <strong>WB F163 Invariant:</strong> Connects weighing hardware to service costing. Hardware disconnects preserve manual operation and never fabricate stock counts. POs require buyer approval.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={dispensedWeightGrams > 30 ? 'outline' : 'primary'}
+              onClick={() => setDispensedWeightGrams(dispensedWeightGrams > 30 ? 30.0 : 34.5)}
+            >
+              {dispensedWeightGrams > 30 ? 'Calibrate to Target (30.0g)' : 'Simulate Heavy Pour (34.5g Waste)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setScaleHardwareConnected(!scaleHardwareConnected)}
+            >
+              {scaleHardwareConnected ? 'Simulate Scale Disconnect' : 'Reconnect Bluetooth Scale'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F164: Staff Coverage Exchanges */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} color="var(--color-primary)" />
+                Staff Coverage Exchanges &amp; Scoped Data Isolation (F164)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Governed shift coverage requests, qualification verification, and assignment-limited client visibility.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={coverageShiftClaimed ? 'sage' : 'muted'}>
+                {coverageShiftClaimed ? 'Coverage Assigned (Maya Lin)' : 'Shift Open'}
+              </Badge>
+              <Badge variant="muted">WB F164 / Rule F164</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Original Shift:</div>
+              <strong>Sat Nov 14 (Elena R. • 10:00 - 16:00)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Substitute Practitioner:</div>
+              <strong style={{ color: '#2B5329' }}>Maya Lin (Balayage Certified)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Compensation Split:</div>
+              <strong>50% Commission • 100% Tips to Maya</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Data Isolation Scope:</div>
+              <strong style={{ color: substituteResourceAccess === 'assigned_shift' ? '#2B5329' : '#A65B32' }}>
+                {substituteResourceAccess === 'assigned_shift' ? '2 Shift Appointments Only' : 'BLOCKED: Full Studio Database'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🤝 <strong>WB F164 Invariant:</strong> Invites qualified staff to cover shifts with access limited strictly to that assignment; coverage never exposes the salon&apos;s full client database or unassigned schedules.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={coverageShiftClaimed ? 'outline' : 'primary'}
+              onClick={() => setCoverageShiftClaimed(!coverageShiftClaimed)}
+            >
+              {coverageShiftClaimed ? 'Re-open Coverage Request' : 'Accept Coverage &amp; Assign (Maya Lin)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSubstituteResourceAccess(substituteResourceAccess === 'assigned_shift' ? 'full_database' : 'assigned_shift')}
+            >
+              Simulate Query ({substituteResourceAccess === 'assigned_shift' ? 'Query Full Studio Database' : 'View Shift Roster Only'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F165: Explainable Return Likelihood */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} color="var(--color-primary)" />
+                Explainable Return Likelihood &amp; Cadence Outreach (F165)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Transparent, cadence-driven retention ranking based on verified visit intervals and stated preferences.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Cadence Ranking Active</Badge>
+              <Badge variant="muted">WB F165 / Rule F165</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Rank #1 Outreach Target:</div>
+              <strong>{selectedCandidateId === 'client_claire_active' ? 'Claire Dupont' : 'Diana Prince'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Visit Cadence Metric:</div>
+              <strong>{selectedCandidateId === 'client_claire_active' ? '30.5 Days Avg (1.08x Cycle)' : '45.0 Days Avg (1.80x Overdue)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Preferred Booking Day:</div>
+              <strong>{selectedCandidateId === 'client_claire_active' ? 'Friday' : 'Saturday'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Opt-Out Suppression Guard:</div>
+              <strong style={{ color: '#2B5329' }}>100% Compliant (Rachel G. Suppressed)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📈 <strong>WB F165 Invariant:</strong> Ranks optional outreach candidates using historical visit cadence and explicit preferences with explainable reasons; no sensitive characteristics or opaque client value labels are exposed.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSelectedCandidateId(selectedCandidateId === 'client_claire_active' ? 'client_overdue_diana' : 'client_claire_active')}
+            >
+              Inspect Candidate ({selectedCandidateId === 'client_claire_active' ? 'View Diana Prince' : 'View Claire Dupont'})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setOutreachOptOutFiltered(!outreachOptOutFiltered)}
+            >
+              {outreachOptOutFiltered ? 'Opt-Out Suppression: Active' : 'Show All Unsuppressed'}
             </Button>
           </div>
         </Card>

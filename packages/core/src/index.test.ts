@@ -357,6 +357,28 @@ import {
   configureEnterpriseSso,
   processScimProvisioningEvent,
   generateEnterpriseAuditExport,
+  createClinicalChartDraft,
+  signAndLockClinicalRecord,
+  verifyGovernedClinicalAccess,
+  amendClinicalRecord,
+  type ClinicalSigner,
+  registerStaffCredential,
+  evaluateServiceEligibility,
+  auditExpiringCredentials,
+  type StaffCredentialProfile,
+  type ServiceCredentialRequirement,
+  recordDispensedProductWeighing,
+  reconcileServiceColorCosting,
+  syncDistributorCatalogFeed,
+  type FormulaTargetSpec,
+  type LocalInventorySku,
+  createShiftCoverageRequest,
+  acceptShiftCoverage,
+  verifySubstituteAccessScope,
+  type SubstituteCandidate,
+  computeClientVisitCadence,
+  rankReturnLikelihoodCandidates,
+  type ClientHistoricalCandidate,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -8462,6 +8484,479 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(auditExport.totalSecurityEvents).toBe(1250);
       expect(auditExport.sha256Digest).toContain('sha256:');
       expect(auditExport.downloadUrl).toContain('/api/v1/enterprise/audit-logs');
+    });
+  });
+
+  describe('Posie Core Logic - F161 (Medical Practice Records and Signoff)', () => {
+    const rnClinician: ClinicalSigner = {
+      practitionerId: 'prac_rn_taylor',
+      name: 'Taylor Reed, RN',
+      licenseType: 'RN',
+      licenseNumber: 'RN-CA-992144',
+      jurisdiction: 'US-CA',
+    };
+
+    const physicianMD: ClinicalSigner = {
+      practitionerId: 'prac_md_vance',
+      name: 'Dr. Sarah Vance, MD',
+      licenseType: 'MD',
+      licenseNumber: 'MD-CA-402911',
+      npiNumber: '1982736450',
+      jurisdiction: 'US-CA',
+    };
+
+    it('requires valid licenses, enforces medical director review for mid-levels, governs access, and allows immutable amendments', () => {
+      // 1. Rejects creation without consent reference
+      expect(() =>
+        createClinicalChartDraft({
+          chartId: 'chart_101',
+          clientId: 'client_eva',
+          practiceId: 'prac_lux_med',
+          serviceId: 'srv_toxin',
+          procedureName: 'Botox Cosmetic 30u',
+          recordType: 'aesthetic_injectable',
+          treatingClinician: rnClinician,
+          observations: [],
+          informedConsentRefId: '',
+        })
+      ).toThrow('informed consent reference ID');
+
+      // 2. Creates valid draft, flags medical director requirement for RN
+      const chartDraft = createClinicalChartDraft({
+        chartId: 'chart_101',
+        clientId: 'client_eva',
+        practiceId: 'prac_lux_med',
+        serviceId: 'srv_toxin',
+        procedureName: 'Botox Cosmetic 30u',
+        recordType: 'aesthetic_injectable',
+        treatingClinician: rnClinician,
+        observations: [
+          {
+            anatomicalSite: 'Glabellar complex (Procerus & Corrugators)',
+            lotNumber: 'BX-99420-EXP',
+            dosageOrUnits: 20,
+            technique: 'Intramuscular micro-droplet',
+            clientTolerance: 'Well tolerated with minimal erythema',
+          },
+        ],
+        informedConsentRefId: 'consent_doc_eva_992',
+      });
+
+      expect(chartDraft.medicalDirectorReview.required).toBe(true);
+      expect(chartDraft.medicalDirectorReview.status).toBe('pending');
+
+      // 3. Treating clinician signs, stays pending until medical director signs
+      const pendingSign = signAndLockClinicalRecord(chartDraft, rnClinician);
+      expect(pendingSign.status).toBe('pending_medical_director');
+      expect(pendingSign.locked).toBe(false);
+
+      // 4. Medical Director co-signs and locks record
+      const lockedRecord = signAndLockClinicalRecord(pendingSign, rnClinician, {
+        medicalDirector: physicianMD,
+        supervisoryNotes: 'Reviewed anatomy, dilution, and dosage. Protocol compliant.',
+      });
+      expect(lockedRecord.status).toBe('signed_locked');
+      expect(lockedRecord.locked).toBe(true);
+      expect(lockedRecord.medicalDirectorReview.status).toBe('approved');
+      expect(lockedRecord.medicalDirectorReview.medicalDirectorName).toBe('Dr. Sarah Vance, MD');
+
+      // 5. Governed access: clinical roles permitted, front desk denied
+      const accessTreating = verifyGovernedClinicalAccess(lockedRecord, {
+        userId: 'prac_rn_taylor',
+        role: 'treating_clinician',
+      });
+      expect(accessTreating.permitted).toBe(true);
+
+      const accessFrontDesk = verifyGovernedClinicalAccess(lockedRecord, {
+        userId: 'staff_reception_claire',
+        role: 'front_desk',
+      });
+      expect(accessFrontDesk.permitted).toBe(false);
+      expect(accessFrontDesk.reason).toContain('Front-desk role restricted');
+      expect(lockedRecord.accessAuditLog).toHaveLength(2);
+
+      // 6. Immutable amendment preserves original observations
+      const amendedRecord = amendClinicalRecord(lockedRecord, {
+        clinician: rnClinician,
+        reason: 'Post-treatment 15-minute ice compress check confirmed resolution of mild swelling.',
+        priorNoteExcerpt: 'Well tolerated with minimal erythema',
+        newNoteExcerpt: 'Well tolerated; post-15m icing confirmed complete resolution of transient swelling.',
+      });
+
+      expect(amendedRecord.status).toBe('amended');
+      expect(amendedRecord.amendments).toHaveLength(1);
+      expect(amendedRecord.observations[0].dosageOrUnits).toBe(20); // Original unaltered
+    });
+  });
+
+  describe('Posie Core Logic - F162 (Training and Qualification Records)', () => {
+    it('manages certificates, evaluates service prerequisites, blocks on expired credentials, and audits renewals', () => {
+      const initialProfile: StaffCredentialProfile = {
+        staffId: 'staff_kendra_aesthetic',
+        staffName: 'Kendra Miller',
+        employmentType: 'w2_employee',
+        authorizedServiceCategories: ['laser_hair_removal', 'chemical_peel'],
+        credentials: [
+          {
+            credentialId: 'cred_laser_01',
+            category: 'laser_safety_certification',
+            title: 'Class IV Laser Operator Safety',
+            issuingAuthority: 'National Laser Institute',
+            licenseOrCertificateNumber: 'NLI-883921',
+            issuedDate: '2024-01-15',
+            expirationDate: '2026-12-31', // Active
+            verifiedBy: 'Studio Owner Maya',
+            verifiedAt: '2024-01-20T10:00:00Z',
+          },
+          {
+            credentialId: 'cred_peel_01',
+            category: 'advanced_modality',
+            title: 'Advanced Medical Chemical Exfoliation',
+            issuingAuthority: 'State Board of Cosmetology',
+            licenseOrCertificateNumber: 'PEEL-7718',
+            issuedDate: '2023-05-10',
+            expirationDate: '2026-05-10', // Expired as of Nov 2026
+            verifiedBy: 'Studio Owner Maya',
+            verifiedAt: '2023-05-15T10:00:00Z',
+          },
+        ],
+      };
+
+      const laserReq: ServiceCredentialRequirement = {
+        serviceId: 'srv_laser_clarity',
+        serviceName: 'Full Leg Alexandrite Laser Resurfacing',
+        requiredCategories: ['laser_safety_certification'],
+        minimumActiveCredentials: ['Class IV Laser Operator Safety'],
+      };
+
+      const peelReq: ServiceCredentialRequirement = {
+        serviceId: 'srv_deep_tca',
+        serviceName: 'TCA 20% Medical Grade Peel',
+        requiredCategories: ['advanced_modality'],
+        minimumActiveCredentials: ['Advanced Medical Chemical Exfoliation'],
+      };
+
+      // 1. Eligible for Laser
+      const laserEligibility = evaluateServiceEligibility(initialProfile, laserReq, '2026-11-01');
+      expect(laserEligibility.eligible).toBe(true);
+      expect(laserEligibility.matchedCredentials).toContain('Class IV Laser Operator Safety');
+
+      // 2. Blocked for Chemical Peel due to expiration
+      const peelEligibility = evaluateServiceEligibility(initialProfile, peelReq, '2026-11-01');
+      expect(peelEligibility.eligible).toBe(false);
+      expect(peelEligibility.blockedReason).toContain('expired on 2026-05-10. Service scheduling blocked');
+
+      // 3. Register renewed credential
+      const updatedProfile = registerStaffCredential(
+        initialProfile,
+        {
+          credentialId: 'cred_peel_01',
+          category: 'advanced_modality',
+          title: 'Advanced Medical Chemical Exfoliation',
+          issuingAuthority: 'State Board of Cosmetology',
+          licenseOrCertificateNumber: 'PEEL-7718-R2',
+          issuedDate: '2026-05-11',
+          expirationDate: '2028-05-11',
+          verifiedBy: 'Studio Director Sarah',
+        },
+        'Studio Director Sarah'
+      );
+
+      const renewedEligibility = evaluateServiceEligibility(updatedProfile, peelReq, '2026-11-01');
+      expect(renewedEligibility.eligible).toBe(true);
+
+      // 4. Audit expiring credentials across profiles
+      const alerts = auditExpiringCredentials([initialProfile], '2026-12-15', 30);
+      expect(alerts).toHaveLength(2); // One expired (peel) + one expiring in 16 days (laser)
+      const laserAlert = alerts.find((a) => a.credentialTitle === 'Class IV Laser Operator Safety');
+      expect(laserAlert?.status).toBe('expiring_soon');
+      expect(laserAlert?.daysRemaining).toBe(16);
+    });
+  });
+
+  describe('Posie Core Logic - F163 (Distributor and Scale Integrations)', () => {
+    it('records precision weighed dispensing, reconciles cost variances against targets, and syncs distributor feeds without fabricating stock', () => {
+      // 1. Record weighed color dispensing
+      const dispensingEvent = recordDispensedProductWeighing({
+        dispensingId: 'disp_color_881',
+        appointmentId: 'appt_chloe_balayage',
+        practitionerId: 'prac_maya_lin',
+        deviceId: 'scale_vish_bt_09',
+        scaleModel: 'Vish Bluetooth Smart Scale Pro',
+        source: 'hardware_scale',
+        components: [
+          {
+            sku: 'SKU-W-9A',
+            productName: 'Wella Illumina 9/60 Very Light Violet Blonde',
+            category: 'color',
+            targetWeightGrams: 30.0,
+            actualWeightGrams: 34.5, // 4.5g over target
+            costPerGram: 0.22,
+          },
+          {
+            sku: 'SKU-DEV-20V',
+            productName: 'Welloxon Perfect 20 Vol Developer',
+            category: 'developer',
+            targetWeightGrams: 60.0,
+            actualWeightGrams: 69.0, // 9g over target (1:2 ratio)
+            costPerGram: 0.05,
+          },
+        ],
+      });
+
+      expect(dispensingEvent.totalTargetGrams).toBe(90.0);
+      expect(dispensingEvent.totalActualGrams).toBe(103.5);
+      expect(dispensingEvent.totalProductCost).toBe(11.04);
+
+      // 2. Reconcile color costing
+      const formulaTarget: FormulaTargetSpec = {
+        formulaName: 'Nordic Vanilla Pearl Glaze',
+        targetComponents: [
+          {
+            sku: 'SKU-W-9A',
+            productName: 'Wella Illumina 9/60',
+            category: 'color',
+            targetWeightGrams: 30.0,
+            costPerGram: 0.22,
+          },
+          {
+            sku: 'SKU-DEV-20V',
+            productName: 'Welloxon Perfect 20 Vol Developer',
+            category: 'developer',
+            targetWeightGrams: 60.0,
+            costPerGram: 0.05,
+          },
+        ],
+      };
+
+      const reconciliation = reconcileServiceColorCosting(formulaTarget, dispensingEvent);
+      expect(reconciliation.varianceGrams).toBe(13.5);
+      expect(reconciliation.variancePercentage).toBe(15);
+      expect(reconciliation.isOverDispensed).toBe(true);
+      expect(reconciliation.wasteWarning).toContain('Dispensed weight exceeds formula target by 15%');
+
+      // 3. Distributor Catalog Sync: Online update
+      const existingSkus: LocalInventorySku[] = [
+        {
+          sku: 'SKU-W-9A',
+          name: 'Wella Illumina 9/60',
+          distributorId: 'dist_saloncentric_nyc',
+          costPerUnit: 12.5,
+          stockOnHand: 14,
+          lastSyncedAt: '2026-10-01T00:00:00Z',
+        },
+      ];
+
+      const feedOnline = syncDistributorCatalogFeed(
+        {
+          distributorId: 'dist_saloncentric_nyc',
+          distributorName: 'SalonCentric Metro NY',
+          items: [
+            {
+              sku: 'SKU-W-9A',
+              name: 'Wella Illumina 9/60',
+              wholesalePrice: 13.25, // Price increase
+              availableStock: 250,
+              inStock: true,
+            },
+          ],
+          timestamp: '2026-10-27T12:00:00Z',
+        },
+        existingSkus,
+        'connected'
+      );
+
+      expect(feedOnline.updatedCount).toBe(1);
+      expect(feedOnline.skus[0].costPerUnit).toBe(13.25);
+
+      // 4. Invariant: Disconnected feed gracefully falls back without fabricating stock
+      const feedOffline = syncDistributorCatalogFeed(
+        {
+          distributorId: 'dist_saloncentric_nyc',
+          distributorName: 'SalonCentric Metro NY',
+          items: [],
+          timestamp: '2026-10-27T12:05:00Z',
+        },
+        existingSkus,
+        'offline'
+      );
+
+      expect(feedOffline.connectionState).toBe('offline_fallback');
+      expect(feedOffline.skus[0].stockOnHand).toBe(14); // Preserves real count, does not fabricate
+      expect(feedOffline.message).toContain('Preserving existing inventory counts without fabrication');
+    });
+  });
+
+  describe('Posie Core Logic - F164 (Staff Coverage Exchanges)', () => {
+    it('creates coverage requests, enforces qualification matching, and strictly restricts substitute access scope', () => {
+      // 1. Create coverage request
+      const shiftRequest = createShiftCoverageRequest({
+        requestId: 'req_shift_sat_991',
+        requestingStaffId: 'staff_elena_colorist',
+        requestingStaffName: 'Elena Rostova',
+        date: '2026-11-14',
+        shiftStartTime: '10:00',
+        shiftEndTime: '16:00',
+        appointments: [
+          {
+            appointmentId: 'appt_101',
+            clientId: 'client_charlotte_1',
+            clientName: 'Charlotte M.',
+            serviceId: 'srv_balayage',
+            serviceName: 'Balayage Blonde',
+            startTime: '10:00',
+            endTime: '12:30',
+            requiredQualificationTitle: 'Master Balayage Certification',
+          },
+          {
+            appointmentId: 'appt_102',
+            clientId: 'client_sophia_2',
+            clientName: 'Sophia K.',
+            serviceId: 'srv_gloss',
+            serviceName: 'Signature Glaze & Blowout',
+            startTime: '13:00',
+            endTime: '14:30',
+          },
+        ],
+        compensationTerms: {
+          serviceCommissionPercentage: 50,
+          tipsPaidDirectToSubstitute: true,
+        },
+        requiresManagerApproval: true,
+      });
+
+      expect(shiftRequest.status).toBe('open');
+
+      // 2. Reject unqualified candidate
+      const apprenticeCandidate: SubstituteCandidate = {
+        staffId: 'staff_apprentice_jen',
+        staffName: 'Jenna Apprentice',
+        employmentType: 'internal_peer',
+        activeQualifications: ['Sanitation & Hygiene'], // Lacks Balayage certification
+      };
+
+      expect(() => acceptShiftCoverage(shiftRequest, apprenticeCandidate, true)).toThrow(
+        'lacks required qualification "Master Balayage Certification"'
+      );
+
+      // 3. Accept qualified candidate with manager signoff
+      const seniorCandidate: SubstituteCandidate = {
+        staffId: 'staff_senior_maya',
+        staffName: 'Maya Lin',
+        employmentType: 'internal_peer',
+        activeQualifications: ['Master Balayage Certification', 'Advanced Colorist License'],
+      };
+
+      const assignment = acceptShiftCoverage(shiftRequest, seniorCandidate, true);
+      expect(assignment.status).toBe('active');
+      expect(assignment.substituteStaffName).toBe('Maya Lin');
+      expect(assignment.coveredAppointmentIds).toHaveLength(2);
+
+      // 4. Invariant: Assignment-limited access scope
+      // Permits access to covered appointments & clients
+      const allowedApptAccess = verifySubstituteAccessScope(assignment, {
+        resourceType: 'shift_appointment',
+        appointmentId: 'appt_101',
+        clientId: 'client_charlotte_1',
+      });
+      expect(allowedApptAccess.permitted).toBe(true);
+
+      // Denies access to unassigned appointments
+      const deniedApptAccess = verifySubstituteAccessScope(assignment, {
+        resourceType: 'shift_appointment',
+        appointmentId: 'appt_999_other_stylist',
+      });
+      expect(deniedApptAccess.permitted).toBe(false);
+      expect(deniedApptAccess.reason).toContain('not assigned to this coverage shift');
+
+      // Denies full client database access
+      const broadDbAccess = verifySubstituteAccessScope(assignment, {
+        resourceType: 'full_client_database',
+      });
+      expect(broadDbAccess.permitted).toBe(false);
+      expect(broadDbAccess.reason).toContain('Full database access is withheld');
+
+      // Denies salon financial reports
+      const financialsAccess = verifySubstituteAccessScope(assignment, {
+        resourceType: 'salon_financials',
+      });
+      expect(financialsAccess.permitted).toBe(false);
+    });
+  });
+
+  describe('Posie Core Logic - F165 (Explainable Return Likelihood)', () => {
+    it('calculates historical visit cadence, excludes opted-out clients, and ranks return candidates with transparent explanations', () => {
+      // 1. Calculate visit cadence
+      const cadenceData = computeClientVisitCadence([
+        '2026-06-01T10:00:00Z',
+        '2026-07-01T10:00:00Z', // 30 days
+        '2026-08-02T10:00:00Z', // 32 days
+        '2026-08-31T10:00:00Z', // 29 days
+      ]);
+      expect(cadenceData.visitCount).toBe(4);
+      expect(cadenceData.averageCadenceDays).toBe(30.3);
+      expect(cadenceData.regularityScore).toBeGreaterThan(0.9);
+
+      // 2. Candidate roster
+      const clients: ClientHistoricalCandidate[] = [
+        {
+          clientId: 'client_claire_active',
+          clientName: 'Claire Dupont',
+          preferredWeekday: 5, // Friday
+          optedOutOfOutreach: false,
+          visitHistory: [
+            { appointmentId: 'a1', completedAt: '2026-08-01T10:00:00Z', serviceName: 'Cut & Style' },
+            { appointmentId: 'a2', completedAt: '2026-09-01T10:00:00Z', serviceName: 'Cut & Style' },
+            { appointmentId: 'a3', completedAt: '2026-10-01T10:00:00Z', serviceName: 'Cut & Style' },
+          ], // ~30.5 days cadence. Ref date is 2026-11-04 (34 days since last visit = 1.1x cadence)
+        },
+        {
+          clientId: 'client_opted_out_rachel',
+          clientName: 'Rachel Green',
+          optedOutOfOutreach: true, // Invariant: must be excluded
+          visitHistory: [
+            { appointmentId: 'b1', completedAt: '2026-09-01T10:00:00Z', serviceName: 'Highlights' },
+            { appointmentId: 'b2', completedAt: '2026-10-01T10:00:00Z', serviceName: 'Highlights' },
+          ],
+        },
+        {
+          clientId: 'client_recent_olivia',
+          clientName: 'Olivia Wilde',
+          optedOutOfOutreach: false,
+          visitHistory: [
+            { appointmentId: 'c1', completedAt: '2026-11-02T10:00:00Z', serviceName: 'Blowout' }, // 2 days ago
+          ],
+        },
+        {
+          clientId: 'client_overdue_diana',
+          clientName: 'Diana Prince',
+          optedOutOfOutreach: false,
+          visitHistory: [
+            { appointmentId: 'd1', completedAt: '2026-07-01T10:00:00Z', serviceName: 'Balayage' },
+            { appointmentId: 'd2', completedAt: '2026-08-15T10:00:00Z', serviceName: 'Balayage' }, // 45 day cadence
+          ], // Ref date 2026-11-04 is 81 days since last visit (1.8x cadence -> overdue lapse risk)
+        },
+      ];
+
+      const ranked = rankReturnLikelihoodCandidates(clients, '2026-11-04');
+
+      // 3. Invariants verified
+      // Rachel (opted-out) and Olivia (visited 2 days ago) must not appear
+      const ids = ranked.map((r) => r.clientId);
+      expect(ids).toContain('client_claire_active');
+      expect(ids).toContain('client_overdue_diana');
+      expect(ids).not.toContain('client_opted_out_rachel');
+      expect(ids).not.toContain('client_recent_olivia');
+
+      // Top candidate is Claire because her cadenceMultiplier is ~1.11 (right in the sweet spot)
+      expect(ranked[0].clientId).toBe('client_claire_active');
+      expect(ranked[0].urgencyLevel).toBe('due_for_visit');
+      expect(ranked[0].explainableReason).toContain('Historical preference for Friday bookings');
+      expect(ranked[0].explainableReason).toContain('averages a visit every');
+
+      // Diana is ranked as overdue lapse risk
+      const diana = ranked.find((r) => r.clientId === 'client_overdue_diana');
+      expect(diana?.urgencyLevel).toBe('overdue_lapse_risk');
     });
   });
 
