@@ -24,6 +24,15 @@ export const AftercareTemplateSchema = z.object({
 
 export type AftercareTemplate = z.infer<typeof AftercareTemplateSchema>;
 
+export const AftercareDeliveryStatusSchema = z.enum([
+  'queued',
+  'sent',
+  'delivered',
+  'opened',
+]);
+
+export type AftercareDeliveryStatus = z.infer<typeof AftercareDeliveryStatusSchema>;
+
 export const AftercareDeliveryRecordSchema = z.object({
   id: z.string().uuid(),
   templateId: z.string().uuid(),
@@ -33,7 +42,9 @@ export const AftercareDeliveryRecordSchema = z.object({
   deliveredByStaffId: z.string().uuid(),
   deliveryMethod: z.enum(['sms', 'email', 'portal']),
   recipientDestination: z.string().min(1),
+  status: AftercareDeliveryStatusSchema.default('delivered'),
   deliveredAt: z.string().datetime(),
+  openedAt: z.string().datetime().optional(),
   /** Frozen snapshot of instructions delivered at this specific timestamp */
   snapshotInstructions: z.array(AftercareStepSchema),
   directContactRoute: z.string(),
@@ -106,8 +117,25 @@ export function deliverAftercare(params: {
     deliveredByStaffId: params.deliveredByStaffId,
     deliveryMethod: params.deliveryMethod,
     recipientDestination: params.recipientDestination,
+    status: 'delivered',
     deliveredAt: new Date().toISOString(),
     snapshotInstructions: params.template.instructions,
     directContactRoute: params.template.emergencyContactRoute,
   });
+}
+
+/**
+ * Formats a plain-language summary of aftercare steps for client text or display.
+ */
+export function formatAftercareClientSummary(record: AftercareDeliveryRecord): string {
+  const steps = record.snapshotInstructions
+    .map(
+      (s) =>
+        `Step ${s.stepNumber} [${s.timingWindow}]: ${s.title} — ${s.instruction}${
+          s.doNotDoWarning ? ` (Note: ${s.doNotDoWarning})` : ''
+        }`
+    )
+    .join('\n\n');
+
+  return `Aftercare Protocol:\n\n${steps}\n\nQuestions? ${record.directContactRoute}`;
 }

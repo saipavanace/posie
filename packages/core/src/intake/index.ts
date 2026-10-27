@@ -43,13 +43,25 @@ export const IntakeFormTemplateSchema = z.object({
 
 export type IntakeFormTemplate = z.infer<typeof IntakeFormTemplateSchema>;
 
+export const IntakeSubmissionStatusSchema = z.enum([
+  'sent',
+  'opened',
+  'draft',
+  'completed',
+  'superseded',
+]);
+
+export type IntakeSubmissionStatus = z.infer<typeof IntakeSubmissionStatusSchema>;
+
 export const IntakeSubmissionSchema = z.object({
   id: z.string().uuid(),
   templateId: z.string().uuid(),
   clientId: z.string().uuid(),
   appointmentId: z.string().uuid().optional(),
-  status: z.enum(['draft', 'completed']),
+  status: IntakeSubmissionStatusSchema,
+  revisionCount: z.number().int().nonnegative().default(1),
   responses: z.record(z.any()),
+  firstOpenedAt: z.string().datetime().optional(),
   lastSavedAt: z.string().datetime(),
   completedAt: z.string().datetime().optional(),
 });
@@ -133,6 +145,7 @@ export function saveIntakeSubmission(params: {
   clientId: string;
   appointmentId?: string;
   responses: Record<string, any>;
+  existingSubmission?: IntakeSubmission;
   markCompleted?: boolean;
 }): IntakeSubmission {
   const validation = validateIntakeForm(params.template, params.responses);
@@ -146,14 +159,17 @@ export function saveIntakeSubmission(params: {
   }
 
   const now = new Date().toISOString();
+  const revision = (params.existingSubmission?.revisionCount || 0) + 1;
 
   return IntakeSubmissionSchema.parse({
-    id: params.id || '10000000-0000-0000-0000-000000000035',
+    id: params.id || params.existingSubmission?.id || '10000000-0000-0000-0000-000000000035',
     templateId: params.template.id,
     clientId: params.clientId,
-    appointmentId: params.appointmentId,
+    appointmentId: params.appointmentId || params.existingSubmission?.appointmentId,
     status: params.markCompleted ? 'completed' : 'draft',
+    revisionCount: revision,
     responses: params.responses,
+    firstOpenedAt: params.existingSubmission?.firstOpenedAt || now,
     lastSavedAt: now,
     completedAt: params.markCompleted ? now : undefined,
   });

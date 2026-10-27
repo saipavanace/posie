@@ -48,12 +48,24 @@ export const BrandedDocumentSchema = z.object({
   totalCents: z.number().int().nonnegative(),
   clauses: z.array(z.string()).default([]),
   templateVersion: z.number().int().positive().default(1),
-  status: z.enum(['draft', 'issued', 'superseded']).default('draft'),
+  status: z.enum(['draft', 'previewed', 'issued', 'superseded']).default('draft'),
   createdAt: z.string().datetime(),
   issuedAt: z.string().datetime().optional(),
 });
 
 export type BrandedDocument = z.infer<typeof BrandedDocumentSchema>;
+
+export interface DocxExportManifest {
+  documentTitle: string;
+  documentNumber: string;
+  authorStaffId: string;
+  sourceTemplateVersion: number;
+  sections: Array<{
+    heading: string;
+    type: 'metadata' | 'table' | 'text' | 'clauses';
+    payload: any;
+  }>;
+}
 
 /**
  * Creates a draft document from provided data and line items.
@@ -98,6 +110,16 @@ export function createDocumentDraft(params: {
     templateVersion: params.templateVersion || 1,
     status: 'draft',
     createdAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Marks a document as previewed prior to issuance.
+ */
+export function markDocumentPreviewed(draft: BrandedDocument): BrandedDocument {
+  return BrandedDocumentSchema.parse({
+    ...draft,
+    status: 'previewed',
   });
 }
 
@@ -224,4 +246,43 @@ export function renderPrintableHtml(doc: BrandedDocument): string {
 </body>
 </html>
   `.trim();
+}
+
+/**
+ * Generates structured export manifest for editable DOCX packaging.
+ */
+export function generateDocxExportManifest(doc: BrandedDocument): DocxExportManifest {
+  return {
+    documentTitle: doc.title,
+    documentNumber: doc.documentNumber || 'DRAFT',
+    authorStaffId: doc.authorStaffId,
+    sourceTemplateVersion: doc.templateVersion,
+    sections: [
+      {
+        heading: 'Header Information',
+        type: 'metadata',
+        payload: {
+          businessName: doc.business.name,
+          businessPhone: doc.business.contactNumber,
+          clientName: doc.client.name,
+          issuedAt: doc.issuedAt || doc.createdAt,
+        },
+      },
+      {
+        heading: 'Itemized Schedule',
+        type: 'table',
+        payload: {
+          items: doc.lineItems,
+          subtotalCents: doc.subtotalCents,
+          taxCents: doc.taxCents,
+          totalCents: doc.totalCents,
+        },
+      },
+      {
+        heading: 'Terms and Conditions',
+        type: 'clauses',
+        payload: doc.clauses,
+      },
+    ],
+  };
 }

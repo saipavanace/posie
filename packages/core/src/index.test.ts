@@ -10,9 +10,11 @@ import {
   createDocumentDraft,
   issueDocument,
   renderPrintableHtml,
+  generateDocxExportManifest,
   createAftercareTemplate,
   approveAftercareTemplate,
   deliverAftercare,
+  formatAftercareClientSummary,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -197,7 +199,7 @@ describe('Posie Core Logic - F035 (Conditional Intake Forms)', () => {
       })
     ).toThrow(/Missing required answers/);
 
-    // Draft autosave succeeds even if incomplete
+    // Draft autosave succeeds even if incomplete and tracks revision count
     const draft = saveIntakeSubmission({
       template: formTemplate,
       clientId: '66666666-6666-6666-6666-666666666666',
@@ -205,6 +207,16 @@ describe('Posie Core Logic - F035 (Conditional Intake Forms)', () => {
       markCompleted: false,
     });
     expect(draft.status).toBe('draft');
+    expect(draft.revisionCount).toBe(1);
+
+    const draftRev2 = saveIntakeSubmission({
+      template: formTemplate,
+      clientId: '66666666-6666-6666-6666-666666666666',
+      responses: { ...responsesAccutaneMissingDetails, note: 'Updated draft' },
+      existingSubmission: draft,
+      markCompleted: false,
+    });
+    expect(draftRev2.revisionCount).toBe(2);
   });
 });
 
@@ -263,6 +275,10 @@ describe('Posie Core Logic - F036 (Branded Document Generation)', () => {
     expect(html).toContain('Glass Glow HydraFacial');
     expect(html).toContain('$599.40');
     expect(html).toContain('Valid for 30 days');
+
+    const manifest = generateDocxExportManifest(issued);
+    expect(manifest.documentNumber).toContain('EST-');
+    expect(manifest.sections.length).toBe(3);
   });
 });
 
@@ -319,6 +335,11 @@ describe('Posie Core Logic - F037 (Approved Aftercare Delivery)', () => {
 
     expect(delivery.snapshotInstructions.length).toBe(2);
     expect(delivery.directContactRoute).toContain('Chloe');
+
+    const summary = formatAftercareClientSummary(delivery);
+    expect(summary).toContain('Aftercare Protocol:');
+    expect(summary).toContain('Broad Spectrum SPF 50');
+    expect(summary).toContain('Chloe at (555) 234-5678');
 
     // Subsequent modifications to original template do not change delivered snapshot
     approved.instructions.push({
