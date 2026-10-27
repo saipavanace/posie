@@ -60,3 +60,6 @@ export * from './complaints';
 export * from './support_escalation';
 export * from './billing_preview';
 export * from './communication_preferences';
+export * from './visit_checkins';
+export * from './media_consent';
+export * from './virtual_consultations';

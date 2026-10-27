@@ -362,3 +362,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F062 — Communication Preferences & Quiet Hours (Document DR05)
 * **What it is:** Granular messaging permissions system separating transactional appointment alerts, clinical aftercare instructions, and promotional marketing broadcasts, with client-defined quiet hours.
 * **Key Invariant (DR05):** Unsubscribing from promotional marketing **never disables essential appointment receipts or safety alerts**. Promotional text blasts respect local quiet hours (default 9:00 PM – 8:00 AM) and are deferred until morning, while all opt-in/opt-out actions append immutable timestamps to the client's consent audit trail.
+
+
+---
+
+## F063 — Visit Progress Check-ins
+* **What it is:** Optional post-service check-in system allowing clients to upload healing photos and share comfort observations between appointments.
+* **Key Invariant (WB T, Row 10):** Reports strictly include an explicit **non-diagnostic legal disclaimer** clarifying that client self-reports do not constitute medical diagnoses. Severe reaction symptoms automatically trigger approved urgent medical escalation instructions and alert treating practitioners with top priority.
+
+---
+
+## F064 — Consent-Aware Portfolio Publishing (Document D12)
+* **What it is:** Granular media rights management separating internal clinical charting from public website portfolios, social media, and lookbooks.
+* **Key Invariant (D12, DR05):** Treatment consent alone **strictly cannot be used as authorization for public marketing**. Media grants require separate explicit client sign-off detailing permitted channels and facial anonymity scopes. Revoking consent instantly unpublishes digital assets from all owned platforms.
+
+---
+
+## F065 — Virtual Consultation Connection
+* **What it is:** Video consultation suite connecting scheduled virtual skin/hair appointments with approved video providers (Daily.co, Google Meet, Zoom Healthcare).
+* **Key Invariant (WB A6, Row 6):** **Zero-friction access** via one-click guest browser links requiring no app installations or account creation. Call recording is **strictly disabled by default**, and rooms link directly to pre-call intake photos and post-consult treatment proposals.

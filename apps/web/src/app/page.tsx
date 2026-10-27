@@ -55,6 +55,9 @@ import {
   Headphones,
   CreditCard,
   BellOff,
+  Activity,
+  Camera,
+  Video,
 } from 'lucide-react';
 
 // Brand Information
@@ -119,6 +122,18 @@ export default function PosieStudioPage() {
   // F062 Communication Preferences State
   const [promoSmsOptIn, setPromoSmsOptIn] = useState(false);
   const [quietHoursSimulatedNight, setQuietHoursSimulatedNight] = useState(false);
+
+  // F063 Visit Progress Check-in State
+  const [checkinComfort, setCheckinComfort] = useState<'routine' | 'severe'>('routine');
+  const [checkinReviewed, setCheckinReviewed] = useState(false);
+
+  // F064 Consent-Aware Portfolio State (D12)
+  const [mediaGrantRevoked, setMediaGrantRevoked] = useState(false);
+  const [anonymitySelection, setAnonymitySelection] = useState<'eyes_obscured' | 'full_face'>('eyes_obscured');
+
+  // F065 Virtual Consultation State (WB A6)
+  const [consultRoomCreated, setConsultRoomCreated] = useState(false);
+  const [consultCompleted, setConsultCompleted] = useState(false);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -778,6 +793,191 @@ export default function PosieStudioPage() {
           </div>
         </Card>
       </section>
+
+      {/* F063: Visit Progress Check-ins Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Activity size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Between-Visit Healing Check-ins (F063)
+              </h3>
+            </div>
+            <Badge variant="sage">Observational Self-Report</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
+            Clients can upload healing photos and share comfort updates after peels, lashes, or microneedling. Concerns route straight to their treating specialist with automatic safety triage.
+          </p>
+
+          <div style={{ background: '#FAF8F5', padding: '12px 14px', borderRadius: '8px', fontSize: '0.8rem', color: '#735A42', marginBottom: '16px' }}>
+            <strong>Legal & Clinical Safeguard:</strong> Check-ins are self-reported client observations to guide care; they do not constitute formal medical diagnoses. Urgent symptoms trigger immediate clinical escalation advice.
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            <Button
+              size="sm"
+              variant={checkinComfort === 'routine' ? 'primary' : 'outline'}
+              onClick={() => { setCheckinComfort('routine'); setCheckinReviewed(false); }}
+            >
+              Day 3: Routine Mild Flaking (Normal)
+            </Button>
+            <Button
+              size="sm"
+              variant={checkinComfort === 'severe' ? 'primary' : 'outline'}
+              onClick={() => { setCheckinComfort('severe'); setCheckinReviewed(false); }}
+            >
+              Day 1: Severe Reaction (Safety Alert)
+            </Button>
+          </div>
+
+          {checkinComfort === 'routine' ? (
+            <div style={{ background: '#F8F9F8', padding: '14px', borderRadius: '8px', border: '1px solid #E8E5E0', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span>Report from <strong>Hailey Morgan</strong> (Jessner Peel, Day 3)</span>
+                <Badge variant="sage">Triage: Routine Healing</Badge>
+              </div>
+              <p style={{ fontStyle: 'italic', margin: '4px 0 10px', color: 'var(--color-text)' }}>
+                "Skin is flaking gently around mouth; applying prescribed barrier balm twice daily."
+              </p>
+              {checkinReviewed ? (
+                <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 12px', borderRadius: '6px', color: '#3A523A' }}>
+                  ✓ Specialist Elena Rostova reviewed: "Flaking is right on track for day 3. Keep skin hydrated and resist peeling flakes manually."
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setCheckinReviewed(true)}>
+                  Send Specialist Reassurance Note
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div style={{ background: '#FFF5F2', border: '1px solid #D9826C', padding: '14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontWeight: 600, color: '#A14E3B' }}>Urgent Clinical Escalation Triggered</span>
+                <Badge variant="rose">Triage: Urgent Medical</Badge>
+              </div>
+              <p style={{ color: 'var(--color-text)', margin: '0 0 10px' }}>
+                <strong>SAFETY INSTRUCTION:</strong> Client reported intense burning and localized blistering. Immediate guidance displayed: pause all active products, apply cold compress, and seek urgent medical evaluation if swelling spreads. Treating specialist alerted via urgent notification.
+              </p>
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F064: Consent-Aware Portfolio Publishing (Document D12) Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Camera size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Consent-Aware Portfolio Publishing (F064 / D12)
+              </h3>
+            </div>
+            <Badge variant="sage">Document D12 Standard</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Treatment consent never grants automatic public marketing rights. Clients hold granular control over whether before/after photos appear on Instagram, the studio website, or remain strictly in private clinical charts.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Authorized Channels</span>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: '4px' }}>
+                {mediaGrantRevoked ? 'None (Revoked)' : 'Website Portfolio & Instagram'}
+              </div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Facial Anonymity Scope</span>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, marginTop: '4px' }}>
+                {anonymitySelection === 'eyes_obscured' ? 'Eyes Obscured / Cropped' : 'Full Face Revealed'}
+              </div>
+            </div>
+            <div style={{ border: '1px solid var(--color-primary)', padding: '12px', borderRadius: '8px', background: '#F9FAF8' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)' }}>Live Digital Status</span>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: mediaGrantRevoked ? '#B36B5C' : 'var(--color-primary)', marginTop: '4px' }}>
+                {mediaGrantRevoked ? 'Removed from All Owned Platforms' : 'Actively Published (Consented)'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {!mediaGrantRevoked ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setMediaGrantRevoked(true)}
+              >
+                Simulate Client Revoking Public Marketing Consent
+              </Button>
+            ) : (
+              <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#3A523A' }}>
+                ✓ Marketing rights revoked. Photo unlinked from website & social feeds. Private clinical charting record preserved intact.
+              </div>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F065: Virtual Consultation Connection (WB A6) Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Video size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Virtual Video Consultation Room (F065 / WB A6)
+              </h3>
+            </div>
+            <Badge variant="sage">Zero-App Frictionless Join</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Clients connect to video consultations directly in their browser without downloading third-party software or creating passwords. Call recording is strictly off by default to protect client confidentiality.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem' }}>Bridal Skin Prep Virtual Consult</strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Specialist: Elena Rostova • Client: Sienna Miller</div>
+              </div>
+              <Badge variant="muted">Recording Strictly OFF</Badge>
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+              Linked Intake: <code>3 Reference Photos Attached</code> • Focus: Acne Scarring & Hydration
+            </div>
+          </div>
+
+          {!consultCompleted ? (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setConsultRoomCreated(true)}
+              >
+                Join One-Click Video Room (Browser Link)
+              </Button>
+              {consultRoomCreated && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConsultCompleted(true)}
+                >
+                  Complete Call & Generate Treatment Plan
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: '#3A523A' }}>
+              ✓ Consultation completed. Recommended plan: <em>"3-step gentle mandelic peel series"</em> linked directly to client proposal estimate.
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

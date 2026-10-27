@@ -81,6 +81,13 @@ import {
   initCommunicationPreferences,
   updateChannelPreference,
   evaluateMessageDispatch,
+  submitVisitProgressCheckin,
+  reviewVisitProgressCheckin,
+  createMediaUseGrant,
+  revokeMediaUsePermission,
+  checkMediaPublishingEligibility,
+  createVirtualConsultation,
+  completeVirtualConsultation,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -1949,5 +1956,161 @@ describe('Posie Core Logic - F062 (Communication Preferences & Quiet Hours - DR0
     expect(nightAppointmentAlert.isDeferredForQuietHours).toBe(false);
   });
 });
+
+describe('Posie Core Logic - F063 (Visit Progress Check-ins)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const appointmentId = '33333333-3333-3333-3333-333333333333';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('records client healing progress, enforces non-diagnostic notice, and routes advice', () => {
+    // 1. Normal progress check-in
+    const routineCheckin = submitVisitProgressCheckin({
+      businessId,
+      clientId,
+      clientName: 'Hailey Morgan',
+      appointmentId,
+      serviceName: 'Level 2 Jessner Peel',
+      practitionerStaffId: staffId,
+      practitionerName: 'Elena Rostova',
+      daysSinceService: 3,
+      comfortLevel: 'mild_expected_dryness_or_redness',
+      clientReportNotes: 'Light flaking around mouth and chin; feeling comfortable with hyaluronic barrier balm.',
+    });
+
+    expect(routineCheckin.status).toBe('submitted_pending_review');
+    expect(routineCheckin.triageLevel).toBe('routine_healing');
+    expect(routineCheckin.nonDiagnosticNotice).toContain('do not constitute formal medical diagnoses');
+
+    // Practitioner reviews and provides reassurance
+    const reviewed = reviewVisitProgressCheckin(routineCheckin, {
+      practitionerAdviceNotes: 'Flaking on day 3 is perfectly on track. Keep skin quenched with gentle lipid moisturizer; avoid picking.',
+    });
+    expect(reviewed.status).toBe('reviewed_reassured');
+    expect(reviewed.practitionerAdviceNotes).toContain('Flaking on day 3 is perfectly on track');
+
+    // 2. Severe reaction triggers urgent medical safety guidance
+    const severeCheckin = submitVisitProgressCheckin({
+      businessId,
+      clientId,
+      clientName: 'Hailey Morgan',
+      appointmentId,
+      serviceName: 'Level 2 Jessner Peel',
+      practitionerStaffId: staffId,
+      practitionerName: 'Elena Rostova',
+      daysSinceService: 1,
+      comfortLevel: 'severe_reaction',
+      clientReportNotes: 'Severe burning sensation and raised blistering near temples.',
+    });
+
+    expect(severeCheckin.triageLevel).toBe('urgent_medical_escalation');
+    expect(severeCheckin.status).toBe('clinically_escalated');
+    expect(severeCheckin.urgentMedicalDisclaimer).toContain('IMPORTANT SAFETY GUIDANCE');
+  });
+});
+
+describe('Posie Core Logic - F064 (Consent-Aware Portfolio Publishing - Document D12)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const assetId = '44444444-4444-4444-4444-444444444444';
+
+  it('enforces separate media permission, validates channel scopes, and unpublishes on revocation', () => {
+    // 1. Invariant: Rejects grant if treatment separation is not explicitly acknowledged
+    expect(() =>
+      createMediaUseGrant({
+        businessId,
+        clientId,
+        clientName: 'Claire Vance',
+        assetIds: [assetId],
+        permittedChannels: ['website_portfolio', 'social_media_instagram_tiktok'],
+        anonymityScope: 'close_up_feature_only',
+        signedByClientName: 'Claire Vance',
+        clientSignatureToken: 'sig_token_claire_9876',
+        explicitTreatmentSeparationAcknowledged: false, // Fails invariant
+      })
+    ).toThrow('treatment consent is separate from marketing rights');
+
+    // 2. Valid explicit grant for website and instagram
+    const grant = createMediaUseGrant({
+      businessId,
+      clientId,
+      clientName: 'Claire Vance',
+      assetIds: [assetId],
+      permittedChannels: ['website_portfolio', 'social_media_instagram_tiktok'],
+      anonymityScope: 'close_up_feature_only',
+      signedByClientName: 'Claire Vance',
+      clientSignatureToken: 'sig_token_claire_9876',
+      explicitTreatmentSeparationAcknowledged: true,
+    });
+
+    expect(grant.status).toBe('active_public_granted');
+    expect(grant.permittedChannels).toContain('website_portfolio');
+
+    // 3. Check publishing eligibility
+    const webCheck = checkMediaPublishingEligibility(grant, 'website_portfolio');
+    expect(webCheck.canPublish).toBe(true);
+
+    const printCheck = checkMediaPublishingEligibility(grant, 'printed_salon_lookbook');
+    expect(printCheck.canPublish).toBe(false);
+    expect(printCheck.reason).toContain('Publication blocked');
+
+    // 4. Revocation removes digital assets from owned platforms
+    const revoked = revokeMediaUsePermission(grant, {
+      revokedByClientName: 'Claire Vance',
+      reason: 'Requested privacy for new professional position',
+    });
+
+    expect(revoked.status).toBe('revoked_unpublish_requested');
+    expect(revoked.removedFromOwnedDigitalPlatforms).toBe(true);
+
+    // After revocation, publishing on web is blocked
+    const postRevocationCheck = checkMediaPublishingEligibility(revoked, 'website_portfolio');
+    expect(postRevocationCheck.canPublish).toBe(false);
+    expect(postRevocationCheck.reason).toContain('Client has formally revoked marketing consent');
+  });
+});
+
+describe('Posie Core Logic - F065 (Virtual Consultation Connection - WB A6)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('creates zero-friction video consultation with recording disabled by default and links outcomes', () => {
+    // 1. Create consultation room
+    const consultation = createVirtualConsultation({
+      businessId,
+      clientId,
+      clientName: 'Sienna Miller',
+      clientEmail: 'sienna@example.com',
+      specialistStaffId: staffId,
+      specialistName: 'Elena Rostova',
+      scheduledStartTime: '2026-11-10T16:00:00Z',
+      durationMinutes: 25,
+      provider: 'daily_co',
+      consultationGoalsNotes: 'Discussing bridal skin prep timeline and acne scar texture treatment options.',
+      hasUploadedConsultationPhotos: true,
+    });
+
+    // Zero friction guest link
+    expect(consultation.clientOneClickJoinUrl).toContain('guest=true');
+    expect(consultation.status).toBe('scheduled');
+
+    // Invariant: Call recording is disabled by default
+    expect(consultation.isRecordingActive).toBe(false);
+    expect(consultation.recordingConsentGranted).toBe(false);
+
+    // 2. Complete consultation and link recommended plan
+    const completed = completeVirtualConsultation(consultation, {
+      clinicalConsultationSummary: 'Recommended 3-step gentle mandelic peel series followed by LED barrier repair.',
+      recommendedServiceId: '55555555-5555-5555-5555-555555555555',
+      followUpProposalEstimateId: '66666666-6666-6666-6666-666666666666',
+    });
+
+    expect(completed.status).toBe('completed');
+    expect(completed.completedAt).toBeDefined();
+    expect(completed.recommendedServiceId).toBe('55555555-5555-5555-5555-555555555555');
+  });
+});
+
 
 
