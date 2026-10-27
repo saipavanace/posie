@@ -185,6 +185,17 @@ export default function PosieStudioPage() {
   const [gapServiceFitted, setGapServiceFitted] = useState(false);
   const [gapStationTheftAttempted, setGapStationTheftAttempted] = useState(false);
 
+  // F078 Multi-Practitioner State
+  const [multiApptDelayed, setMultiApptDelayed] = useState(false);
+
+  // F079 Group & Family Booking State
+  const [groupPrivacyTarget, setGroupPrivacyTarget] = useState<'none' | 'adult_friend' | 'minor_child'>('none');
+
+  // F080 Classes & Workshops State
+  const [workshopSeatsConfirmed, setWorkshopSeatsConfirmed] = useState<string[]>(['Emily W.']);
+  const [workshopWaitlist, setWorkshopWaitlist] = useState<string[]>([]);
+
+
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -1943,6 +1954,254 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F078: Multi-Practitioner Appointments Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Multi-Practitioner Appointments & Visit Itinerary (F078 / D02)
+              </h3>
+            </div>
+            <Badge variant="sage">Sequential Services • Ripple Impact</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Coordinate sequential treatments across certified practitioners with structured handoff notes. If an earlier segment runs late, Posie analyzes downstream schedule collisions before notifying staff.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                Chloe's Glow Afternoon Itinerary (Document D02)
+              </strong>
+              <Badge variant="sage">{multiApptDelayed ? 'Version 2 (Revised)' : 'Version 1 (Confirmed)'}</Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Segment 1 (Master Colorist)</span>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>Maya Lin — Balayage</div>
+                <div style={{ fontSize: '0.8rem', color: multiApptDelayed ? '#B36B5C' : 'var(--color-text)' }}>
+                  {multiApptDelayed ? '1:00 PM – 2:50 PM (20m Lift Delay)' : '1:00 PM – 2:30 PM (90 mins)'}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#6A7D6A', marginTop: '4px' }}>
+                  💬 Handoff: "Scalp slightly sensitive, avoid hot water rinse."
+                </div>
+              </div>
+
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Segment 2 (Keratin Lash Certified)</span>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>Sarah Jenkins — Keratin Lash Lift</div>
+                <div style={{ fontSize: '0.8rem', color: multiApptDelayed ? '#B36B5C' : 'var(--color-text)' }}>
+                  {multiApptDelayed ? 'Projected: 2:50 PM – 3:35 PM' : 'Scheduled: 2:30 PM – 3:15 PM (45 mins)'}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                  Sarah's next client arrives at 3:30 PM
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Test Delay Ripple Engine:</span>
+            <Button
+              size="sm"
+              variant={multiApptDelayed ? 'primary' : 'outline'}
+              onClick={() => setMultiApptDelayed(!multiApptDelayed)}
+            >
+              {multiApptDelayed ? 'Reset to On-Time Schedule' : 'Simulate 20m Delay on Maya\'s Foils'}
+            </Button>
+          </div>
+
+          {multiApptDelayed && (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              ⚠️ <strong>Downstream Cascade Warning:</strong> Extending Maya's service pushes Sarah's end time to 3:35 PM, colliding by 5 minutes with Sarah's next booked appointment at 3:30 PM. Studio coordinator alerted to adjust buffer before notifying client.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F079: Group and Family Booking Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <HeartPulse size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Group & Family Booking (F079 / Document D22)
+              </h3>
+            </div>
+            <Badge variant="sage">Bridal / Group Proposals • Privacy Firewall</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Book parties and bridal groups with combined or itemized checkout. Legal invariant: organizers and guardians do not automatically gain access to other adult guests' confidential medical and intake records.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                Lauren's Bridal Party (Day-Of Packet D22)
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                Subtotal: $455.00 • 30% Deposit Paid ($136.50) • Due: $318.50
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Organizer / Bride</span>
+                <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>Lauren Hayes</div>
+                <div style={{ fontSize: '0.78rem' }}>Bridal Updo ($220)</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Adult Guest / MOH</span>
+                <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>Brianna Smith</div>
+                <div style={{ fontSize: '0.78rem' }}>Hollywood Waves ($150)</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Minor Child (Daughter)</span>
+                <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>Lily Hayes</div>
+                <div style={{ fontSize: '0.78rem' }}>Youth Soft Curls ($85)</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Test Privacy Firewall:</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setGroupPrivacyTarget('adult_friend')}
+            >
+              Organizer Requests Adult Guest's (Brianna) Health Notes
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setGroupPrivacyTarget('minor_child')}
+            >
+              Organizer Requests Minor Child's (Lily) Allergy Notes
+            </Button>
+          </div>
+
+          {groupPrivacyTarget === 'adult_friend' && (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              🔒 <strong>Medical Privacy Firewall Triggered:</strong> Brianna is a legal adult. Her confidential pregnancy & allergy disclosures are firewalled from the bridal party packet and viewable only by her treating specialist.
+            </div>
+          )}
+
+          {groupPrivacyTarget === 'minor_child' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Authorized Legal Guardian Access:</strong> Lauren is Lily's verified guardian. Record revealed: "Severe peanut allergy; ensure styling products are 100% nut-oil free."
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F080: Classes and Workshops Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Classes & Workshops (F080)
+              </h3>
+            </div>
+            <Badge variant="sage">Seat Roster • Waitlist Auto-Promotion</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Host group masterclasses and wellness workshops. Invariant: The final seat is sold strictly once during concurrent checkout, and cancellations automatically promote waitlisted guests.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                  Gua Sha & Lymphatic Drainage Masterclass ($65.00)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Instructor: Maya Lin • Studio Room B • Nov 25 at 6:00 PM
+                </div>
+              </div>
+              <Badge variant={workshopSeatsConfirmed.length >= 2 ? 'rose' : 'sage'}>
+                {workshopSeatsConfirmed.length}/2 Seats Confirmed
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Confirmed Attendee Roster</span>
+                <ul style={{ margin: '4px 0 0', paddingLeft: '18px', fontSize: '0.82rem' }}>
+                  {workshopSeatsConfirmed.map((name, i) => (
+                    <li key={i}>{name}</li>
+                  ))}
+                  {workshopSeatsConfirmed.length === 0 && <li style={{ color: '#999' }}>No seats filled</li>}
+                </ul>
+              </div>
+
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Waitlist Queue</span>
+                <ul style={{ margin: '4px 0 0', paddingLeft: '18px', fontSize: '0.82rem' }}>
+                  {workshopWaitlist.map((name, i) => (
+                    <li key={i}>{name} (Priority #{i + 1})</li>
+                  ))}
+                  {workshopWaitlist.length === 0 && <li style={{ color: '#999' }}>Waitlist empty</li>}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {workshopSeatsConfirmed.length < 2 && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setWorkshopSeatsConfirmed([...workshopSeatsConfirmed, 'Hannah A.'])}
+              >
+                Book Final Seat (Hannah A.)
+              </Button>
+            )}
+
+            {workshopSeatsConfirmed.length >= 2 && workshopWaitlist.length === 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setWorkshopWaitlist(['Claire R.'])}
+              >
+                Simulate Concurrent Checkout (Claire R. to Waitlist)
+              </Button>
+            )}
+
+            {workshopSeatsConfirmed.includes('Emily W.') && workshopWaitlist.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setWorkshopSeatsConfirmed(workshopSeatsConfirmed.filter((n) => n !== 'Emily W.').concat('Claire R.'));
+                  setWorkshopWaitlist([]);
+                }}
+              >
+                Emily W. Cancels Seat (Auto-Promote Claire R.)
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setWorkshopSeatsConfirmed(['Emily W.']);
+                setWorkshopWaitlist([]);
+              }}
+            >
+              Reset Workshop Demo
+            </Button>
+          </div>
+        </Card>
+      </section>
+
 
 
 

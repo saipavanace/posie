@@ -456,4 +456,23 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Three-phase appointment scheduler modeling hands-on work, chemical processing gaps (e.g. 40-minute hair color development or numbing cream dwell), and finishing blowouts.
 * **Key Invariant (Basis: B; WB F15):** **Non-evicting processing gaps.** During a chemical processing gap, the practitioner's hands-on time is freed to accept a quick secondary service (e.g. express dry cut or consultation) in another chair, **without releasing the primary client's occupied station**. Secondary services are blocked from stealing the occupied chair or encroaching on the finish time.
 
+---
+
+## F078 — Multi-Practitioner Appointments & Visit Itinerary (Document D02)
+* **What it is:** Coordinated sequential appointment engine uniting multiple specialists (e.g. Master Colorist + Lash Specialist) into a single unified client visit.
+* **Key Invariant (Basis: B; multi-staff workflows):** **Ripple consequence analysis before alert dispatch.** Evaluates practitioner qualifications and credential requirements per segment. When an earlier segment experiences a processing delay, the system assesses downstream schedule collisions on subsequent practitioners and clients before alerting staff or revising Document D02 itineraries.
+
+---
+
+## F079 — Group & Family Booking (Document D22)
+* **What it is:** Multi-guest party and bridal proposal coordinator with shared deposit management, single or itemized split payments, and day-of event packets.
+* **Key Invariant (Document D22, Legal Basis: B):** **Medical intake firewall for adults.** Legal guardians can access their minor children's medical disclosures (e.g. nut or chemical allergies). However, adult party members' health questionnaires and pregnancy disclosures are strictly firewalled from event organizers and fellow guests, stripped automatically from shared day-of event packets.
+
+---
+
+## F080 — Classes & Workshops
+* **What it is:** Group session and masterclass capacity manager coordinating studio room availability, instructor assignments, attendance rosters, and waitlists.
+* **Key Invariant (Basis: B; WB F18):** **Single-sale final seat guarantee.** Atomic seat reservation guarantees the final class seat cannot be double-sold during concurrent checkout. When a confirmed attendee cancels, the system automatically promotes the earliest waitlisted guest to confirmed status with immediate notification.
+
+
 

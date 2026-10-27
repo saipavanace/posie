@@ -75,3 +75,7 @@ export * from './financial_ledger';
 export * from './booking_engine';
 export * from './resource_scheduling';
 export * from './service_intervals';
+export * from './multi_practitioner';
+export * from './group_booking';
+export * from './classes_workshops';
+

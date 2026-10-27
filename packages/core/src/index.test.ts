@@ -122,6 +122,16 @@ import {
   cancelResourceReservations,
   buildSplitIntervalSchedule,
   canFitSecondaryServiceInProcessingGap,
+  createMultiPractitionerAppointment,
+  addSegmentHandoffNotes,
+  recordSegmentDelayAndAssessImpact,
+  reviseVisitItinerary,
+  createGroupBookingProposal,
+  canAccessMemberConfidentialRecords,
+  generateDayOfEventPacket,
+  registerAttendeeForClass,
+  cancelAttendeeAndPromoteWaitlist,
+  checkInClassAttendee,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -2864,6 +2874,298 @@ describe('Posie Core Logic - F077 (Processing & Finishing Intervals)', () => {
     expect(tooLongService.reason).toContain('encroaches on the practitioner\'s finishing segment');
   });
 });
+
+describe('Posie Core Logic - F078 (Multi-Practitioner Appointments - Document D02)', () => {
+  const tenantId = 'tenant_posie_flatiron';
+
+  it('enforces skill checks, attaches handoff notes, and exposes delay consequences before downstream notification', () => {
+    // 1. Skill check failure: Practitioner without chemical certification cannot be booked for chemical peel
+    const invalidCertResult = createMultiPractitionerAppointment({
+      tenantId,
+      clientId: 'client_chloe_101',
+      clientName: 'Chloe Bennett',
+      clientPhone: '+1-212-555-1234',
+      locationAddress: '24 E 21st St, New York, NY',
+      segments: [
+        {
+          serviceId: 'srv_deep_peel',
+          serviceName: 'Medical Grade Chemical Peel',
+          practitionerId: 'prac_apprentice_jen',
+          practitionerName: 'Jen Apprentice',
+          practitionerCertifications: ['basic_esthetics'],
+          requiredCertification: 'advanced_chemical_peel_license',
+          startTime: '2026-11-22T13:00:00.000Z',
+          durationMinutes: 45,
+        },
+      ],
+    });
+
+    expect(invalidCertResult.success).toBe(false);
+    if (invalidCertResult.success) return;
+    expect(invalidCertResult.reason).toContain('does not possess required credential');
+
+    // 2. Coordinated valid appointment: Maya (Balayage) -> Sarah (Lash Lift)
+    const multiAppt = createMultiPractitionerAppointment({
+      tenantId,
+      clientId: 'client_chloe_101',
+      clientName: 'Chloe Bennett',
+      clientPhone: '+1-212-555-1234',
+      locationAddress: '24 E 21st St, New York, NY',
+      segments: [
+        {
+          serviceId: 'srv_balayage',
+          serviceName: 'Custom Sun-Kissed Balayage',
+          practitionerId: 'prac_maya_colorist',
+          practitionerName: 'Maya Lin',
+          practitionerCertifications: ['master_colorist'],
+          startTime: '2026-11-22T13:00:00.000Z',
+          durationMinutes: 90, // Ends at 14:30
+        },
+        {
+          serviceId: 'srv_lash_lift',
+          serviceName: 'Keratin Lash Infusion',
+          practitionerId: 'prac_sarah_lashes',
+          practitionerName: 'Sarah Jenkins',
+          practitionerCertifications: ['keratin_lash_certified'],
+          startTime: '2026-11-22T14:30:00.000Z',
+          durationMinutes: 45, // Ends at 15:15
+        },
+      ],
+    });
+
+    expect(multiAppt.success).toBe(true);
+    if (!multiAppt.success) return;
+    expect(multiAppt.segments.length).toBe(2);
+    expect(multiAppt.itinerary.depositStatus).toBe('deposit_paid');
+
+    // 3. Attach handoff notes from Maya to Sarah
+    const segmentsWithNotes = addSegmentHandoffNotes(
+      multiAppt.segments,
+      multiAppt.segments[0].segmentId,
+      'Client scalp was slightly warm from lightener processing; avoid high steam on face.'
+    );
+    expect(segmentsWithNotes[0].handoffNotesToNext).toContain('avoid high steam');
+
+    // 4. INVARIANT: Delayed segment evaluates downstream consequences before staff notification
+    const delayCheck = recordSegmentDelayAndAssessImpact({
+      segments: multiAppt.segments,
+      delayedSegmentId: multiAppt.segments[0].segmentId,
+      delayMinutes: 20, // Maya runs 20m late (finishing at 14:50 instead of 14:30)
+      practitionerNextBookings: [
+        {
+          practitionerId: 'prac_sarah_lashes',
+          nextAppointmentStart: '2026-11-22T15:30:00.000Z', // Sarah's next appointment
+        },
+      ],
+    });
+
+    // Sarah's service is pushed to 14:50 - 15:35, which collides with her 15:30 client!
+    expect(delayCheck.impactAssessment.delayedSegmentId).toBe(multiAppt.segments[0].segmentId);
+    expect(delayCheck.impactAssessment.impactedDownstreamSegments.length).toBe(1);
+    const downstreamSarah = delayCheck.impactAssessment.impactedDownstreamSegments[0];
+    expect(downstreamSarah.hasDownstreamScheduleConflict).toBe(true);
+    expect(downstreamSarah.conflictDetails).toContain('collides with next appointment starting at 2026-11-22T15:30:00.000Z');
+
+    // 5. Revise Document D02 Visit Itinerary
+    const revisedItinerary = reviseVisitItinerary(
+      multiAppt.itinerary,
+      delayCheck.updatedSegments,
+      'Foils processing extended by 20m for optimal lift'
+    );
+    expect(revisedItinerary.version).toBe(2);
+    expect(revisedItinerary.revisionReason).toContain('optimal lift');
+  });
+});
+
+describe('Posie Core Logic - F079 (Group & Family Booking - Document D22)', () => {
+  const tenantId = 'tenant_posie_chelsea';
+
+  it('organizes party proposals and strictly firewalls adult confidential medical intake from organizers/guardians', () => {
+    // 1. Create a party booking proposal with an organizer, an adult friend, and a minor daughter
+    const proposal = createGroupBookingProposal({
+      tenantId,
+      eventTitle: "Lauren's Wedding Morning Glam",
+      organizer: {
+        fullName: 'Lauren Hayes (Bride & Organizer)',
+        email: 'lauren@weddingglow.com',
+        phone: '+1-917-555-8811',
+      },
+      eventDate: '2026-12-05',
+      venueType: 'in_salon',
+      members: [
+        {
+          fullName: 'Lauren Hayes',
+          ageCategory: 'adult',
+          assignedServiceId: 'srv_bridal_hair',
+          assignedServiceName: 'Bridal Updo & Veil Placement',
+          servicePriceCents: 22000,
+          practitionerId: 'prac_maya',
+          practitionerName: 'Maya Lin',
+          startTime: '2026-12-05T09:00:00.000Z',
+          endTime: '2026-12-05T10:30:00.000Z',
+          confidentialIntakeNotes: 'History of contact dermatitis from metallic hair pins',
+        },
+        {
+          fullName: 'Brianna Smith (Maid of Honor)',
+          ageCategory: 'adult',
+          assignedServiceId: 'srv_glam_waves',
+          assignedServiceName: 'Hollywood Waves',
+          servicePriceCents: 15000,
+          practitionerId: 'prac_chloe',
+          practitionerName: 'Chloe Bennett',
+          startTime: '2026-12-05T09:30:00.000Z',
+          endTime: '2026-12-05T10:30:00.000Z',
+          confidentialIntakeNotes: 'Pregnant (1st trimester), strictly avoid lavender aromatics',
+        },
+        {
+          fullName: 'Lily Hayes (Junior Bridesmaid)',
+          ageCategory: 'minor',
+          guardianMemberId: 'mbr_org_lauren', // Lauren is her mother/guardian
+          assignedServiceId: 'srv_soft_curls',
+          assignedServiceName: 'Youth Soft Curls & Shimmer',
+          servicePriceCents: 8500,
+          practitionerId: 'prac_maya',
+          practitionerName: 'Maya Lin',
+          startTime: '2026-12-05T10:30:00.000Z',
+          endTime: '2026-12-05T11:15:00.000Z',
+          confidentialIntakeNotes: 'Peanut allergy (ensure styling products are nut-oil free)',
+        },
+      ],
+    });
+
+    expect(proposal.members.length).toBe(3);
+    expect(proposal.totalEstimatedCents).toBe(45500); // $455.00
+    expect(proposal.depositRequiredCents).toBe(13650); // 30% = $136.50
+
+    const organizerMember = proposal.members[0];
+    const adultFriendMember = proposal.members[1];
+    const minorChildMember = proposal.members[2];
+
+    // INVARIANT TEST 1: Organizer CANNOT access fellow adult friend's private medical/pregnancy notes!
+    const adultPrivacyCheck = canAccessMemberConfidentialRecords({
+      requesterMemberId: organizerMember.memberId,
+      targetMember: adultFriendMember,
+    });
+    expect(adultPrivacyCheck.authorized).toBe(false);
+    expect(adultPrivacyCheck.reason).toContain('Privacy Firewall: Adult party member intake and medical notes cannot be accessed');
+
+    // INVARIANT TEST 2: Organizer/Guardian CAN access their own minor child's allergy disclosures
+    // Set minor's guardian ID to organizer's actual ID
+    minorChildMember.guardianMemberId = organizerMember.memberId;
+    const minorGuardianCheck = canAccessMemberConfidentialRecords({
+      requesterMemberId: organizerMember.memberId,
+      targetMember: minorChildMember,
+    });
+    expect(minorGuardianCheck.authorized).toBe(true);
+    expect(minorGuardianCheck.reason).toContain('Authorized guardian access');
+
+    // 2. Generate Day-of Event Packet (Document D22)
+    const dayOfPacket = generateDayOfEventPacket(proposal);
+    expect(dayOfPacket.scheduleItems.length).toBe(3);
+    expect(dayOfPacket.privacyNotice).toContain('Confidential Medical Firewall');
+
+    // Verify day-of packet does NOT leak confidential health intake into shared itinerary
+    const packetJson = JSON.stringify(dayOfPacket);
+    expect(packetJson).not.toContain('Pregnant');
+    expect(packetJson).not.toContain('dermatitis');
+  });
+});
+
+describe('Posie Core Logic - F080 (Classes & Workshops)', () => {
+  const tenantId = 'tenant_posie_williamsburg';
+
+  const masterclassSession = {
+    sessionId: 'cls_master_glow_01',
+    tenantId,
+    title: 'Gua Sha & Lymphatic Drainage Masterclass',
+    instructorId: 'prac_maya_instructor',
+    instructorName: 'Maya Lin',
+    roomId: 'room_workshop_studio',
+    roomName: 'Movement & Workshop Studio',
+    startTime: '2026-11-25T18:00:00.000Z',
+    endTime: '2026-11-25T19:30:00.000Z',
+    maxCapacity: 2, // 2 seats max for test
+    waitlistCapacity: 2,
+    priceCents: 6500,
+    status: 'scheduled' as const,
+    roster: [],
+    createdAt: '2026-11-01T12:00:00.000Z',
+  };
+
+  it('manages atomic capacity, routes to waitlist on full capacity, and auto-promotes on cancellation', () => {
+    // 1. First attendee books seat 1/2
+    const reg1 = registerAttendeeForClass({
+      session: masterclassSession,
+      attendeeId: 'user_emily_1',
+      attendeeName: 'Emily Watson',
+      attendeeEmail: 'emily@example.com',
+      ticketType: 'direct_purchase',
+    });
+    expect(reg1.success).toBe(true);
+    if (!reg1.success) return;
+    expect(reg1.status).toBe('confirmed');
+
+    // 2. Second attendee books seat 2/2 (Final seat sold once!)
+    const reg2 = registerAttendeeForClass({
+      session: reg1.updatedSession,
+      attendeeId: 'user_hannah_2',
+      attendeeName: 'Hannah Abbott',
+      attendeeEmail: 'hannah@example.com',
+      ticketType: 'direct_purchase',
+    });
+    expect(reg2.success).toBe(true);
+    if (!reg2.success) return;
+    expect(reg2.status).toBe('confirmed');
+
+    // 3. Third attendee attempts booking on sold out class without waitlist -> REJECTED
+    const reg3Blocked = registerAttendeeForClass({
+      session: reg2.updatedSession,
+      attendeeId: 'user_claire_3',
+      attendeeName: 'Claire Redfield',
+      attendeeEmail: 'claire@example.com',
+      ticketType: 'direct_purchase',
+      joinWaitlistIfFull: false,
+    });
+    expect(reg3Blocked.success).toBe(false);
+    if (reg3Blocked.success) return;
+    expect(reg3Blocked.reason).toContain('completely sold out');
+
+    // 4. Third attendee joins waitlist
+    const reg3Waitlist = registerAttendeeForClass({
+      session: reg2.updatedSession,
+      attendeeId: 'user_claire_3',
+      attendeeName: 'Claire Redfield',
+      attendeeEmail: 'claire@example.com',
+      ticketType: 'direct_purchase',
+      joinWaitlistIfFull: true,
+    });
+    expect(reg3Waitlist.success).toBe(true);
+    if (!reg3Waitlist.success) return;
+    expect(reg3Waitlist.status).toBe('waitlisted');
+
+    // 5. First attendee cancels -> Claire Redfield is automatically promoted from waitlist to confirmed!
+    const cancelResult = cancelAttendeeAndPromoteWaitlist({
+      session: reg3Waitlist.updatedSession,
+      attendeeId: 'user_emily_1',
+    });
+
+    expect(cancelResult.cancelledAttendee.status).toBe('cancelled');
+    expect(cancelResult.promotedAttendee).toBeDefined();
+    expect(cancelResult.promotedAttendee?.attendeeId).toBe('user_claire_3');
+    expect(cancelResult.promotedAttendee?.status).toBe('confirmed');
+
+    // 6. Check-in promoted attendee at session time
+    const checkedInSession = checkInClassAttendee({
+      session: cancelResult.updatedSession,
+      attendeeId: 'user_claire_3',
+    });
+
+    const attendeeRecord = checkedInSession.roster.find((a) => a.attendeeId === 'user_claire_3')!;
+    expect(attendeeRecord.status).toBe('attended');
+    expect(attendeeRecord.checkedInAt).toBeDefined();
+  });
+});
+
 
 
 
