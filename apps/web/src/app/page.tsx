@@ -223,6 +223,16 @@ export default function PosieStudioPage() {
   const [disputePacketAssembled, setDisputePacketAssembled] = useState(false);
   const [disputeUrgencyMode, setDisputeUrgencyMode] = useState<'standard' | 'urgent'>('standard');
 
+  // F090 Payout Tracker State
+  const [payoutConfirmedAch, setPayoutConfirmedAch] = useState(false);
+
+  // F091 Gift Card Liability State
+  const [giftCardRedeemedAmount, setGiftCardRedeemedAmount] = useState(0);
+
+  // F092 Package Series State
+  const [packageRefundState, setPackageRefundState] = useState<'active_2_used' | 'partially_refunded'>('active_2_used');
+
+
 
 
 
@@ -2939,6 +2949,216 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F090: Payout and Hold Tracker Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Wallet size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Payout & Risk Hold Tracker (F090)
+              </h3>
+            </div>
+            <Badge variant="sage">Available vs. Held Funds • ACH Settlement Verification</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Transparent financial transparency explaining pending, cleared, and reserved funds. Invariant: Predicted payout arrival dates are strictly distinguished from bank-confirmed settlements.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ background: '#FAFAFA', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Available for Payout</span>
+              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-primary)' }}>$1,250.00</div>
+              <span style={{ fontSize: '0.72rem', color: '#6A7D6A' }}>Cleared & ready to transfer</span>
+            </div>
+            <div style={{ background: '#FAFAFA', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Pending Batch (1-Day)</span>
+              <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>$450.00</div>
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Card batch processing</span>
+            </div>
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '12px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '0.74rem', color: '#B36B5C' }}>Reserved Risk Hold</span>
+              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#B36B5C' }}>$500.00</div>
+              <span style={{ fontSize: '0.72rem', color: '#B36B5C' }}>Owner ID Verification required</span>
+            </div>
+          </div>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', background: '#FFF', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong>Batch #PO-8819 ($1,250.00 to Chase Bank ...9012)</strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  {payoutConfirmedAch ? 'Confirmed Settled • ACH Trace: ACH-20261122-889912' : 'Status: Predicted in Transit (Est. Arrival: Nov 22)'}
+                </div>
+              </div>
+              <Badge variant={payoutConfirmedAch ? 'sage' : 'muted'}>
+                {payoutConfirmedAch ? 'Confirmed Bank Settlement' : 'Predicted in Transit'}
+              </Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={payoutConfirmedAch ? 'outline' : 'primary'}
+              onClick={() => setPayoutConfirmedAch(!payoutConfirmedAch)}
+            >
+              {payoutConfirmedAch ? 'Revert to In-Transit State' : 'Confirm Bank ACH Settlement (#ACH-20261122-889912)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F091: Gift Card Liability Ledger Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Gift size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Gift Card Liability Ledger (F091 / Document D17)
+              </h3>
+            </div>
+            <Badge variant="sage">GAAP Deferred Liability • Live Balance Lookup</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Sell and redeem stored value with strict GAAP accounting. Invariant: Selling a gift card records an unearned liability, never counting face value as earned service revenue until actually redeemed!
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                  Certificate: GIFT-****-4242 (Purchased by Gwyneth Paltrow)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Recipient: Dakota Johnson • Valid 5 Years
+                </div>
+              </div>
+              <Badge variant="sage">
+                ${(150 - giftCardRedeemedAmount).toFixed(2)} Liability Remaining
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Account 2100 (Unearned Liability)</span>
+                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>${(150 - giftCardRedeemedAmount).toFixed(2)}</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Account 4000 (Earned Service Revenue)</span>
+                <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-primary)' }}>${giftCardRedeemedAmount.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {giftCardRedeemedAmount === 0 ? (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setGiftCardRedeemedAmount(60)}
+              >
+                Dakota Redeems $60.00 for Express Facial
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setGiftCardRedeemedAmount(0)}
+              >
+                Reset Gift Card Balance ($150.00)
+              </Button>
+            )}
+          </div>
+
+          {giftCardRedeemedAmount > 0 && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Redemption Movement Recorded:</strong> $60.00 deducted from Deferred Liability and recognized as Earned Revenue on Ticket #TKT-DAKOTA-1. Masked card balance updated to $90.00.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F092: Package & Series Entitlements Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Package size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Package & Series Entitlements (F092 / D13, D16)
+              </h3>
+            </div>
+            <Badge variant="sage">Session Counter • Partial Refund Revocation</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Manage multi-session treatment packages. Invariant: A refund cannot leave consumed sessions available again; refunding unconsumed sessions revokes remaining units and locks consumed visits.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                  Zendaya — HydraFacial 5-Series Radiance Pass ($500.00 Total)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Unit Value: $100.00 per session • Purchased Nov 1
+                </div>
+              </div>
+              <Badge variant={packageRefundState === 'partially_refunded' ? 'rose' : 'sage'}>
+                {packageRefundState === 'partially_refunded' ? 'Partially Refunded & Closed' : 'Active Pass (3 Sessions Remaining)'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', textAlign: 'center', fontSize: '0.78rem', marginTop: '10px' }}>
+              <div style={{ background: '#E8ECE6', border: '1px solid #A2B59F', padding: '8px', borderRadius: '4px' }}>
+                Session 1<br /><strong>Used (Nov 5)</strong>
+              </div>
+              <div style={{ background: '#E8ECE6', border: '1px solid #A2B59F', padding: '8px', borderRadius: '4px' }}>
+                Session 2<br /><strong>Used (Nov 12)</strong>
+              </div>
+              <div style={{ background: packageRefundState === 'partially_refunded' ? '#FFF7F5' : '#FFF', border: packageRefundState === 'partially_refunded' ? '1px solid #C67D6E' : '1px solid #E8E5E0', padding: '8px', borderRadius: '4px' }}>
+                Session 3<br /><strong>{packageRefundState === 'partially_refunded' ? 'Refunded' : 'Available'}</strong>
+              </div>
+              <div style={{ background: packageRefundState === 'partially_refunded' ? '#FFF7F5' : '#FFF', border: packageRefundState === 'partially_refunded' ? '1px solid #C67D6E' : '1px solid #E8E5E0', padding: '8px', borderRadius: '4px' }}>
+                Session 4<br /><strong>{packageRefundState === 'partially_refunded' ? 'Refunded' : 'Available'}</strong>
+              </div>
+              <div style={{ background: packageRefundState === 'partially_refunded' ? '#FFF7F5' : '#FFF', border: packageRefundState === 'partially_refunded' ? '1px solid #C67D6E' : '1px solid #E8E5E0', padding: '8px', borderRadius: '4px' }}>
+                Session 5<br /><strong>{packageRefundState === 'partially_refunded' ? 'Refunded' : 'Available'}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {packageRefundState === 'active_2_used' ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPackageRefundState('partially_refunded')}
+              >
+                Client Relocating: Refund 3 Remaining Sessions ($300.00)
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPackageRefundState('active_2_used')}
+              >
+                Reset Package Series Demo
+              </Button>
+            )}
+          </div>
+
+          {packageRefundState === 'partially_refunded' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Partial Package Refund Reconciled:</strong> $300.00 refunded for the 3 unused sessions. Invariant enforced: Remaining units revoked to 0, pass marked closed, and the 2 previously consumed sessions remain permanently recognized with zero negative balance.
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

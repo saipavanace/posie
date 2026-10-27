@@ -528,6 +528,25 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Automated dispute defense engine assembling signed intake forms, cancellation policies, SOAP charts, and terminal receipts into an audit-ready chargeback defense bundle.
 * **Key Invariant (Basis: I; WB F34, Documents D05/D15/D18):** **Cryptographic truth-in-defense.** Assembles 5 critical verification pillars (signed D05 policy, signed treatment consent hash, practitioner SOAP notes, terminal receipt, and two-way SMS logs) with deadline tracking. Truth-in-defense notice clarifies that evidence submission strictly follows card network rules without false promises of guaranteed bank rulings.
 
+---
+
+## F090 — Payout and Hold Tracker
+* **What it is:** Multi-balance deposit tracker providing total visibility into available cleared funds, pending batches, and reserved risk holds.
+* **Key Invariant (Basis: I; WB F36 C8):** **Confirmed settlement verification.** Predicted payout arrival dates are strictly distinguished from confirmed settlements. Payouts require verified bank ACH trace numbers before being logged as settled, and owner verification requirements (e.g. ID verification holds) surface with direct action links.
+
+---
+
+## F091 — Gift Card Liability Ledger (Document D17)
+* **What it is:** Stored-value certificate and redemption engine with GAAP-compliant deferred revenue liability accounting.
+* **Key Invariant (Basis: B; WB F38, Document D17):** **Unearned liability separation.** Selling a gift card logs deferred liability under Account 2100 with zero recognized service revenue. Earned revenue is recognized solely when value is partially or fully redeemed for services or retail products. Certificates feature secure masked codes (`GIFT-****-4242`) and real-time balance tracking.
+
+---
+
+## F092 — Package & Series Entitlements (Documents D13, D16)
+* **What it is:** Multi-session prepaid series tracker (e.g. 5x HydraFacial package) managing session consumption, rollover dates, and partial cancellations.
+* **Key Invariant (Basis: B; WB F39, Documents D13/D16):** **Partial refund revocation integrity.** Refunding an active package series refunds only the unconsumed sessions while permanently revoking remaining entitlement units to 0. Already consumed sessions remain permanently locked in the historical ledger, completely preventing negative session balances or reused visits.
+
+
 
 
 

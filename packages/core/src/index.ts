@@ -87,4 +87,7 @@ export * from './terminal_payments';
 export * from './refunds_exchanges';
 export * from './noshow_collection';
 export * from './dispute_workspace';
+export * from './payout_tracker';
+export * from './gift_card_ledger';
+export * from './package_series';
 

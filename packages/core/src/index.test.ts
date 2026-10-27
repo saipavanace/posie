@@ -157,6 +157,13 @@ import {
   settleNoShowRecoveryLink,
   compileDisputeDefensePacket,
   checkDisputeDeadlineUrgency,
+  computeStudioBalanceState,
+  transitionPayoutState,
+  issueGiftCardLiability,
+  redeemGiftCardValue,
+  issuePackageSeriesEntitlement,
+  consumePackageSession,
+  refundRemainingPackageSessions,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -3904,6 +3911,184 @@ describe('Posie Core Logic - F089 (Dispute Evidence Workspace)', () => {
     expect(urgentDeadline.humanNotice).toContain('URGENT');
   });
 });
+
+describe('Posie Core Logic - F090 (Payout and Hold Tracker)', () => {
+  const tenantId = 'tenant_posie_tribeca';
+
+  it('distinguishes available from held funds and strictly verifies ACH settlement before confirmation', () => {
+    // 1. Studio balance calculation with a $500 risk hold
+    const balance = computeStudioBalanceState({
+      tenantId,
+      availableCents: 125000,   // $1,250.00 available
+      pendingBatchCents: 45000,  // $450.00 pending 1-day batch
+      reservedHoldCents: 50000,  // $500.00 held for verification
+      activeRequirements: [
+        {
+          requirementId: 'req_id_verify_1',
+          title: 'Owner Identity Verification',
+          description: 'Upload valid state driver license or passport.',
+          status: 'action_required',
+          actionLink: 'posie.com/verify/owner',
+        },
+      ],
+      recentPayouts: [],
+    });
+
+    expect(balance.availableCents).toBe(125000);
+    expect(balance.totalUndepositedCents).toBe(220000); // $2,200.00
+    expect(balance.explanationNotice).toContain('rolling risk reserve or pending processor verification');
+
+    // 2. Initial predicted payout
+    const payoutBatch = {
+      payoutId: 'po_batch_8819',
+      tenantId,
+      payoutAmountCents: 125000,
+      status: 'predicted_in_transit' as const,
+      predictedArrivalDate: '2026-11-22',
+      destinationBankLast4: '9012',
+      initiatedAt: '2026-11-20T10:00:00.000Z',
+    };
+
+    // 3. Invariant: Cannot confirm settlement without valid ACH trace number
+    expect(() => {
+      transitionPayoutState({
+        payout: payoutBatch,
+        targetStatus: 'confirmed_bank_settlement',
+        achTraceNumber: '', // Missing ACH trace!
+      });
+    }).toThrow('A valid bank ACH trace number is required');
+
+    // 4. Confirmed bank settlement with valid ACH trace number
+    const confirmedPayout = transitionPayoutState({
+      payout: payoutBatch,
+      targetStatus: 'confirmed_bank_settlement',
+      achTraceNumber: 'ACH-20261122-889912',
+      currentTime: '2026-11-22T08:30:00.000Z',
+    });
+
+    expect(confirmedPayout.status).toBe('confirmed_bank_settlement');
+    expect(confirmedPayout.achTraceNumber).toBe('ACH-20261122-889912');
+    expect(confirmedPayout.confirmedSettledTimestamp).toBeDefined();
+  });
+});
+
+describe('Posie Core Logic - F091 (Gift Card Liability Ledger - Document D17)', () => {
+  const tenantId = 'tenant_posie_soho';
+
+  it('records deferred liability upon sale (zero earned revenue) and recognizes revenue only on redemption', () => {
+    // 1. Sell $150 gift card
+    const saleResult = issueGiftCardLiability({
+      tenantId,
+      purchasedValueCents: 15000, // $150.00
+      purchaserName: 'Gwyneth Paltrow',
+      purchaserEmail: 'gwyneth@goop.com',
+      recipientName: 'Dakota Johnson',
+      recipientEmail: 'dakota@example.com',
+      personalMessage: 'Enjoy a relaxing glow afternoon!',
+      validityYears: 5,
+      currentTime: '2026-11-01T12:00:00.000Z',
+    });
+
+    // INVARIANT 1: Selling gift card = $0 earned service revenue! (Account 2100 Liability)
+    expect(saleResult.card.remainingLiabilityBalanceCents).toBe(15000);
+    expect(saleResult.card.recognizedEarnedRevenueCents).toBe(0);
+    expect(saleResult.accountingClassification).toContain('Unearned Gift Card Liability');
+    expect(saleResult.accountingClassification).toContain('$0.00 recognized as earned service revenue');
+    expect(saleResult.card.maskedCode).toContain('GIFT-****-');
+
+    // 2. Partial redemption: Dakota redeems $60 towards an express treatment
+    const redemption1 = redeemGiftCardValue({
+      card: saleResult.card,
+      ticketId: 'tkt_dakota_1',
+      amountToRedeemCents: 6000, // $60.00
+      currentTime: '2026-11-15T14:00:00.000Z',
+    });
+
+    expect(redemption1.updatedCard.remainingLiabilityBalanceCents).toBe(9000); // $90.00 remaining
+    expect(redemption1.updatedCard.recognizedEarnedRevenueCents).toBe(6000);   // $60.00 earned
+    expect(redemption1.updatedCard.status).toBe('active');
+    expect(redemption1.movement.recognizedEarnedRevenueCents).toBe(6000);
+
+    // 3. Prevent over-redemption ($100 > $90 remaining)
+    expect(() => {
+      redeemGiftCardValue({
+        card: redemption1.updatedCard,
+        ticketId: 'tkt_dakota_2',
+        amountToRedeemCents: 10000,
+      });
+    }).toThrow('exceeds remaining card balance');
+  });
+});
+
+describe('Posie Core Logic - F092 (Package & Series Entitlements - Documents D13, D16)', () => {
+  const tenantId = 'tenant_posie_flatiron';
+
+  it('tracks session consumption and ensures partial refunds permanently revoke unconsumed units', () => {
+    // 1. Client purchases 5-session HydraFacial package for $500 ($100/session)
+    const series = issuePackageSeriesEntitlement({
+      tenantId,
+      clientId: 'cli_zendaya',
+      clientName: 'Zendaya Coleman',
+      seriesName: 'HydraFacial 5-Series Radiance Pass',
+      eligibleServiceId: 'srv_hydra_facial',
+      totalUnits: 5,
+      totalPricePaidCents: 50000, // $500.00
+      validityMonths: 12,
+      currentTime: '2026-11-01T10:00:00.000Z',
+    });
+
+    expect(series.unitsRemaining).toBe(5);
+    expect(series.unitsConsumed).toBe(0);
+    expect(series.unitPriceCents).toBe(10000); // $100.00
+
+    // 2. Consume 1st session
+    const consumed1 = consumePackageSession({
+      packageSeries: series,
+      appointmentId: 'apt_zen_1',
+      serviceName: 'HydraFacial Radiance',
+      practitionerName: 'Maya Lin',
+      currentTime: '2026-11-05T14:00:00.000Z',
+    });
+    expect(consumed1.unitsConsumed).toBe(1);
+    expect(consumed1.unitsRemaining).toBe(4);
+
+    // 3. Consume 2nd session
+    const consumed2 = consumePackageSession({
+      packageSeries: consumed1,
+      appointmentId: 'apt_zen_2',
+      serviceName: 'HydraFacial Radiance',
+      practitionerName: 'Chloe Bennett',
+      currentTime: '2026-11-12T14:00:00.000Z',
+    });
+    expect(consumed2.unitsConsumed).toBe(2);
+    expect(consumed2.unitsRemaining).toBe(3);
+
+    // 4. INVARIANT TEST: Client requests refund for remaining 3 sessions
+    // Refund must refund exactly 3 x $100 = $300, AND set unitsRemaining to 0 so they cannot be reused!
+    const refundResult = refundRemainingPackageSessions({
+      packageSeries: consumed2,
+      reason: 'Client relocated across country',
+      currentTime: '2026-11-18T10:00:00.000Z',
+    });
+
+    expect(refundResult.refundedUnitsCount).toBe(3);
+    expect(refundResult.refundAmountCents).toBe(30000); // $300.00
+    expect(refundResult.updatedPackageSeries.unitsRemaining).toBe(0); // Revoked!
+    expect(refundResult.updatedPackageSeries.status).toBe('partially_refunded_closed');
+    expect(refundResult.auditNotice).toContain('The 2 previously consumed sessions remain permanently recognized');
+
+    // Attempting to consume from refunded series throws error
+    expect(() => {
+      consumePackageSession({
+        packageSeries: refundResult.updatedPackageSeries,
+        appointmentId: 'apt_zen_3',
+        serviceName: 'HydraFacial Radiance',
+        practitionerName: 'Maya Lin',
+      });
+    }).toThrow('Package series is not active');
+  });
+});
+
 
 
 
