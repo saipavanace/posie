@@ -66,6 +66,7 @@ import {
   Phone,
   Shield,
   Scale,
+  ShoppingBag,
 } from 'lucide-react';
 
 // Brand Information
@@ -244,6 +245,22 @@ export default function PosieStudioPage() {
   const [loyaltyPoints, setLoyaltyPoints] = useState<number>(450);
   const [loyaltyTier, setLoyaltyTier] = useState<'Silver Radiance' | 'Gold VIP'>('Silver Radiance');
   const [loyaltyClawbackTriggered, setLoyaltyClawbackTriggered] = useState<boolean>(false);
+
+  // F096 Online Storefront State
+  const [storeStockCleanser, setStoreStockCleanser] = useState<number>(10);
+  const [storeReservedCleanser, setStoreReservedCleanser] = useState<number>(0);
+  const [storeOrderStatus, setStoreOrderStatus] = useState<'browsing' | 'reserved' | 'paid_processing' | 'ready_for_pickup' | 'cancelled_restocked'>('browsing');
+  const [storeFulfillmentMethod, setStoreFulfillmentMethod] = useState<'pickup' | 'shipping'>('pickup');
+
+  // F097 Commission Statement State
+  const [commissionStatementStatus, setCommissionStatementStatus] = useState<'estimated' | 'manager_approved'>('estimated');
+  const [hasForwardAdjustment, setHasForwardAdjustment] = useState<boolean>(false);
+
+  // F098 Time Off & Coverage State
+  const [timeOffStatus, setTimeOffStatus] = useState<'submitted' | 'approved' | 'rejected'>('submitted');
+  const [timeOffConflict1Resolved, setTimeOffConflict1Resolved] = useState<boolean>(false);
+  const [timeOffConflict2Resolved, setTimeOffConflict2Resolved] = useState<boolean>(false);
+  const [timeOffApprovalBlockedWarning, setTimeOffApprovalBlockedWarning] = useState<boolean>(false);
 
 
 
@@ -3467,6 +3484,424 @@ export default function PosieStudioPage() {
           <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
             ✓ <strong>Immutable Rule Guard:</strong> Rule changes (e.g. promotional 2x multipliers or standard rule adjustments) are tagged with unique rule versions. Previously banked points remain 100% immune from silent retroactive recalculation.
           </div>
+        </Card>
+      </section>
+
+      {/* F096: Online Retail Storefront & Unified Stock Ledger Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShoppingBag size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Online Retail Storefront & Unified Stock Ledger (F096)
+              </h3>
+            </div>
+            <Badge variant="sage">Unified Physical Stock • 15-Min Cart Hold • Pickup PIN & Carrier Shipping</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Sell boutique skincare and retail items online and in-person from one unified stock ledger. Features timed cart reservations to prevent overselling and clean pickup vs. shipping options.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Barrier Gentle Cleanser (SKU: CLN-001)
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Unit Price: $32.00 • In-Person POS & Online Storefront Synced
+                </div>
+              </div>
+              <Badge variant={storeOrderStatus === 'cancelled_restocked' ? 'muted' : storeOrderStatus === 'ready_for_pickup' ? 'sage' : 'muted'}>
+                {storeOrderStatus === 'browsing'
+                  ? 'In Stock'
+                  : storeOrderStatus === 'reserved'
+                  ? 'Cart Hold (Expires 15m)'
+                  : storeOrderStatus === 'ready_for_pickup'
+                  ? 'Ready for In-Store Pickup'
+                  : storeOrderStatus === 'paid_processing'
+                  ? 'Paid & Processing'
+                  : 'Order Cancelled & Restocked'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.82rem', marginTop: '10px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Available Physical Stock</span>
+                <strong style={{ fontSize: '1.2rem', color: 'var(--color-primary)' }}>{storeStockCleanser} Units</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Ready for POS walk-in or online cart</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Reserved Cart Stock</span>
+                <strong style={{ fontSize: '1.2rem', color: storeReservedCleanser > 0 ? '#B36B5C' : 'var(--color-primary)' }}>
+                  {storeReservedCleanser} Units
+                </strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Protected against double-purchase</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Fulfillment Method</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                  {storeFulfillmentMethod === 'pickup' ? 'Studio Pickup (Free)' : 'Ground Shipping ($5.95)'}
+                </strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                  {storeFulfillmentMethod === 'pickup' ? '4-Digit Claim PIN required' : 'Free delivery over $75'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {storeOrderStatus === 'ready_for_pickup' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px 16px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.84rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ color: '#2B5329' }}>Order #ORD-77291 Confirmed: Ready for Studio Pickup</strong>
+                  <div style={{ color: '#4A6B48', marginTop: '2px' }}>Show this PIN at the front desk when picking up your cleanser.</div>
+                </div>
+                <div style={{ background: '#FFF', border: '2px solid #738A73', padding: '6px 14px', borderRadius: '6px', fontWeight: 'bold', fontSize: '1.2rem', color: '#2B5329', letterSpacing: '2px' }}>
+                  PIN: 5912
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {storeOrderStatus === 'browsing' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setStoreStockCleanser(storeStockCleanser - 1);
+                    setStoreReservedCleanser(storeReservedCleanser + 1);
+                    setStoreOrderStatus('reserved');
+                  }}
+                >
+                  Hold 1 Unit in Online Cart (15-Min Timer)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setStoreFulfillmentMethod(storeFulfillmentMethod === 'pickup' ? 'shipping' : 'pickup')}
+                >
+                  Toggle Fulfillment: {storeFulfillmentMethod === 'pickup' ? 'Switch to Shipping' : 'Switch to Studio Pickup'}
+                </Button>
+              </>
+            )}
+
+            {storeOrderStatus === 'reserved' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    setStoreReservedCleanser(0);
+                    setStoreOrderStatus(storeFulfillmentMethod === 'pickup' ? 'ready_for_pickup' : 'paid_processing');
+                  }}
+                >
+                  Simulate Online Checkout ($34.64 Total)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    // Release expired or cancelled reservation
+                    setStoreStockCleanser(storeStockCleanser + 1);
+                    setStoreReservedCleanser(0);
+                    setStoreOrderStatus('browsing');
+                  }}
+                >
+                  Release Cart Hold (Return to General Stock)
+                </Button>
+              </>
+            )}
+
+            {(storeOrderStatus === 'ready_for_pickup' || storeOrderStatus === 'paid_processing') && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setStoreStockCleanser(storeStockCleanser + 1);
+                  setStoreOrderStatus('cancelled_restocked');
+                }}
+              >
+                Client Cancellation: Refund & Restock Cleanser (+1 Stock)
+              </Button>
+            )}
+
+            {storeOrderStatus === 'cancelled_restocked' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setStoreStockCleanser(10);
+                  setStoreReservedCleanser(0);
+                  setStoreOrderStatus('browsing');
+                }}
+              >
+                Reset Storefront Demo
+              </Button>
+            )}
+          </div>
+
+          <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+            ✓ <strong>Unified Ledger Defense:</strong> Online cart holds and completed sales draw from the exact same physical stock ledger as in-studio POS transactions, preventing accidental overselling of high-demand retail items.
+          </div>
+        </Card>
+      </section>
+
+      {/* F097: Commission Calculation Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Briefcase size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Commission Calculation & Staff Earnings Statements (F097 / Document D20)
+              </h3>
+            </div>
+            <Badge variant="sage">Tiered Rates • 100% Tip Pass-Through • Non-Statutory D20 Statement</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Calculates tiered service commissions and retail product percentages. Approved payroll statements are permanently locked against edits; subsequent client refunds generate transparent forward adjustments in the next open pay period.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Sophia Loren — Senior Esthetician (Period: Oct 16 – Oct 31, 2026)
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Statement ID: STMT-OCT-2026-01 • Rule: Tier 1 (45%), Tier 2 (55% over $1k), Retail (10%)
+                </div>
+              </div>
+              <Badge variant={commissionStatementStatus === 'manager_approved' ? 'sage' : 'muted'}>
+                {commissionStatementStatus === 'manager_approved' ? 'Manager Approved & Locked' : 'Open Period Live Estimate'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.82rem', marginTop: '10px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Service Commission</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>$135.00</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>45% of $300.00 service gross</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Retail Commission</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>$5.00</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>10% of $50.00 retail products</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Gratuities (100% Pass)</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>$60.00</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Passed directly without salon cuts</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Net Earnings</span>
+                <strong style={{ fontSize: '1.1rem', color: '#2B5329' }}>
+                  {hasForwardAdjustment ? '$146.00' : '$200.00'}
+                </strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                  {hasForwardAdjustment ? 'Includes -$54.00 forward clawback' : 'Gross payable before statutory taxes'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {hasForwardAdjustment && (
+            <div style={{ border: '1px solid #E5C3B8', background: '#FFF9F7', padding: '12px 16px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.82rem' }}>
+              <strong style={{ color: '#8F4A3E', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                <AlertTriangle size={16} /> Prior-Period Forward Adjustment Linked (Document D20 Standard)
+              </strong>
+              <div style={{ color: '#555', lineHeight: '1.5' }}>
+                Client requested redo refund on HydraFacial ($120.00 service). <strong>Approved statement STMT-OCT-2026-01 was NOT rewritten.</strong> Instead, a -$54.00 commission adjustment was cleanly attached to the next open period (PAY-2026-11-A).
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {commissionStatementStatus === 'estimated' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setCommissionStatementStatus('manager_approved')}
+              >
+                Manager Sign & Lock Statement (Audrey, Director)
+              </Button>
+            )}
+
+            {commissionStatementStatus === 'manager_approved' && !hasForwardAdjustment && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setHasForwardAdjustment(true)}
+              >
+                Simulate Post-Pay Client Refund: Apply Forward Adjustment (-$54.00)
+              </Button>
+            )}
+
+            {(commissionStatementStatus === 'manager_approved' || hasForwardAdjustment) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setCommissionStatementStatus('estimated');
+                  setHasForwardAdjustment(false);
+                }}
+              >
+                Reset Commission Statement Demo
+              </Button>
+            )}
+          </div>
+
+          <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+            ✓ <strong>Payroll Defense Invariant:</strong> Once a pay period statement is approved by management, historical records are immutable. Post-approval refunds generate linked adjustments in subsequent open pay periods.
+          </div>
+        </Card>
+      </section>
+
+      {/* F098: Time Off & Coverage Planning Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Time Off & Client Coverage Planning (F098)
+              </h3>
+            </div>
+            <Badge variant="sage">Commitment Defense • Certified Coverage Matching • Hard Calendar Blocking</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Approve staff absence requests with pre-approval conflict impact reports. Prohibits silent drops or moves of client appointments and requires qualified staff matching or proactive rescheduling outreach.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Maya — Lead Esthetician (3-Day Wellness Vacation: Nov 10 – Nov 12)
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Request ID: REQ-PTO-01 • Paid Time Off (PTO)
+                </div>
+              </div>
+              <Badge variant={timeOffStatus === 'approved' ? 'sage' : 'muted'}>
+                {timeOffStatus === 'approved' ? 'Approved & Calendar Locked' : 'Pending Owner Review'}
+              </Badge>
+            </div>
+
+            <div style={{ border: '1px solid #E5E0D8', borderRadius: '6px', padding: '12px', background: '#FFF', marginTop: '10px' }}>
+              <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+                Conflict Impact Report: 2 Conflicting Bookings ($300.00 Revenue at Risk)
+              </strong>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.8rem' }}>
+                <div style={{ border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px', background: timeOffConflict1Resolved ? '#F4F7F4' : '#FFFDF9' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <strong>Chloe Bennett — $120.00</strong>
+                    <Badge variant={timeOffConflict1Resolved ? 'sage' : 'rose'}>
+                      {timeOffConflict1Resolved ? 'Coverage Assigned' : 'Unassigned Conflict'}
+                    </Badge>
+                  </div>
+                  <div style={{ color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    Service: Hydra-Dew Facial (Nov 10, 2:00 PM)
+                  </div>
+                  <div style={{ marginTop: '6px' }}>
+                    {timeOffConflict1Resolved ? (
+                      <span style={{ color: '#2B5329', fontWeight: 'bold' }}>✓ Reassigned to Jen (Licensed Esthetician)</span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setTimeOffConflict1Resolved(true);
+                          setTimeOffApprovalBlockedWarning(false);
+                        }}
+                      >
+                        Reassign to Jen (Qualified Coverage)
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px', background: timeOffConflict2Resolved ? '#F4F7F4' : '#FFFDF9' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <strong>Hailey Bieber — $180.00</strong>
+                    <Badge variant={timeOffConflict2Resolved ? 'sage' : 'rose'}>
+                      {timeOffConflict2Resolved ? 'Reschedule Queued' : 'Unassigned Conflict'}
+                    </Badge>
+                  </div>
+                  <div style={{ color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    Service: Chemical Peel (Nov 11, 11:00 AM)
+                  </div>
+                  <div style={{ marginTop: '6px' }}>
+                    {timeOffConflict2Resolved ? (
+                      <span style={{ color: '#2B5329', fontWeight: 'bold' }}>✓ Queued for VIP Reschedule Outreach</span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setTimeOffConflict2Resolved(true);
+                          setTimeOffApprovalBlockedWarning(false);
+                        }}
+                      >
+                        Queue for Proactive Reschedule Call
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {timeOffApprovalBlockedWarning && (
+            <div style={{ border: '1px solid #C67D6E', background: '#FFF7F5', padding: '12px 16px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.84rem', color: '#8F4A3E' }}>
+              <strong>⚠ Owner Approval Blocked:</strong> Cannot approve absence request while client appointments are unassigned. Client commitments cannot be silently dropped. Please assign coverage or schedule client outreach before approving.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {timeOffStatus === 'submitted' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  if (!timeOffConflict1Resolved || !timeOffConflict2Resolved) {
+                    setTimeOffApprovalBlockedWarning(true);
+                  } else {
+                    setTimeOffStatus('approved');
+                    setTimeOffApprovalBlockedWarning(false);
+                  }
+                }}
+              >
+                Approve Absence Request & Lock Calendar
+              </Button>
+            )}
+
+            {timeOffStatus === 'approved' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setTimeOffStatus('submitted');
+                  setTimeOffConflict1Resolved(false);
+                  setTimeOffConflict2Resolved(false);
+                  setTimeOffApprovalBlockedWarning(false);
+                }}
+              >
+                Reset Time Off & Coverage Demo
+              </Button>
+            )}
+          </div>
+
+          {timeOffStatus === 'approved' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Absence Approved & Calendar Hard-Locked:</strong> All client commitments safely resolved. Maya's schedule is locked against online booking and walk-in assignment for Nov 10 – Nov 12.
+            </div>
+          )}
         </Card>
       </section>
 

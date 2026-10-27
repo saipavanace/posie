@@ -174,6 +174,24 @@ import {
   accrueLoyaltyPoints,
   reverseLoyaltyPointsForReturn,
   redeemLoyaltyPoints,
+  createStoreProduct,
+  reserveCartItems,
+  releaseExpiredReservation,
+  calculateOrderQuote,
+  checkoutOnlineOrder,
+  fulfillStoreOrder,
+  refundAndRestockOrder,
+  defineCommissionRule,
+  calculateLineCommission,
+  generateEarningsStatement,
+  approveEarningsStatement,
+  createForwardAdjustment,
+  submitTimeOffRequest,
+  generateConflictImpactReport,
+  reassignConflictedBooking,
+  markBookingForRescheduling,
+  approveTimeOffRequest,
+  rejectTimeOffRequest,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -4331,6 +4349,384 @@ describe('Posie Core Logic - F095 (Loyalty Balance Ledger & Rewards)', () => {
     expect(accrualUnderV2.updatedAccount.currentPointsBalance).toBe(350); // 300 historical + 50 new
   });
 });
+
+// F096: Online Retail Storefront & Unified Stock Ledger
+describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledger)', () => {
+  it('manages unified stock ledger, cart reservations, expiration release, checkout, and restock', () => {
+      // 1. Setup products in unified stock ledger
+      const cleanser = createStoreProduct({
+        id: 'prod_cleanse',
+        sku: 'CLN-001',
+        name: 'Barrier Gentle Cleanser',
+        category: 'skincare',
+        price: 32.0,
+        weightOz: 8,
+        initialStock: 10,
+      });
+
+      const serum = createStoreProduct({
+        id: 'prod_serum',
+        sku: 'SRM-002',
+        name: 'Glow Hyaluronic Serum',
+        category: 'skincare',
+        price: 48.0,
+        weightOz: 4,
+        initialStock: 4,
+      });
+
+      const products = new Map<string, typeof cleanser>();
+      products.set(cleanser.id, cleanser);
+      products.set(serum.id, serum);
+
+      // 2. Reserve items during client online checkout session
+      const { reservation, updatedProducts: pAfterReserve } = reserveCartItems({
+        cartId: 'cart_123',
+        items: [
+          { productId: 'prod_cleanse', quantity: 2 },
+          { productId: 'prod_serum', quantity: 1 },
+        ],
+        products,
+        holdDurationMinutes: 15,
+        currentTime: '2026-10-27T10:00:00.000Z',
+      });
+
+      expect(pAfterReserve.get('prod_cleanse')!.availableStock).toBe(8);
+      expect(pAfterReserve.get('prod_cleanse')!.reservedStock).toBe(2);
+      expect(pAfterReserve.get('prod_serum')!.availableStock).toBe(3);
+      expect(pAfterReserve.get('prod_serum')!.reservedStock).toBe(1);
+
+      // Oversell prevention
+      expect(() => {
+        reserveCartItems({
+          cartId: 'cart_fail',
+          items: [{ productId: 'prod_serum', quantity: 10 }],
+          products: pAfterReserve,
+        });
+      }).toThrow(/Insufficient stock/);
+
+      // 3. Expiration release test
+      const expiredRelease = releaseExpiredReservation({
+        reservation,
+        products: pAfterReserve,
+        currentTime: '2026-10-27T10:20:00.000Z', // 20 mins later (>15 mins)
+      });
+      expect(expiredRelease.released).toBe(true);
+      expect(expiredRelease.updatedProducts.get('prod_cleanse')!.availableStock).toBe(10);
+      expect(expiredRelease.updatedProducts.get('prod_cleanse')!.reservedStock).toBe(0);
+
+      // 4. Re-reserve and calculate quote (Pickup vs Shipping)
+      const { reservation: activeReservation, updatedProducts: pLive } = reserveCartItems({
+        cartId: 'cart_456',
+        items: [
+          { productId: 'prod_cleanse', quantity: 1 }, // $32
+          { productId: 'prod_serum', quantity: 1 }, // $48 = $80 total (qualifies for free shipping)
+        ],
+        products,
+        currentTime: '2026-10-27T11:00:00.000Z',
+      });
+
+      const quote = calculateOrderQuote({
+        items: activeReservation.items,
+        fulfillmentMethod: 'shipping',
+        storeTaxRate: 0.0825,
+      });
+
+      expect(quote.subtotal).toBe(80.0);
+      expect(quote.shippingFee).toBe(0); // >= $75 free shipping
+      expect(quote.shippingTier).toBe('free');
+      expect(quote.taxAmount).toBe(6.6); // 80 * 0.0825 = 6.60
+      expect(quote.totalAmount).toBe(86.6);
+
+      // 5. Checkout online order
+      const { order, updatedProducts: pAfterCheckout } = checkoutOnlineOrder({
+        reservation: activeReservation,
+        clientId: 'client_maya',
+        clientName: 'Maya Angelou',
+        clientEmail: 'maya@example.com',
+        fulfillmentMethod: 'shipping',
+        shippingAddress: {
+          recipientName: 'Maya Angelou',
+          street1: '123 Atelier Way',
+          city: 'Beverly Hills',
+          state: 'CA',
+          postalCode: '90210',
+          country: 'USA',
+          phone: '310-555-0199',
+        },
+        paymentReference: 'ch_card_9931',
+        quote,
+        products: pLive,
+        currentTime: '2026-10-27T11:05:00.000Z',
+      });
+
+      expect(order.status).toBe('paid_processing');
+      // Invariant: Reserved stock cleared, available stock stays decremented
+      expect(pAfterCheckout.get('prod_cleanse')!.reservedStock).toBe(0);
+      expect(pAfterCheckout.get('prod_cleanse')!.availableStock).toBe(9);
+
+      // 6. Fulfill order with shipping tracking
+      const shippedOrder = fulfillStoreOrder({
+        order,
+        action: 'dispatch_shipping',
+        trackingNumber: 'USPS9400111899223344',
+        carrier: 'USPS Priority Mail',
+      });
+      expect(shippedOrder.status).toBe('shipped');
+      expect(shippedOrder.trackingNumber).toBe('USPS9400111899223344');
+
+      // 7. Refund and restock order
+      const { order: refundedOrder, updatedProducts: pRestocked } = refundAndRestockOrder({
+        order: shippedOrder,
+        products: pAfterCheckout,
+        reason: 'Customer requested cancellation prior to carrier scan',
+      });
+
+      expect(refundedOrder.status).toBe('cancelled_restocked');
+      expect(refundedOrder.refundedAmount).toBe(86.6);
+      // Invariant: Available stock cleanly incremented back in the unified ledger
+      expect(pRestocked.get('prod_cleanse')!.availableStock).toBe(10);
+      expect(pRestocked.get('prod_serum')!.availableStock).toBe(4);
+    });
+  });
+
+  // F097: Commission Calculation & Staff Earnings Statements (Document D20)
+  describe('Posie Core Logic - F097 (Commission Calculation - Document D20)', () => {
+    it('applies tiered service and retail commission, locks approved statement, and generates forward adjustments', () => {
+      // 1. Define tiered commission rule
+      const rule = defineCommissionRule({
+        ruleId: 'RULE-2026-V1',
+        staffId: 'staff_sophia',
+        effectiveFrom: '2026-01-01',
+        serviceTiers: [
+          { thresholdMin: 0, thresholdMax: 1000, ratePercentage: 45 },
+          { thresholdMin: 1000, ratePercentage: 55 }, // 55% over $1,000 in service sales
+        ],
+        retailRatePercentage: 10, // 10% flat on retail sales
+      });
+
+      // 2. Generate live Document D20 statement
+      const statement = generateEarningsStatement({
+        statementId: 'STMT-OCT-2026-01',
+        periodId: 'PAY-2026-10-B',
+        staffId: 'staff_sophia',
+        staffName: 'Sophia Loren',
+        periodStartDate: '2026-10-16',
+        periodEndDate: '2026-10-31',
+        rule,
+        tickets: [
+          {
+            ticketId: 'tkt_01',
+            itemType: 'service',
+            description: 'Hydra-Dew Facial',
+            apportionedGross: 120.0,
+            tipAmount: 25.0,
+            performedAt: '2026-10-18T14:00:00Z',
+          },
+          {
+            ticketId: 'tkt_02',
+            itemType: 'service',
+            description: 'Custom Chemical Peel',
+            apportionedGross: 180.0,
+            tipAmount: 35.0,
+            performedAt: '2026-10-20T11:00:00Z',
+          },
+          {
+            ticketId: 'tkt_03',
+            itemType: 'retail',
+            description: 'SPF 50 Glow Drops',
+            apportionedGross: 50.0,
+            tipAmount: 0,
+            performedAt: '2026-10-20T11:30:00Z',
+          },
+        ],
+      });
+
+      expect(statement.status).toBe('estimated');
+      expect(statement.summary.totalServiceGross).toBe(300.0);
+      // Service commission at 45% (under $1,000 tier): 300 * 0.45 = $135.00
+      expect(statement.summary.totalServiceCommission).toBe(135.0);
+      // Retail commission at 10%: 50 * 0.10 = $5.00
+      expect(statement.summary.totalRetailCommission).toBe(5.0);
+      // Tips: 25 + 35 = $60.00
+      expect(statement.summary.totalTips).toBe(60.0);
+      // Total payable: 135 + 5 + 60 = $200.00
+      expect(statement.summary.netPayableEarnings).toBe(200.0);
+
+      // 3. Manager approves statement (locking historical record)
+      const approved = approveEarningsStatement({
+        statement,
+        managerName: 'Audrey (Salon Director)',
+      });
+      expect(approved.status).toBe('manager_approved');
+      expect(approved.approvedBy).toBe('Audrey (Salon Director)');
+
+      // Invariant: Cannot re-approve an already approved statement
+      expect(() => {
+        approveEarningsStatement({
+          statement: approved,
+          managerName: 'Audrey (Salon Director)',
+        });
+      }).toThrow(/already manager_approved/);
+
+      // 4. Forward Adjustment: A client receives a redo refund on tkt_01 ($120 facial)
+      // Invariant: Never alters historical approved statement; creates linked forward adjustment
+      const forwardAdj = createForwardAdjustment({
+        originalStatement: approved,
+        refundedTicketId: 'tkt_01',
+        clawbackAmount: 54.0, // 45% of $120 = $54 commission clawback
+        reason: 'Post-payroll redo refund approved for sensitive skin client reaction',
+        managerName: 'Audrey (Salon Director)',
+      });
+
+      expect(forwardAdj.adjustmentAmount).toBe(-54.0);
+      expect(forwardAdj.originalPeriodId).toBe('PAY-2026-10-B');
+
+      // Next pay period includes forward adjustment
+      const nextStatement = generateEarningsStatement({
+        statementId: 'STMT-NOV-2026-01',
+        periodId: 'PAY-2026-11-A',
+        staffId: 'staff_sophia',
+        staffName: 'Sophia Loren',
+        periodStartDate: '2026-11-01',
+        periodEndDate: '2026-11-15',
+        rule,
+        tickets: [
+          {
+            ticketId: 'tkt_04',
+            itemType: 'service',
+            description: 'Dermaplaning Deluxe',
+            apportionedGross: 150.0,
+            tipAmount: 30.0,
+            performedAt: '2026-11-02T10:00:00Z',
+          },
+        ],
+        priorPeriodAdjustments: [forwardAdj],
+      });
+
+      // 150 * 0.45 = 67.50 service commission + 30 tip - 54 clawback = $43.50 net
+      expect(nextStatement.summary.totalServiceCommission).toBe(67.5);
+      expect(nextStatement.summary.totalAdjustments).toBe(-54.0);
+      expect(nextStatement.summary.netPayableEarnings).toBe(43.5);
+    });
+  });
+
+  // F098: Time Off & Coverage Planning
+  describe('Posie Core Logic - F098 (Time Off & Coverage Planning)', () => {
+    it('detects booking conflicts, prevents unassigned approvals, matches certified coverage, and locks calendar', () => {
+      // 1. Submit time off request
+      const request = submitTimeOffRequest({
+        requestId: 'REQ-PTO-01',
+        staffId: 'staff_maya',
+        staffName: 'Maya (Lead Esthetician)',
+        category: 'vacation',
+        startDate: '2026-11-10T00:00:00Z',
+        endDate: '2026-11-12T23:59:59Z',
+        totalDays: 3,
+        isPaid: true,
+        notes: 'Annual wellness retreat',
+      });
+
+      expect(request.status).toBe('submitted');
+
+      // 2. Existing studio bookings during that window
+      const existingBookings = [
+        {
+          bookingId: 'bk_101',
+          staffId: 'staff_maya',
+          clientName: 'Chloe Bennett',
+          clientPhone: '310-555-4422',
+          serviceId: 'srv_facial',
+          serviceName: 'Hydra-Dew Glass Facial',
+          startTime: '2026-11-10T14:00:00Z',
+          endTime: '2026-11-10T15:00:00Z',
+          price: 120.0,
+          depositPaid: 50.0,
+        },
+        {
+          bookingId: 'bk_102',
+          staffId: 'staff_maya',
+          clientName: 'Hailey Bieber',
+          clientPhone: '310-555-7788',
+          serviceId: 'srv_peel',
+          serviceName: 'Radiance Chemical Peel',
+          startTime: '2026-11-11T11:00:00Z',
+          endTime: '2026-11-11T12:00:00Z',
+          price: 180.0,
+          depositPaid: 50.0,
+        },
+      ];
+
+      // 3. Generate conflict impact report
+      const impactReport = generateConflictImpactReport({
+        request,
+        existingBookings,
+      });
+
+      expect(impactReport.totalConflictingBookings).toBe(2);
+      expect(impactReport.totalRevenueAtRisk).toBe(300.0);
+      expect(impactReport.hasUnresolvedCommitments).toBe(true);
+
+      // Invariant: Cannot approve time off while appointments are unassigned
+      expect(() => {
+        approveTimeOffRequest({
+          request,
+          impactReport,
+          managerName: 'Audrey (Owner)',
+        });
+      }).toThrow(/Cannot approve time off: 2 client appointment\(s\) have not been resolved/);
+
+      // 4. Resolve Conflict 1: Reassign to qualified coverage provider
+      const qualifiedReplacement = {
+        staffId: 'staff_jen',
+        name: 'Jen (Licensed Esthetician)',
+        qualifiedServiceIds: ['srv_facial', 'srv_peel'],
+        isAvailableOnDate: (d: string) => d.startsWith('2026-11-10'),
+      };
+
+      const resolvedBooking1 = reassignConflictedBooking({
+        booking: impactReport.conflictingBookings[0],
+        replacementProvider: qualifiedReplacement,
+      });
+      expect(resolvedBooking1.coverageStatus).toBe('coverage_assigned');
+      expect(resolvedBooking1.reassignedStaffName).toBe('Jen (Licensed Esthetician)');
+
+      // Invariant: Unqualified replacement attempt rejected
+      const unqualifiedProvider = {
+        staffId: 'staff_tom',
+        name: 'Tom (Lash Stylist)',
+        qualifiedServiceIds: ['srv_lashes'], // does not do chemical peels
+        isAvailableOnDate: () => true,
+      };
+      expect(() => {
+        reassignConflictedBooking({
+          booking: impactReport.conflictingBookings[1],
+          replacementProvider: unqualifiedProvider,
+        });
+      }).toThrow(/not certified\/qualified/);
+
+      // 5. Resolve Conflict 2: Mark for proactive client rescheduling outreach
+      const resolvedBooking2 = markBookingForRescheduling(impactReport.conflictingBookings[1]);
+      expect(resolvedBooking2.coverageStatus).toBe('reschedule_required');
+
+      // 6. Approve time off with all client commitments resolved
+      const resolvedReport = {
+        ...impactReport,
+        conflictingBookings: [resolvedBooking1, resolvedBooking2],
+        hasUnresolvedCommitments: false,
+      };
+
+      const { request: approvedRequest, calendarBlocked } = approveTimeOffRequest({
+        request,
+        impactReport: resolvedReport,
+        managerName: 'Audrey (Owner)',
+        notes: 'Coverage coordinated with Jen; client Hailey queued for VIP reschedule call',
+      });
+
+      expect(approvedRequest.status).toBe('approved');
+      expect(calendarBlocked).toBe(true);
+      expect(approvedRequest.reviewedBy).toBe('Audrey (Owner)');
+    });
+  });
 
 
 

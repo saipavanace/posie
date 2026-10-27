@@ -564,6 +564,25 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Double-entry points and tier elevation ledger for beauty and wellness clients, tracking accruals across retail and services, threshold promotions, and return clawbacks.
 * **Key Invariant (Basis: B; WB F42):** **Rule versioning & historical point protection.** Loyalty point accrual rules are strictly version-controlled with effective date stamps. If a salon updates point accrual rules (e.g. changing from 1 pt/$1 to 0.5 pt/$1), the system strictly applies new rules to future purchases, permanently preserving previously earned point balances from silent retroactive dilution. Returns and refunds cleanly reverse only the points accrued on the returned item.
 
+---
+
+## F096 — Online Retail Storefront & Unified Stock Ledger
+* **What it is:** E-commerce retail storefront supporting boutique skincare sales with physical stock reservations, pickup vs. shipping fulfillment, tax calculations, and automatic restocking.
+* **Key Invariant (Basis: B; WB F52):** **Single unified stock ledger & cart reservation holds.** Online storefront sales and in-person POS sales draw atomically from the exact same physical stock ledger. When an online customer begins checkout, stock is protected by a 15-minute reservation timer, preventing double-booking or overselling with in-studio walk-in buyers. Pickups generate secure 4-digit verification PINs; carrier shipments calculate live weight, shipping tiers, and tracking numbers; and cancelled orders cleanly restock units back into available general inventory.
+
+---
+
+## F097 — Commission Calculation & Staff Earnings Statements (Document D20)
+* **What it is:** Tiered service and retail commission tracking engine generating transparent Document D20 earnings statements with 100% tip pass-through and payroll reconciliation.
+* **Key Invariant (Basis: B; WB F53, Document D20):** **Immutable historical payroll & forward adjustment integrity.** Commission rules feature effective-dated versions, ensuring future commission adjustments never alter historical runs. Once a pay period statement is reviewed and approved by management, the historical statement is permanently locked. If a client receives a post-payroll service refund or redo, Posie strictly forbids rewriting historical approved earnings; instead, it generates an auditable forward adjustment line item in the next open pay period statement. Statements are clearly labeled as studio reconciliation detail to preserve statutory payroll boundaries.
+
+---
+
+## F098 — Time Off & Client Coverage Planning
+* **What it is:** Staff absence approval, conflict impact analysis, coverage reassignment, and schedule blocking suite for beauty and wellness teams.
+* **Key Invariant (Basis: I; team scheduling):** **Client commitment defense & certified coverage matching.** Prohibits the silent deletion, dropping, or orphan status of existing client bookings when staff request time off. The system generates an authoritative Conflict Impact Report quantifying appointments and revenue at risk. Owner approval is strictly blocked until every conflicting booking has either been reassigned to an available provider certified for that specific service, or queued for proactive client rescheduling outreach. Upon approval, the staff member's calendar is hard-blocked against online booking and walk-in scheduling.
+
+
 
 
 
