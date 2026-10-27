@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F016)
+# Posie App User Guide: Core Modules (F001 - F019)
 
-Welcome to **Posie**! This guide details features **F001 through F016** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F019** active across the platform.
 
 ---
 
@@ -11,8 +11,7 @@ Welcome to **Posie**! This guide details features **F001 through F016** active a
   * `Secondary (#8A9A86)`: Muted Linen Sage for soft tags and highlights.
   * `Tertiary (#C67D6E)`: Warm Terracotta Rose for playful callouts.
   * `Neutral Canvas (#FAF8F5)`: Linen Off-White for clean contrast.
-* **Tone of Voice:**
-  * Quirky, authoritative, playful, and jargon-free.
+* **Tone of Voice:** Quirky, authoritative, playful, and jargon-free.
 * **Key Invariant:** Brand updates apply to future drafts; historical receipts and records permanently retain original branding.
 
 ---
@@ -107,3 +106,21 @@ Welcome to **Posie**! This guide details features **F001 through F016** active a
 ## F016 — Catalog Import Templates
 * **What it is:** Guided CSV templates to import treatments and services from previous platforms (Vagaro, GlossGenius).
 * **Key Invariant:** Invalid rows are isolated and reported with line numbers without corrupting valid live records.
+
+---
+
+## F017 — Total Cost Estimator
+* **What it is:** A transparent ownership bill preview calculating base subscriptions, card processing, metered SMS, and custom domains.
+* **Key Invariant (WB C7 C14):** Owners can inspect how each operational dimension impacts their bill with zero hidden fees.
+
+---
+
+## F018 — Short Daily Owner Digest
+* **What it is:** A single high-level daily summary showing confirmed appointments, expected gross collections, secured deposits, and outstanding balances.
+* **Key Invariant:** Highlights the single most critical decision needed for tomorrow and honors studio quiet hours (9 PM to 8 AM).
+
+---
+
+## F019 — Lapsed Client Worklist
+* **What it is:** An intelligent treatment-cadence reconnect queue identifying clients overdue for their regular visits.
+* **Key Invariant:** Strictly excludes opted-out marketing recipients, deceased clients, or those with future appointments already on the calendar.

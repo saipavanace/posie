@@ -6,29 +6,15 @@ import {
   Sparkles,
   Clock,
   ShieldCheck,
-  QrCode,
-  Printer,
-  MessageSquare,
-  Copy,
-  Check,
   CheckCircle2,
-  FileText,
-  ListTodo,
-  Layers,
-  ChevronRight,
-  User,
   Users,
-  Package,
-  Compass,
-  PlayCircle,
-  VolumeX,
-  Volume2,
-  HeartHandshake,
-  AlertCircle,
-  Accessibility,
   CheckSquare2,
-  UploadCloud,
-  FileSpreadsheet,
+  DollarSign,
+  TrendingUp,
+  UserCheck,
+  Moon,
+  Calendar,
+  AlertCircle,
 } from 'lucide-react';
 
 // Brand Information
@@ -47,7 +33,6 @@ const services = [
     duration: 60,
     description:
       'A deep double cleanse, enzyme exfoliation, and ultra-drenching hyaluronic bath. Zero stinging, zero nonsense, just dewy radiance.',
-    prep: 'Stop heavy exfoliating acids or retinol 48 hours beforehand.',
   },
   {
     id: 's2',
@@ -57,7 +42,6 @@ const services = [
     duration: 35,
     description:
       'Custom tinting and precision shaping that makes your natural arches pop so well you can skip filling them in for 4 weeks.',
-    prep: 'Come with clean, makeup-free brows.',
   },
   {
     id: 's3',
@@ -67,79 +51,55 @@ const services = [
     duration: 45,
     description:
       'Gentle peach-fuzz removal and dead cell sweep. Your foundation and serums will glide on like pure silk.',
-    prep: 'Skip active breakouts and sunburns.',
   },
 ];
 
-// Specialists
-const staffMembers = [
-  {
-    id: 'st1',
-    name: 'Chloe Martinez',
-    role: 'Licensed Master Esthetician',
-    bio: 'Obsessed with barrier repair, scalp massages, and making sure extractions never feel like torture.',
-  },
-  {
-    id: 'st2',
-    name: 'Sienna Brooks',
-    role: 'Brow & Lash Specialist',
-    bio: 'Queen of natural, fluffy brows. Believes your brows are sisters, not twins, but they should still hang out together.',
-  },
-];
+// F018: Daily Owner Digest Data
+const ownerDigest = {
+  date: 'Today, Monday Oct 26',
+  confirmedVisits: 6,
+  grossExpected: '$645.00',
+  depositsCollected: '$129.00',
+  outstandingDueAtCheckout: '$516.00',
+  unresolvedExceptions: 1,
+  actionRequired: '1 client (Maya) requires signed glycolic acid waiver prior to 2:30 PM appointment.',
+};
 
-// F015: Initial Daily Tasks
-const initialDailyTasks = [
+// F019: Lapsed Client Worklist Data
+const lapsedClients = [
   {
-    id: 'task-1',
-    type: 'incomplete_form',
-    title: 'Missing Chemical Peel Waiver for Maya',
-    details: 'Appointment today at 2:30 PM with Chloe requires signed waiver before room entry.',
-    status: 'pending',
+    name: 'Sarah Jenkins',
+    lastVisit: 'Sept 1, 2026',
+    cadence: '4 weeks',
+    overdue: '25 days overdue',
+    suggestedMsg: 'Hey Sarah! ✨ We miss your glow! Chloe has 2 openings this Friday if you want to refresh your Hydra-Dew facial.',
   },
   {
-    id: 'task-2',
-    type: 'unpaid_deposit',
-    title: 'Collect 20% Deposit from Sarah L.',
-    details: 'Hold window expires in 4 hours for Saturday 11:00 AM slot.',
-    status: 'pending',
-  },
-  {
-    id: 'task-3',
-    type: 'low_stock_warning',
-    title: 'Restock Hyaluronic Serum Ampoules',
-    details: 'Only 3 units left in studio backbar (reorder recommended).',
-    status: 'completed',
+    name: 'Jessica Miller',
+    lastVisit: 'Aug 15, 2026',
+    cadence: '6 weeks',
+    overdue: '18 days overdue',
+    suggestedMsg: 'Hey Jessica! Just checking in on your brow sculpt. Ready for a touch-up? Tap here to book without logging in.',
   },
 ];
 
 export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
-  const [selectedStaff, setSelectedStaff] = useState<string>('st1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // F012 Demo Mode
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  // F017 Total Cost Estimator State
+  const [monthlyVolume, setMonthlyVolume] = useState<number>(5000); // $5,000 / mo
+  const [staffCount, setStaffCount] = useState<number>(1);
+  const [customDomain, setCustomDomain] = useState<boolean>(false);
 
-  // F013 & F014 Client Preference & Accessibility States
-  const [preferredName, setPreferredName] = useState('Maya');
-  const [quietVisit, setQuietVisit] = useState(true);
-  const [stepFree, setStepFree] = useState(true);
-  const [scentFree, setSentFree] = useState(false);
-
-  // F015 Daily Task Queue State
-  const [tasks, setTasks] = useState(initialDailyTasks);
-
-  // F016 CSV Template Preview State
-  const [csvUploaded, setCsvUploaded] = useState(false);
+  // Cost calculation
+  const baseSub = 29;
+  const extraStaffCost = Math.max(0, staffCount - 1) * 15;
+  const processingCost = Math.round(monthlyVolume * 0.026 + (monthlyVolume / 75) * 0.1);
+  const domainCost = customDomain ? 10 : 0;
+  const totalCost = baseSub + extraStaffCost + processingCost + domainCost;
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
-  const activeStaffObj = staffMembers.find((s) => s.id === selectedStaff) || staffMembers[0];
-
-  const handleResolveTask = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } : t))
-    );
-  };
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
@@ -178,232 +138,272 @@ export default function PosieStudioPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Badge variant="sage">Features F001 - F016 Live</Badge>
+          <Badge variant="sage">Features F001 - F019 Live</Badge>
           <Badge variant="rose">Atelier Studio</Badge>
         </div>
       </header>
 
-      {/* F015 & F016 Operations Grid */}
+      {/* F018: Short Daily Owner Digest Banner */}
+      <section style={{ marginBottom: '40px' }}>
+        <Card style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--color-primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={20} color="var(--color-primary)" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+                Feature 018: Daily Owner Digest • {ownerDigest.date}
+              </span>
+            </div>
+            <Badge variant="sage">
+              <Moon size={12} style={{ marginRight: '4px' }} /> Quiet Hours Active (9 PM - 8 AM)
+            </Badge>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Confirmed Visits</span>
+              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-primary)' }}>
+                {ownerDigest.confirmedVisits} Appointments
+              </strong>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Expected Gross</span>
+              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-primary)' }}>
+                {ownerDigest.grossExpected}
+              </strong>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Deposits Secured</span>
+              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-secondary)' }}>
+                {ownerDigest.depositsCollected}
+              </strong>
+            </div>
+
+            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Due at Checkout</span>
+              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-tertiary)' }}>
+                {ownerDigest.outstandingDueAtCheckout}
+              </strong>
+            </div>
+          </div>
+
+          {/* Top Decision Action Bar */}
+          <div
+            style={{
+              backgroundColor: 'var(--color-secondary-light)',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '0.88rem',
+              color: 'var(--color-primary)',
+            }}
+          >
+            <AlertCircle size={18} />
+            <span><strong>Today's Focus:</strong> {ownerDigest.actionRequired}</span>
+          </div>
+        </Card>
+      </section>
+
+      {/* F017 & F019 Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        {/* F015: Daily Task List */}
+        {/* F017: Total Cost Estimator */}
         <Card style={{ backgroundColor: '#FFFFFF' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <CheckSquare2 size={20} color="var(--color-tertiary)" />
+            <DollarSign size={20} color="var(--color-tertiary)" />
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 015: Daily Task Queue
+              Feature 017: Total Cost Estimator
             </span>
           </div>
           <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Today's Operational Actions
+            Honest Studio Bill Preview
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Consolidated exceptions: missing forms, unpaid holds, and stock checks with clear owners.
+            No "nickel & diming". See your exact monthly costs before committing to a plan.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {tasks.map((task) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px' }}>
+                <span>Monthly Card Volume:</span>
+                <strong>${monthlyVolume.toLocaleString()} / mo</strong>
+              </div>
+              <input
+                type="range"
+                min="1000"
+                max="25000"
+                step="1000"
+                value={monthlyVolume}
+                onChange={(e) => setMonthlyVolume(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
+              <span>Staff Specialists:</span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {[1, 2, 3].map((num) => (
+                  <Button
+                    key={num}
+                    variant={staffCount === num ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStaffCount(num)}
+                  >
+                    {num}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={customDomain}
+                onChange={(e) => setCustomDomain(e.target.checked)}
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              Add Custom Studio Domain ($10/mo)
+            </label>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              padding: '14px',
+              borderRadius: '12px',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Estimated Monthly Total:</span>
+              <strong style={{ fontSize: '1.4rem', color: 'var(--color-primary)' }}>${totalCost}.00</strong>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Includes $29 base + ${processingCost} card fees (2.6% + 10¢) + ${extraStaffCost} extra staff + ${domainCost} domain.
+            </p>
+          </div>
+        </Card>
+
+        {/* F019: Lapsed Client Reconnect Worklist */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <UserCheck size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 019: Lapsed Client Worklist
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Treatment Cadence Reconnect
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Clients overdue past their individual treatment interval. Opted-out clients are strictly excluded.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {lapsedClients.map((client) => (
               <div
-                key={task.id}
-                onClick={() => handleResolveTask(task.id)}
+                key={client.name}
                 style={{
+                  backgroundColor: 'var(--color-bg)',
                   padding: '12px 14px',
                   borderRadius: '10px',
-                  backgroundColor: task.status === 'completed' ? 'var(--color-secondary-light)' : 'var(--color-bg)',
                   border: '1px solid var(--color-border)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={task.status === 'completed'}
-                  readOnly
-                  style={{ marginTop: '3px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <strong
-                    style={{
-                      fontSize: '0.9rem',
-                      color: 'var(--color-primary)',
-                      textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-                      display: 'block',
-                    }}
-                  >
-                    {task.title}
-                  </strong>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    {task.details}
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>{client.name}</strong>
+                  <Badge variant="rose">{client.overdue}</Badge>
                 </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                  Regular cycle: {client.cadence} • Last seen {client.lastVisit}
+                </p>
+                <Button variant="outline" size="sm" style={{ fontSize: '0.75rem', width: '100%' }}>
+                  Preview Reconnect SMS
+                </Button>
               </div>
             ))}
           </div>
         </Card>
-
-        {/* F016: Catalog Import Templates */}
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <FileSpreadsheet size={20} color="var(--color-primary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-              Feature 016: Catalog CSV Importer
-            </span>
-          </div>
-          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            One-Click Catalog Migration
-          </h3>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Upload existing menus from Vagaro or GlossGenius. Invalid rows are isolated without corrupting live data.
-          </p>
-
-          <div
-            style={{
-              border: '2px dashed var(--color-border)',
-              borderRadius: '12px',
-              padding: '24px',
-              textAlign: 'center',
-              backgroundColor: 'var(--color-bg)',
-              marginBottom: '16px',
-            }}
-          >
-            <UploadCloud size={32} color="var(--color-primary)" style={{ margin: '0 auto 8px' }} />
-            <strong style={{ fontSize: '0.9rem', display: 'block', color: 'var(--color-primary)' }}>
-              {csvUploaded ? 'catalog_import_v1.csv (Parsed 3 Valid Treatments)' : 'Drag and drop your catalog CSV here'}
-            </strong>
-            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              Standard template: name, category, price_in_cents, duration, prep
-            </span>
-          </div>
-
-          <Button
-            variant={csvUploaded ? 'secondary' : 'outline'}
-            size="md"
-            onClick={() => setCsvUploaded(!csvUploaded)}
-            style={{ width: '100%' }}
-          >
-            {csvUploaded ? '✓ 3 Treatments Imported (Zero Errors)' : 'Simulate CSV Upload & Validation'}
-          </Button>
-        </Card>
       </div>
 
-      {/* F014: Quiet Visit & Accessibility Requests */}
-      <section style={{ marginBottom: '40px' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <Accessibility size={20} color="var(--color-tertiary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 014: Inclusive Accessibility & Quiet Visits
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Tailored Access Accommodations</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            Privately routed to the specialist setting up your room so you arrive to a safe, comfortable space.
-          </p>
+      {/* Treatment Menu */}
+      <section style={{ marginBottom: '56px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
         </div>
 
-        <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px 14px',
-                borderRadius: '10px',
-                border: '1px solid var(--color-border)',
-                backgroundColor: quietVisit ? 'var(--color-secondary-light)' : 'var(--color-bg)',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={quietVisit}
-                onChange={(e) => setQuietVisit(e.target.checked)}
-                style={{ accentColor: 'var(--color-primary)' }}
-              />
-              <div>
-                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block' }}>Quiet Visit</strong>
-                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Essential treatment questions only; zero conversational pressure.</span>
-              </div>
-            </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          {services.map((svc) => {
+            const isSelected = selectedService === svc.id;
+            return (
+              <Card
+                key={svc.id}
+                style={{
+                  cursor: 'pointer',
+                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                  borderWidth: isSelected ? '2px' : '1px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+                onClick={() => setSelectedService(svc.id)}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <Badge variant="sage">{svc.tag}</Badge>
+                    <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-primary)' }}>
+                      ${svc.price}
+                    </span>
+                  </div>
 
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px 14px',
-                borderRadius: '10px',
-                border: '1px solid var(--color-border)',
-                backgroundColor: stepFree ? 'var(--color-secondary-light)' : 'var(--color-bg)',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={stepFree}
-                onChange={(e) => setStepFree(e.target.checked)}
-                style={{ accentColor: 'var(--color-primary)' }}
-              />
-              <div>
-                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block' }}>Step-Free Entry</strong>
-                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Ramp access & wider doorway into treatment suite.</span>
-              </div>
-            </label>
+                  <h3 style={{ fontSize: '1.35rem', marginBottom: '8px', color: 'var(--color-primary)' }}>
+                    {svc.name}
+                  </h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                    {svc.description}
+                  </p>
+                </div>
 
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px 14px',
-                borderRadius: '10px',
-                border: '1px solid var(--color-border)',
-                backgroundColor: scentFree ? 'var(--color-secondary-light)' : 'var(--color-bg)',
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={scentFree}
-                onChange={(e) => setSentFree(e.target.checked)}
-                style={{ accentColor: 'var(--color-primary)' }}
-              />
-              <div>
-                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block' }}>Scent-Free Suite</strong>
-                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>No essential oil diffusers or scented candles.</span>
-              </div>
-            </label>
-          </div>
-        </Card>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderTop: '1px solid var(--color-border)',
+                    paddingTop: '12px',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    <Clock size={16} /> {svc.duration} mins
+                  </span>
+                  <Button variant={isSelected ? 'tertiary' : 'outline'} size="sm">
+                    {isSelected ? 'Selected' : 'Select'}
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       </section>
 
       {/* Booking Confirmation Box */}
       <section>
         <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            Confirm Appointment for {preferredName}
+            Book Your Appointment
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Treatment:</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>Selected Treatment:</span>
               <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Specialist:</span>
-              <strong>{activeStaffObj.name}</strong>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Accommodations Logged:</span>
-              <strong>
-                {[quietVisit ? 'Quiet Visit' : null, stepFree ? 'Step-Free' : null, scentFree ? 'Scent-Free' : null]
-                  .filter(Boolean)
-                  .join(' • ') || 'Standard Visit'}
-              </strong>
+              <span style={{ color: 'var(--color-text-muted)' }}>Required 20% Deposit:</span>
+              <strong>${(activeServiceObj.price * 0.2).toFixed(2)}</strong>
             </div>
           </div>
 
@@ -423,7 +423,7 @@ export default function PosieStudioPage() {
               <div>
                 <strong>Appointment Snapshot Confirmed!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  A daily task has been created for {activeStaffObj.name} with your accessibility requests.
+                  Updated in your Daily Owner Digest (F018).
                 </p>
               </div>
             </div>
