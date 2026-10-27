@@ -262,6 +262,16 @@ export default function PosieStudioPage() {
   const [timeOffConflict2Resolved, setTimeOffConflict2Resolved] = useState<boolean>(false);
   const [timeOffApprovalBlockedWarning, setTimeOffApprovalBlockedWarning] = useState<boolean>(false);
 
+  // F099 Accounting Integration State
+  const [accountingPlatform, setAccountingPlatform] = useState<'quickbooks_online' | 'xero'>('quickbooks_online');
+  const [accountingSyncStatus, setAccountingSyncStatus] = useState<'pending' | 'synced'>('pending');
+  const [accountingIdempotencyTriggered, setAccountingIdempotencyTriggered] = useState<boolean>(false);
+
+  // F100 Electronic Signatures State
+  const [esignDocumentStatus, setEsignDocumentStatus] = useState<'issued' | 'signed' | 'superseded'>('issued');
+  const [esignPaymentSeparationChecked, setEsignPaymentSeparationChecked] = useState<boolean>(true);
+  const [esignTamperCheckPassed, setEsignTamperCheckPassed] = useState<boolean | null>(null);
+
 
 
 
@@ -3902,6 +3912,272 @@ export default function PosieStudioPage() {
               ✓ <strong>Absence Approved & Calendar Hard-Locked:</strong> All client commitments safely resolved. Maya's schedule is locked against online booking and walk-in assignment for Nov 10 – Nov 12.
             </div>
           )}
+        </Card>
+      </section>
+
+      {/* F099: Accounting Integration Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Scale size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Accounting Integration & Reconciled Journal Sync (F099)
+              </h3>
+            </div>
+            <Badge variant="sage">QuickBooks & Xero • Double-Entry Balance • Idempotent Retries</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Map services, boutique retail, gift card liabilities, sales taxes, gratuities, and clearing deposits into balanced double-entry journal entries. Sync retries never duplicate entries.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Daily Close Batch: DAILY-SALES-1027 ({accountingPlatform === 'quickbooks_online' ? 'QuickBooks Online' : 'Xero'})
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Idempotency Key: IDEMP-2026-10-27-DAILY • Double-Entry Reconciled
+                </div>
+              </div>
+              <Badge variant={accountingSyncStatus === 'synced' ? 'sage' : 'muted'}>
+                {accountingSyncStatus === 'synced' ? 'Synced: QBO-JE-894102' : 'Pending Remote Sync'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.82rem', marginTop: '10px' }}>
+              {/* Debits */}
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+                  Debits (Assets & Expenses) — $360.63
+                </strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>1050 Undeposited Clearing Funds:</span>
+                  <strong>$350.18</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>6050 Merchant Processing Fee Expense:</span>
+                  <strong>$10.45</strong>
+                </div>
+              </div>
+
+              {/* Credits */}
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+                  Credits (Revenues & Liabilities) — $360.63
+                </strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>4000 Service Revenue:</span>
+                  <strong>$200.00</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>4100 Retail Product Sales:</span>
+                  <strong>$50.00</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>2100 Deferred Revenue (Gift Cards):</span>
+                  <strong>$50.00</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>2200 Sales Tax Payable:</span>
+                  <strong>$20.63</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>2300 Tips / Gratuities Payable:</span>
+                  <strong>$40.00</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '10px', fontSize: '0.78rem', color: '#2B5329', background: '#F4F7F4', padding: '6px 12px', borderRadius: '4px' }}>
+              ✓ <strong>Double-Entry Invariant Verified:</strong> Total Debits ($360.63) === Total Credits ($360.63). Gift card sales are isolated under Liability Account 2100 rather than recognized prematurely as sales.
+            </div>
+          </div>
+
+          {accountingIdempotencyTriggered && (
+            <div style={{ border: '1px solid #738A73', background: '#F4F7F4', padding: '10px 14px', borderRadius: '6px', marginBottom: '14px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Idempotent Protection Enforced:</strong> Idempotency key <code>IDEMP-2026-10-27-DAILY</code> was detected by the accounting engine. Remote batch QBO-JE-894102 was recognized; zero duplicate journal entries were created.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {accountingSyncStatus === 'pending' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  setAccountingSyncStatus('synced');
+                  setAccountingIdempotencyTriggered(false);
+                }}
+              >
+                Sync Batch to QuickBooks Online
+              </Button>
+            )}
+
+            {accountingSyncStatus === 'synced' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAccountingIdempotencyTriggered(true)}
+              >
+                Test Idempotent Retry (Simulate Duplicate Webhook)
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setAccountingSyncStatus('pending');
+                setAccountingIdempotencyTriggered(false);
+                setAccountingPlatform(accountingPlatform === 'quickbooks_online' ? 'xero' : 'quickbooks_online');
+              }}
+            >
+              Toggle Platform ({accountingPlatform === 'quickbooks_online' ? 'Switch to Xero' : 'Switch to QuickBooks'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F100: Versioned Electronic Signatures Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileCheck2 size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Versioned Electronic Signatures & Cryptographic Evidence (F100)
+              </h3>
+            </div>
+            <Badge variant="sage">Rules BR05, DR04, DR05, DR10 • SHA-256 Digest • Consent vs. Payment Separation</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Signatures are mathematically bound to an exact document snapshot. If terms or scope change, historical signed artifacts are permanently preserved and a new version is issued.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Chemical Peel & Retinoid Protocol Consent ({esignDocumentStatus === 'superseded' ? 'Version 1.0 (Superseded)' : 'Version 1.0 (Active)'})
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', marginTop: '2px' }}>
+                  SHA-256 Digest: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+                </div>
+              </div>
+              <Badge variant={esignDocumentStatus === 'signed' ? 'sage' : esignDocumentStatus === 'superseded' ? 'muted' : 'rose'}>
+                {esignDocumentStatus === 'signed'
+                  ? 'Signed & Cryptographically Sealed'
+                  : esignDocumentStatus === 'superseded'
+                  ? 'Superseded (Historical Preserved)'
+                  : 'Awaiting E-Signature'}
+              </Badge>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', color: '#555', lineHeight: '1.5', marginBottom: '12px' }}>
+              &ldquo;Client agrees to patch test protocols and informs practitioner of active retinoid use. Posie Atelier reserves the right to postpone treatment if skin barrier is compromised.&rdquo;
+            </div>
+
+            {/* Invariant DR05 Checkbox */}
+            <div style={{ border: '1px solid #E5E0D8', background: '#FFFDF9', padding: '10px 12px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={esignPaymentSeparationChecked}
+                  onChange={(e) => setEsignPaymentSeparationChecked(e.target.checked)}
+                  style={{ marginTop: '2px' }}
+                />
+                <span style={{ color: 'var(--color-primary)' }}>
+                  <strong>Rule DR05 Compliance:</strong> I understand that signing this consent form confirms treatment acknowledgment only and does NOT authorize any payment card charges. Payment is processed separately at checkout.
+                </span>
+              </label>
+            </div>
+
+            {esignDocumentStatus === 'signed' && (
+              <div style={{ border: '1px solid #A2B59F', background: '#F4F7F4', padding: '12px', borderRadius: '6px', fontSize: '0.82rem' }}>
+                <strong style={{ color: '#2B5329', display: 'block', marginBottom: '4px' }}>
+                  ✓ Cryptographic Audit Certificate Attached (Rule DR10)
+                </strong>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', color: '#3A523A', fontSize: '0.78rem' }}>
+                  <div>Signer: <strong>Zendaya Coleman (Client)</strong></div>
+                  <div>IP Address: <strong>192.168.1.100</strong></div>
+                  <div>Timestamp: <strong>2026-10-27 14:30:00 UTC</strong></div>
+                  <div>Device: <strong>Mobile Safari / iOS 17</strong></div>
+                  <div>Signature Mode: <strong>Drawn Vector Verified</strong></div>
+                  <div>Evidence ID: <strong>EVID-OCT27-991A</strong></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {esignTamperCheckPassed !== null && (
+            <div style={{ marginTop: '10px', background: esignTamperCheckPassed ? '#F4F7F4' : '#FFF7F5', border: esignTamperCheckPassed ? '1px solid #738A73' : '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: esignTamperCheckPassed ? '#3A523A' : '#8F4A3E', marginBottom: '12px' }}>
+              {esignTamperCheckPassed
+                ? '✓ Cryptographic Integrity Verified: Calculated content hash matches the signed signature digest with zero data alterations.'
+                : '⚠ Tamper Alarm: Document content does not match the signed digest! Document integrity has been compromised.'}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {esignDocumentStatus === 'issued' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  if (!esignPaymentSeparationChecked) {
+                    alert('Rule DR05 requires acknowledging separation of consent and payment!');
+                    return;
+                  }
+                  setEsignDocumentStatus('signed');
+                  setEsignTamperCheckPassed(true);
+                }}
+              >
+                Sign Consent as Zendaya Coleman
+              </Button>
+            )}
+
+            {esignDocumentStatus === 'signed' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEsignTamperCheckPassed(true)}
+                >
+                  Verify Cryptographic Tamper Seal
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEsignDocumentStatus('superseded');
+                    setEsignTamperCheckPassed(null);
+                  }}
+                >
+                  Practitioner Issues v2.0 Amendment (Rule DR04)
+                </Button>
+              </>
+            )}
+
+            {esignDocumentStatus === 'superseded' && (
+              <div style={{ width: '100%' }}>
+                <div style={{ background: '#FFF9F7', border: '1px solid #E5C3B8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8F4A3E', marginBottom: '10px' }}>
+                  ✓ <strong>Rule DR04 Enforced:</strong> Version 1.0 historical artifact is locked and preserved in audit records. Version 2.0 draft has been spawned with updated medical precautions requiring fresh client acceptance.
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEsignDocumentStatus('issued');
+                    setEsignTamperCheckPassed(null);
+                    setEsignPaymentSeparationChecked(true);
+                  }}
+                >
+                  Reset E-Signature Showcase
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
       </section>
 

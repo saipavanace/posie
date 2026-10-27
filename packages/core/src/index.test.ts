@@ -192,6 +192,16 @@ import {
   markBookingForRescheduling,
   approveTimeOffRequest,
   rejectTimeOffRequest,
+  validateChartOfAccountsMapping,
+  buildSalesJournalEntry,
+  createSyncBatch,
+  executeAccountingSync,
+  computeDocumentHash,
+  createSignableDocument,
+  issueDocumentForSignature,
+  applyElectronicSignature,
+  verifySignatureIntegrity,
+  createAmendedDocument,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -4725,6 +4735,189 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(approvedRequest.status).toBe('approved');
       expect(calendarBlocked).toBe(true);
       expect(approvedRequest.reviewedBy).toBe('Audrey (Owner)');
+    });
+  });
+
+  // F099: Accounting Integration & Reconciled Journal Sync
+  describe('Posie Core Logic - F099 (Accounting Integration & Reconciled Journal Sync)', () => {
+    const qboMapping = {
+      platform: 'quickbooks_online' as const,
+      serviceRevenueAccount: '4000 - Service Sales',
+      retailRevenueAccount: '4100 - Retail Boutique Sales',
+      giftCardLiabilityAccount: '2100 - Deferred Revenue / Gift Cards',
+      salesTaxPayableAccount: '2200 - Sales Tax Payable',
+      tipsPayableAccount: '2300 - Gratuities / Tips Payable',
+      processingFeeExpenseAccount: '6050 - Merchant Processing Fees',
+      clearingDepositAccount: '1050 - Undeposited Clearing Funds',
+    };
+
+    it('validates account mappings and enforces double-entry balancing across revenues, liabilities, and clearing', () => {
+      // 1. Validation check
+      expect(validateChartOfAccountsMapping(qboMapping)).toBe(true);
+
+      expect(() => {
+        validateChartOfAccountsMapping({
+          ...qboMapping,
+          clearingDepositAccount: '',
+        });
+      }).toThrow(/missing required account for: clearingDepositAccount/);
+
+      // 2. Build balanced sales journal entry
+      const entry = buildSalesJournalEntry({
+        idempotencyKey: 'IDEMP-2026-10-27-DAILY',
+        transactionDate: '2026-10-27',
+        reference: 'DAILY-SALES-BATCH-1027',
+        serviceRevenue: 200.0,
+        retailRevenue: 50.0,
+        giftCardLiabilitySold: 50.0, // Deferred revenue liability
+        salesTax: 20.63,
+        tips: 40.0,
+        processingFee: 10.45,
+        mapping: qboMapping,
+      });
+
+      // Total credits: 200 + 50 + 50 + 20.63 + 40 = $360.63
+      // Total debits: 10.45 fee + 350.18 clearing deposit = $360.63
+      expect(entry.totalCredit).toBe(360.63);
+      expect(entry.totalDebit).toBe(360.63);
+      expect(entry.isBalanced).toBe(true);
+
+      // 3. Create sync batch and execute sync
+      const batch = createSyncBatch({
+        batchId: 'BATCH-SYNC-001',
+        platform: 'quickbooks_online',
+        journalEntries: [entry],
+        idempotencyKey: 'IDEMP-2026-10-27-DAILY',
+      });
+
+      expect(batch.status).toBe('pending');
+
+      const { batch: syncedBatch, duplicatePrevented: firstSyncDup } = executeAccountingSync({
+        batch,
+      });
+
+      expect(firstSyncDup).toBe(false);
+      expect(syncedBatch.status).toBe('synced');
+      expect(syncedBatch.externalReferenceId).toMatch(/^QBO-JE-\d+/);
+
+      // 4. Invariant: Idempotent re-sync prevents duplicate journal entries
+      const { batch: retryBatch, duplicatePrevented } = executeAccountingSync({
+        batch: syncedBatch,
+      });
+
+      expect(duplicatePrevented).toBe(true);
+      expect(retryBatch.externalReferenceId).toBe(syncedBatch.externalReferenceId);
+
+      // 5. Handles API gateway failures and tracks retry count
+      const failedSync = executeAccountingSync({
+        batch,
+        mockExternalSystemFailure: true,
+      });
+
+      expect(failedSync.batch.status).toBe('failed');
+      expect(failedSync.batch.retryCount).toBe(1);
+      expect(failedSync.batch.lastErrorMessage).toContain('API timeout');
+    });
+  });
+
+  // F100: Versioned Electronic Signatures & Cryptographic Evidence Record
+  describe('Posie Core Logic - F100 (Versioned Electronic Signatures - Rules BR05, DR04, DR05, DR10)', () => {
+    it('cryptographically binds signatures to document text, enforces payment separation, and locks amended versions', () => {
+      // 1. Create signable document draft
+      const documentText =
+        'TREATMENT CONSENT & ARBITRATION AGREEMENT v1.0\nClient agrees to patch test protocols and informs practitioner of active retinoid use. Posie Atelier reserves right to postpone service if skin barrier is impaired.';
+
+      const docDraft = createSignableDocument({
+        documentId: 'DOC-CONSENT-991',
+        documentType: 'service_consent',
+        title: 'Chemical Peel & Exfoliation Consent',
+        content: documentText,
+        version: 1,
+      });
+
+      expect(docDraft.status).toBe('draft');
+      expect(docDraft.documentHash).toBe(computeDocumentHash(documentText));
+
+      // 2. Issue document for signature
+      const issuedDoc = issueDocumentForSignature(docDraft);
+      expect(issuedDoc.status).toBe('issued_awaiting_signature');
+
+      // 3. Invariant DR05: Consent and payment are separate actions
+      // Signing without acknowledging payment separation MUST fail
+      expect(() => {
+        applyElectronicSignature({
+          document: issuedDoc,
+          signer: {
+            name: 'Zendaya Coleman',
+            email: 'zendaya@example.com',
+            role: 'client',
+          },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+          signatureType: 'drawn',
+          signatureData: 'M10 20 Q 30 50 80 20 T 120 40',
+          consentAcknowledgementText:
+            'I have read and agree to all treatment terms and contraindications.',
+          acknowledgedSeparationOfPayment: false, // Invariant DR05 test
+        });
+      }).toThrow(/Invariant DR05 Violation/);
+
+      // 4. Apply lawful electronic signature with evidence record
+      const signedDoc = applyElectronicSignature({
+        document: issuedDoc,
+        signer: {
+          name: 'Zendaya Coleman',
+          email: 'zendaya@example.com',
+          phone: '310-555-9011',
+          role: 'client',
+        },
+        ipAddress: '192.168.1.100',
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+        signatureType: 'drawn',
+        signatureData: 'M10 20 Q 30 50 80 20 T 120 40',
+        consentAcknowledgementText:
+          'I have read and agree to all treatment terms and contraindications.',
+        acknowledgedSeparationOfPayment: true,
+        currentTime: '2026-10-27T14:30:00.000Z',
+      });
+
+      expect(signedDoc.status).toBe('signed_completed');
+      expect(signedDoc.signatureEvidence).toBeDefined();
+      expect(signedDoc.signatureEvidence!.signer.name).toBe('Zendaya Coleman');
+      expect(signedDoc.signatureEvidence!.documentHash).toBe(signedDoc.documentHash);
+
+      // 5. Verify signature integrity
+      const verification = verifySignatureIntegrity(signedDoc);
+      expect(verification.isValid).toBe(true);
+
+      // 6. Tamper Detection: Changing a single character in content invalidates the hash
+      const tamperedDoc = {
+        ...signedDoc,
+        content: documentText + ' [Unapproved stealth modification]',
+      };
+      const tamperCheck = verifySignatureIntegrity(tamperedDoc);
+      expect(tamperCheck.isValid).toBe(false);
+      expect(tamperCheck.error).toContain('Content Tamper detected');
+
+      // 7. Invariant DR04: Amending a document supersedes the original and preserves historical artifact
+      const { supersededDocument, newVersionDraft } = createAmendedDocument({
+        signedDocument: signedDoc,
+        newContent:
+          documentText + '\nAMENDMENT 1: Client advised to discontinue AHA/BHA 7 days prior.',
+        amendmentReason: 'Added high-percentage AHA precaution guidance',
+        newDocumentId: 'DOC-CONSENT-992',
+      });
+
+      // Original document is superseded, historical signature intact
+      expect(supersededDocument.status).toBe('superseded');
+      expect(supersededDocument.supersededByDocumentId).toBe('DOC-CONSENT-992');
+      expect(supersededDocument.signatureEvidence!.signer.name).toBe('Zendaya Coleman');
+
+      // New draft is version 2, draft status, awaiting new signature
+      expect(newVersionDraft.version).toBe(2);
+      expect(newVersionDraft.status).toBe('draft');
+      expect(newVersionDraft.documentId).toBe('DOC-CONSENT-992');
+      expect(newVersionDraft.signatureEvidence).toBeUndefined();
     });
   });
 

@@ -96,4 +96,6 @@ export * from './loyalty_ledger';
 export * from './online_storefront';
 export * from './commission_calculation';
 export * from './timeoff_coverage';
+export * from './accounting_sync';
+export * from './electronic_signatures';
 

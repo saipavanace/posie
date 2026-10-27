@@ -582,6 +582,19 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Staff absence approval, conflict impact analysis, coverage reassignment, and schedule blocking suite for beauty and wellness teams.
 * **Key Invariant (Basis: I; team scheduling):** **Client commitment defense & certified coverage matching.** Prohibits the silent deletion, dropping, or orphan status of existing client bookings when staff request time off. The system generates an authoritative Conflict Impact Report quantifying appointments and revenue at risk. Owner approval is strictly blocked until every conflicting booking has either been reassigned to an available provider certified for that specific service, or queued for proactive client rescheduling outreach. Upon approval, the staff member's calendar is hard-blocked against online booking and walk-in scheduling.
 
+---
+
+## F099 — Accounting Integration & Reconciled Journal Sync (QuickBooks & Xero)
+* **What it is:** Real-time general ledger synchronization mapping studio sales, gift card liabilities, sales taxes, tips, merchant processing fees, and bank clearing deposits to external accounting software.
+* **Key Invariant (Basis: B; WB F68):** **Double-entry balancing & idempotent retry protection.** Sync retries never duplicate journal entries in QuickBooks Online or Xero; every transaction batch requires a unique idempotency key. Rather than transmitting a single blended sales number, Posie reconciles distinct financial accounts: Service Revenue (Account 4000), Retail Sales (Account 4100), Gift Card Deferred Liability (Account 2100), Sales Tax Payable (Account 2200), Tips Payable (Account 2300), Merchant Processing Fees (Account 6050), and Undeposited Clearing Funds (Account 1050), strictly enforcing that Total Debits equal Total Credits.
+
+---
+
+## F100 — Versioned Electronic Signatures & Cryptographic Evidence (Rules BR05, DR04, DR05, DR10)
+* **What it is:** Compliant e-signature suite for intake questionnaires, treatment consents, photographic media releases, estimate approvals, and cancellation policy acknowledgments.
+* **Key Invariant (Basis: B; WB F22, Rules BR05, DR04, DR05, DR10):** **Cryptographic hash binding & consent-payment separation.** Signatures are mathematically bound to a SHA-256 digest of the exact document text; altering a single character triggers a tamper alert. In accordance with Rule DR05, signing an informed consent or intake questionnaire explicitly does NOT authorize a payment card charge. Per Rule DR04, once signed, historical document artifacts remain immutable. Amendments supersede the original document and spawn a linked Version 2 draft requiring fresh client signature acceptance. Audit evidence records permanently capture UTC timestamps, client IP addresses, browser user agents, and signature vectors.
+
+
 
 
 
