@@ -894,6 +894,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Predictive operations and staffing engine estimating future appointment demand, chair capacity utilization, cancellation risk exposure, and recommended labor hours.
 * **Key Invariant (Basis: Expansion (X); DATA, WB F150, Rule F150):** **Empirical Uncertainty Intervals & Cold-Start Graceful Degradation.** "Sufficient history and monitoring. Forecasts are evaluated on future periods and degrade gracefully for new businesses." Every projection outputs explicit statistical uncertainty intervals (80% confidence bounds) alongside simple 4-week historical moving averages. For new ateliers or services with <4 weeks of history, the model flags limited data and gracefully widens confidence bounds to prevent overstaffing or understaffing.
 
+---
+
+## F151 — What-If Business Planning (WB F151, F020, F143)
+* **What it is:** Interactive strategic planning engine allowing salon owners to rehearse the financial and workload impacts of schedule adjustments, pricing changes, service mix shifts, or staffing additions.
+* **Key Invariant (Basis: Growth (G); DATA FIN, WB F151, Rule F151):** **Ground-Truth Costs & Contribution Floor Safeguards.** "Trusted historical costs and explicit owner-entered assumptions; scenarios never become actual forecasts without validation." Enables owners to set protected lifestyle time off (e.g. 4-day work week or 32 hours maximum) while evaluating whether net direct contribution meets or exceeds their mandatory weekly contribution floor.
+
+---
+
+## F152 — Measured Growth Experiments (WB F152, F117, F082)
+* **What it is:** Rigorous A/B testing and randomized holdout experiment engine for salon rebooking promotions, off-peak pricing incentives, and client win-back campaigns.
+* **Key Invariant (Basis: Growth (G); DATA MSG, WB F152, Rule F152):** **Randomized Holdout Verification & Margin Cannibalization Guards.** "Results distinguish causal tests from simple before-and-after trends." Automatically partitions eligible clients into treatment and holdout control cohorts (e.g. 50/50 split), isolating true causal conversion uplift from natural demand trends while monitoring client opt-out rates and net contribution dollars to prevent profit erosion. Requires verified owner authorization before launching.
+
+---
+
+## F153 — Cancellation Policy Simulator (WB F153, F108, F127)
+* **What it is:** Predictive policy rehearsal simulator modeling the delicate tradeoff between upfront booking deposit friction, funnel checkout completion rates, cancellation frequencies, and recovered contribution dollars.
+* **Key Invariant (Basis: Expansion (X); DATA LEG, WB F153, Rule F153):** **Blast-Radius Rehearsal & Conversion-vs-Recovery Modeling.** "Historical funnel and financial data. Policy changes are approved and effects are measured after rollout." Generates empirical impact projections across conversion friction vs uncollected no-show recoveries (e.g. $30 fixed deposit vs 100% full prepay) before policies are published to clients, protecting studios from unintended booking drops.
+
+---
+
+## F154 — Service Match Assistant (WB F154, F022)
+* **What it is:** Conversational service navigation assistant matching client goals, hair/skin types, budget ranges, and time availability to suitable treatments from the studio's verified active service catalog.
+* **Key Invariant (Basis: Expansion (X); AI CLIN, WB F154, Rule F154):** **Strict Clinical Guardrails & Practitioner Referral.** "Medical questions or ambiguous eligibility are referred to a qualified professional." The engine strictly adheres to approved catalog treatments with transparent pricing. Any mention of active clinical contraindications, retinol burns, severe eczema flares, or medical conditions hard-stops automated service matching and directs the guest to a licensed practitioner consultation.
+
+---
+
+## F155 — Purchasing Recommendations (WB F155, F047, F125)
+* **What it is:** Inventory procurement recommendation engine analyzing stock on hand, committed appointment allocations, supplier lead times, and owner budget caps to calculate optimal reorder quantities.
+* **Key Invariant (Basis: Expansion (X); DATA OPS PART, WB F155, Rule F155):** **Demand-Aware Replenishment & Authorized Buyer Signoff.** "The owner approves costs and substitutions before ordering." Reorder models incorporate minimum order quantities (MOQ) and case pack constraints. Generating recommendations or draft purchase orders never automatically spends salon funds or transmits orders until an authorized buyer explicitly reviews and signs the purchase order.
+
+
 
 
 

@@ -332,6 +332,15 @@ import {
   executeGovernedDataQuery,
   GOVERNED_METRIC_DEFINITIONS,
   generateDemandStaffingForecast,
+  simulateWhatIfScenario,
+  compareWhatIfScenarios,
+  createGrowthExperiment,
+  assignClientToExperiment,
+  evaluateGrowthExperimentResults,
+  simulateCancellationPolicyImpact,
+  matchServicesToClientPreferences,
+  generatePurchasingRecommendations,
+  approvePurchaseOrderDraft,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -7900,6 +7909,289 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(coldForecast.buckets).toHaveLength(7);
     });
   });
+
+  describe('Posie Core Logic - F151 (What-If Business Planning)', () => {
+    const mockBaseline = {
+      weeklyServiceRevenueCents: 500000, // $5,000.00
+      weeklyRetailRevenueCents: 80000, // $800.00
+      weeklyLaborCostCents: 200000, // $2,000.00
+      weeklyProductCostCents: 45000, // $450.00
+      weeklyOperatingOverheadCents: 55000, // $550.00
+      weeklyOwnerHoursWorked: 48,
+      weeklyDirectContributionCents: 280000, // $2,800.00
+    };
+
+    it('simulates financial tradeoffs, protects owner time off, and verifies contribution floor preservation', () => {
+      // Scenario A: Raise prices 15%, slight 5% volume elasticity, hire assistant ($500/wk) to cut owner hours to 32h
+      const assumptionsA = {
+        scenarioName: 'Balanced Growth & 4-Day Work Week',
+        targetDaysOff: ['Sunday', 'Monday', 'Friday'],
+        targetOwnerMaxHoursPerWeek: 32,
+        priceAdjustmentPercentage: 15,
+        serviceVolumeMultiplier: 0.95,
+        staffHeadcountDelta: 1,
+        additionalWeeklyLaborCostCents: 50000, // $500.00
+        minimumWeeklyContributionFloorCents: 250000, // $2,500.00 floor
+      };
+
+      const outcomeA = simulateWhatIfScenario(mockBaseline, assumptionsA);
+
+      expect(outcomeA.meetsContributionFloor).toBe(true);
+      expect(outcomeA.ownerWorkload.targetTimeOffAchieved).toBe(true);
+      expect(outcomeA.ownerWorkload.hoursSavedPerWeek).toBeGreaterThanOrEqual(16);
+      expect(outcomeA.projectedFinancials.netContributionCents).toBeGreaterThan(250000);
+      expect(outcomeA.tradeoffSummary).toContain('Balanced Win');
+
+      // Scenario B: Drop prices 20% to drive volume (+10%), but contribution fails floor
+      const assumptionsB = {
+        scenarioName: 'Discount Volume Push',
+        targetDaysOff: ['Sunday'],
+        targetOwnerMaxHoursPerWeek: 50,
+        priceAdjustmentPercentage: -20,
+        serviceVolumeMultiplier: 1.10,
+        staffHeadcountDelta: 0,
+        additionalWeeklyLaborCostCents: 0,
+        minimumWeeklyContributionFloorCents: 250000,
+      };
+
+      const outcomeB = simulateWhatIfScenario(mockBaseline, assumptionsB);
+      expect(outcomeB.meetsContributionFloor).toBe(false);
+
+      // Compare scenarios
+      const comparison = compareWhatIfScenarios([outcomeA, outcomeB]);
+      expect(comparison.bestMarginScenario).toBe('Balanced Growth & 4-Day Work Week');
+      expect(comparison.bestTimeOffScenario).toBe('Balanced Growth & 4-Day Work Week');
+      expect(comparison.comparisonTable).toHaveLength(2);
+    });
+  });
+
+  describe('Posie Core Logic - F152 (Measured Growth Experiments)', () => {
+    it('enforces owner approval, splits cohorts into randomized holdouts, and detects true causal uplift vs cannibalization', () => {
+      // 1. Create experiment config
+      const expConfig = createGrowthExperiment(
+        {
+          title: 'Off-Peak Thursday 15% Courtesy Incentive',
+          type: 'off_peak_promotional_offer',
+          holdoutPercentage: 50,
+          minimumSampleSize: 20,
+          contributionFloorCents: 6500,
+          approvedByOwnerStaffId: 'staff_owner_elena',
+          startDate: '2026-11-01',
+          endDate: '2026-11-28',
+          hypothesis: 'Offering 15% off on Thursday afternoon fills open slots without eroding full-price regulars.',
+        },
+        'staff_owner_elena'
+      );
+
+      expect(expConfig.experimentId).toBeDefined();
+
+      // 2. Cohort assignment distribution
+      const assignment1 = assignClientToExperiment(expConfig, 'cli_101');
+      const assignment2 = assignClientToExperiment(expConfig, 'cli_102');
+      expect(['treatment', 'control_holdout']).toContain(assignment1);
+      expect(['treatment', 'control_holdout']).toContain(assignment2);
+
+      // 3. Evaluate results with sufficient sample size and positive causal uplift
+      const mockCohort: any[] = [];
+      // 25 treatment clients: 16 completed (64%), high contribution, low opt-out
+      for (let i = 0; i < 25; i++) {
+        mockCohort.push({
+          clientId: `treat_${i}`,
+          assignment: 'treatment',
+          completedAppointment: i < 16,
+          revenueCents: 12000,
+          discountAppliedCents: 1800,
+          directContributionCents: i < 16 ? 7500 : 0,
+          unsubscribedOrOptedOut: i === 0, // 1 opt-out (4%)
+        });
+      }
+      // 25 control holdouts: 10 completed (40%), 1 opt-out (4%)
+      for (let i = 0; i < 25; i++) {
+        mockCohort.push({
+          clientId: `ctrl_${i}`,
+          assignment: 'control_holdout',
+          completedAppointment: i < 10,
+          revenueCents: 12000,
+          discountAppliedCents: 0,
+          directContributionCents: i < 10 ? 8200 : 0,
+          unsubscribedOrOptedOut: i === 0, // 1 opt-out (4%)
+        });
+      }
+
+      const report = evaluateGrowthExperimentResults(expConfig, mockCohort);
+
+      expect(report.status).toBe('completed_statistically_significant');
+      expect(report.isCausalUpliftConfirmed).toBe(true);
+      expect(report.conversionRates.upliftPct).toBe(24.0); // 64% vs 40%
+      expect(report.contributionMetrics.netIncrementalContributionCents).toBeGreaterThan(0);
+      expect(report.recommendation).toContain('Adopt strategy');
+    });
+  });
+
+  describe('Posie Core Logic - F153 (Cancellation Policy Simulator)', () => {
+    const mockBaseline = {
+      monthlyInquiriesCount: 400,
+      historicalCheckoutConversionPct: 75, // 300 bookings
+      monthlyCompletedVisitsCount: 250,
+      monthlyLateCancellationsCount: 35,
+      monthlyNoShowsCount: 15,
+      averageServicePriceCents: 15000, // $150.00
+      averageDirectContributionCents: 11000, // $110.00
+    };
+
+    it('simulates conversion drop vs recovered funds and identifies net positive policy terms', () => {
+      // 1. Moderate fixed deposit ($30) with 24h notice window
+      const moderateTerms = {
+        policyName: 'Moderate $30 Deposit with 24h Notice',
+        depositType: 'fixed_deposit' as const,
+        depositValue: 3000, // $30.00
+        cancellationWindowHours: 24,
+        lateCancellationFeePercentage: 50,
+      };
+
+      const modResult = simulateCancellationPolicyImpact(mockBaseline, moderateTerms);
+      expect(modResult.funnelImpact.conversionFrictionDropPct).toBe(3.5);
+      expect(modResult.attendanceImpact.projectedNoShows).toBeLessThan(15);
+      expect(modResult.financialOutcome.forfeitedDepositsCollectedCents).toBeGreaterThan(0);
+      expect(modResult.verdict).toBe('net_positive_gain');
+
+      // 2. Extreme full prepayment (100% deposit) with 48h notice
+      const extremeTerms = {
+        policyName: 'Extreme 100% Prepayment',
+        depositType: 'percentage_deposit' as const,
+        depositValue: 100, // 100%
+        cancellationWindowHours: 48,
+        lateCancellationFeePercentage: 100,
+      };
+
+      const extremeResult = simulateCancellationPolicyImpact(mockBaseline, extremeTerms);
+      expect(extremeResult.funnelImpact.conversionFrictionDropPct).toBe(20.0); // 20% conversion drop
+      expect(extremeResult.verdict).toBe('net_negative_drop');
+      expect(extremeResult.advisoryNote).toContain('Overly Restrictive');
+    });
+  });
+
+  describe('Posie Core Logic - F154 (Service Match Assistant)', () => {
+    const mockCatalog = [
+      {
+        serviceId: 'srv_hydra_dew',
+        name: 'Hydra-Dew Glass Glow Facial',
+        priceCents: 14000,
+        durationMinutes: 60,
+        category: 'facial' as const,
+        targetConcerns: ['dry skin', 'dehydration', 'dullness', 'texture'],
+        suitableSkinHairTypes: ['Sensitive Fitzpatrick II', 'Dry', 'Combination'],
+        contraindicatedConditions: ['open wounds'],
+        description: 'Deep hyaluronic infusion and soothing botanical exfoliation.',
+      },
+      {
+        serviceId: 'srv_brow_sculpt',
+        name: 'Precision Brow Lamination & Tint',
+        priceCents: 6500,
+        durationMinutes: 40,
+        category: 'brows_lashes' as const,
+        targetConcerns: ['sparse arches', 'unruly brows'],
+        suitableSkinHairTypes: ['All types'],
+        contraindicatedConditions: [],
+        description: 'Keratin smoothing and bespoke arch tinting.',
+      },
+    ];
+
+    it('matches services based on concern and budget, while routing medical contraindications to clinical referral', () => {
+      // 1. Standard matching client
+      const standardInput = {
+        primaryConcern: 'dehydration and dullness',
+        skinOrHairType: 'Sensitive Fitzpatrick II',
+        budgetRangeCents: { min: 10000, max: 18000 },
+        availableMinutes: 75,
+        hasContraindicationsOrAllergies: false,
+      };
+
+      const matchRes = matchServicesToClientPreferences(standardInput, mockCatalog);
+      expect(matchRes.requiresClinicalReferral).toBe(false);
+      expect(matchRes.matchedServices[0].service.serviceId).toBe('srv_hydra_dew');
+      expect(matchRes.matchedServices[0].isWithinBudget).toBe(true);
+      expect(matchRes.matchedServices[0].isWithinTimeLimit).toBe(true);
+      expect(matchRes.explanationSpeech).toContain('Hydra-Dew Glass Glow Facial');
+
+      // 2. Medical contraindication guardrail trigger (retinol burn)
+      const medicalInput = {
+        primaryConcern: 'severe peeling and redness',
+        skinOrHairType: 'Dry',
+        budgetRangeCents: { min: 5000, max: 20000 },
+        availableMinutes: 60,
+        hasContraindicationsOrAllergies: true,
+        contraindicationsNotes: 'Suffering from active retinol burn from prescription cream last week',
+      };
+
+      const medRes = matchServicesToClientPreferences(medicalInput, mockCatalog);
+      expect(medRes.requiresClinicalReferral).toBe(true);
+      expect(medRes.matchedServices).toHaveLength(0);
+      expect(medRes.clinicalReferralReason).toContain('retinol burn');
+      expect(medRes.explanationSpeech).toContain('complimentary 15-minute consultation');
+    });
+  });
+
+  describe('Posie Core Logic - F155 (Purchasing Recommendations)', () => {
+    const mockInventoryItems = [
+      {
+        sku: 'SKU_HYALURONIC_SERUM_500ML',
+        productName: 'Botanical Hyaluronic Acid Professional Backbar (500ml)',
+        supplierName: 'Luxe Derm Supply',
+        supplierSku: 'LDS-HA-500',
+        currentStockOnHand: 2,
+        allocatedBookedDemandUnits: 3, // Deficit! 3 committed vs 2 on hand
+        supplierLeadTimeDays: 7,
+        minimumOrderQuantity: 4,
+        unitCostCents: 4500, // $45.00
+        packSizeUnits: 4,
+        averageWeeklyUsageUnits: 3,
+      },
+      {
+        sku: 'SKU_ORGANIC_COTTON_PADS',
+        productName: 'Organic Unbleached Cleansing Rounds (500ct)',
+        supplierName: 'EcoSpa Wholesale',
+        supplierSku: 'ECO-ROUND-500',
+        currentStockOnHand: 25,
+        allocatedBookedDemandUnits: 4,
+        supplierLeadTimeDays: 5,
+        minimumOrderQuantity: 10,
+        unitCostCents: 1200,
+        packSizeUnits: 5,
+        averageWeeklyUsageUnits: 2,
+      },
+    ];
+
+    it('identifies imminent stockouts, respects MOQs and pack sizes, and mandates authorized buyer PO signoff', () => {
+      const plan = generatePurchasingRecommendations(mockInventoryItems, 50000); // $500 budget cap
+
+      expect(plan.isWithinBudget).toBe(true);
+      expect(plan.items).toHaveLength(2);
+
+      // Item 1 (Hyaluronic Serum) should be urgent stockout imminent
+      const serumRec = plan.items.find(i => i.sku === 'SKU_HYALURONIC_SERUM_500ML');
+      expect(serumRec?.urgency).toBe('urgent_stockout_imminent');
+      expect(serumRec?.recommendedUnitsToOrder).toBe(8); // 2 packs of 4 to cover 7-unit deficit
+      expect(serumRec?.estimatedCostCents).toBe(36000); // 8 * $45.00 = $360.00
+
+      // Item 2 (Cotton rounds) has 21 available units (healthy)
+      const cottonRec = plan.items.find(i => i.sku === 'SKU_ORGANIC_COTTON_PADS');
+      expect(cottonRec?.urgency).toBe('healthy_stock');
+      expect(cottonRec?.recommendedUnitsToOrder).toBe(0);
+
+      // Verify draft PO creation
+      expect(plan.draftPurchaseOrders).toHaveLength(1);
+      expect(plan.draftPurchaseOrders[0].supplierName).toBe('Luxe Derm Supply');
+      expect(plan.draftPurchaseOrders[0].status).toBe('draft_pending_owner_approval');
+
+      // Invariant: Approve purchase order draft
+      const approvedPo = approvePurchaseOrderDraft(plan, 'Luxe Derm Supply', 'staff_owner_elena');
+      expect(approvedPo.isApproved).toBe(true);
+      expect(approvedPo.approvedPoNumber).toContain('PO-LUX');
+      expect(approvedPo.auditRecord).toContain('authorized buyer staff_owner_elena');
+    });
+  });
+
 
 
 

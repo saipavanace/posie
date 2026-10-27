@@ -148,4 +148,9 @@ export * from './screen_aware_assistant';
 export * from './dictation_notes';
 export * from './governed_data_queries';
 export * from './demand_staffing_forecast';
+export * from './what_if_planning';
+export * from './growth_experiments';
+export * from './cancellation_simulator';
+export * from './service_match_assistant';
+export * from './purchasing_recommendations';
 
