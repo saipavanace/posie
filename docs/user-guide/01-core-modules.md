@@ -1134,6 +1134,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Frictionless 1-click subscription cancellation and downgrade workflow with guaranteed historical read-only data access and comprehensive export archives.
 * **Key Invariant (Basis: Launch candidate (L); LEG FIN OPS, WB F190, Rule F190, Table 91):** **90-Day Read-Only Archive & Published Data Purge Schedule.** "Allow clear cancellation and downgrade, with a specified historical read-only period, export and published retention policy; subscription and record permissions; the owner sees what stops, what remains accessible and when data will be deleted." Provides immediate self-service exit without retention calls; guarantees 90 days of read-only historical archive access; produces downloadable CSV/ZIP export packages across clients, bookings, and ledger records; publishes exact scheduled data deletion date.
 
+---
+
+## F191 — SMS Marketing Campaigns (WB F191, WB F42, WB F61, Table 91)
+* **What it is:** Dedicated text message marketing engine generating brand-identified SMS broadcasts with character segmentation analysis (GSM-7 vs Unicode), quiet-hours gating, and strict budget caps.
+* **Key Invariant (Basis: Growth (G); MSG LEG, WB F191, Rule F191, Table 91):** **Explicit Marketing Opt-In & TCPA Quiet Hours Compliance.** "Create brand-identified text campaigns with previews, opt-in audiences, frequency limits, budget caps and measurable results; carrier registration and consent; estimates include message segments, replies and possible provider charges." Strictly filters for verified opt-in marketing SMS consent; blocks dispatches outside 8:00 AM - 9:00 PM recipient local time; requires mandatory opt-out instructions (e.g. "Reply STOP"); halts campaign if projected spend exceeds owner budget cap.
+
+---
+
+## F192 — Lost Demand Ledger (WB F192, CRS04, WB F81, Table 91)
+* **What it is:** Turn-away and unfulfilled availability logging ledger capturing online search drop-offs, phone turn-aways, and walk-in capacity constraints.
+* **Key Invariant (Basis: Growth (G); DATA, WB F192, Rule F192, Table 91):** **Observed Demand Deduplication & Unfulfilled Revenue Attribution.** "Capture unsuccessful availability searches and manual turn-aways with requested service, time flexibility and optional permission to follow up; booking events and manual quick entry; reports separate observed requests from inferred lost revenue and expose duplicate demand." Deduplicates multiple searches by the same client on the same day; tracks verified follow-up permissions for waitlist auto-recovery; generates actionable peak-day capacity reports.
+
+---
+
+## F193 — Leave-By Appointment Constraint (WB F193, X21, X01, Table 91)
+* **What it is:** Hard client departure constraint scheduling engine tailoring treatment durations to firm client deadlines (e.g. flight departures, school pickups).
+* **Key Invariant (Basis: Growth (G); CLIN UX, WB F193, Rule F193, Table 91):** **Departure Cushion & Post-Departure Cleanup Buffer Reservation.** "Let a client state a firm departure deadline; fit consultation, processing, finishing and checkout within that window; reserve cleanup against resources after client departure; validated stage durations and resource availability; show achievable finish times and decline infeasible combinations; an estimate is not a guarantee against overruns." Calculates multi-stage treatment timelines; reserves post-departure room cleanup buffers against staff resources; declines infeasible start times exceeding the deadline.
+
+---
+
+## F194 — Budget- and Time-Constrained Visit Options (WB F194, X21, X01, Table 91)
+* **What it is:** Intelligent consultation discovery engine matching client-stated budget ceilings (e.g. $100 max) and available appointment time windows (e.g. 45 min max) to owner-curated treatment bundles.
+* **Key Invariant (Basis: Growth (G); CLIN UX, WB F194, Rule F194, Table 91):** **Strict Constraint Envelope & Transparent Trade-Off Explanations.** "Offer owner-approved service bundles that fit the client’s total budget and available visit window; show inclusive estimated totals, dependencies and tradeoffs; avoid arbitrary clinical or combinatorial service invention; do not optimize for maximum spend; reject unsupported combinations; final confirmation rechecks staff/room availability and exact prices, and the client approves every extra."
+
+---
+
+## F195 — Assisted Completion Without a Smartphone (WB F195, X29, F014, F070, Table 91)
+* **What it is:** Multi-channel booking and intake access workflow enabling clients without smartphones, apps, or email to schedule, consent, and pay via phone operators, counter tablets, or physical wet-signed paper records.
+* **Key Invariant (Basis: Launch candidate (L); UX LEG OPS SEC, WB F195, Rule F195, Table 91):** **Zero E-Signature Fabrication & Scanned Paper Audit Trail.** "Allow a client to book and complete necessary steps by phone, on an accessible in-salon device or with paper where permitted, without requiring their own smartphone, app or email; staff record the channel and authorized assistance; unresolved digital steps remain visible; never fabricate a client e-signature or mark a failed message as delivered; support secure wet-signed scan attachment, identity checks, read-back of price/policy, duplicate prevention and restricted staff handling."
+
+
 
 
 

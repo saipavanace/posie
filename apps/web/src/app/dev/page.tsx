@@ -606,6 +606,26 @@ export default function PosieStudioPage() {
   const [subscriptionCancellationStep, setSubscriptionCancellationStep] = useState<'active' | 'cancelled_read_only'>('active');
   const [exportManifestDownloaded, setExportManifestDownloaded] = useState<boolean>(false);
 
+  // F191 SMS Marketing Campaigns State
+  const [smsCampaignText, setSmsCampaignText] = useState<string>('Exclusive 20% off all Hydra-Dew Facials this Thursday! Reply STOP to opt out.');
+  const [smsQuietHoursSimulated, setSmsQuietHoursSimulated] = useState<boolean>(false);
+
+  // F192 Lost Demand Ledger State
+  const [lostDemandEntriesCount, setLostDemandEntriesCount] = useState<number>(3);
+  const [lostDemandFollowUpGranted, setLostDemandFollowUpGranted] = useState<boolean>(true);
+
+  // F193 Leave By Constraint State
+  const [leaveByTargetTime, setLeaveByTargetTime] = useState<string>('13:30');
+  const [leaveByTightDeadlineSimulated, setLeaveByTightDeadlineSimulated] = useState<boolean>(false);
+
+  // F194 Budget & Time Constrained Options State
+  const [budgetCapClientSelected, setBudgetCapClientSelected] = useState<number>(100);
+  const [durationCapClientSelected, setDurationCapClientSelected] = useState<number>(45);
+
+  // F195 Assisted Completion Without a Smartphone State
+  const [assistedChannelSelected, setAssistedChannelSelected] = useState<'phone_operator' | 'counter_tablet' | 'paper_wet_signed'>('phone_operator');
+  const [assistedPaperScanAttached, setAssistedPaperScanAttached] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -626,7 +646,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F190)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F195)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -11032,6 +11052,345 @@ export default function PosieStudioPage() {
               onClick={() => setExportManifestDownloaded(!exportManifestDownloaded)}
             >
               {exportManifestDownloaded ? 'Reset Download State' : 'Download Complete Export Manifest (CSV/ZIP Archives)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F191: SMS Marketing Campaigns */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquareWarning size={18} color="var(--color-primary)" />
+                SMS Marketing Campaigns &amp; Delivery Governance (F191)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                TCPA/10DLC compliant text broadcasts with GSM-7/Unicode segment analysis, opt-in audience filtering, quiet-hours gating, and budget caps.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={smsQuietHoursSimulated ? 'rose' : 'sage'}>
+                {smsQuietHoursSimulated
+                  ? 'BLOCKED: TCPA Quiet Hours (11:00 PM)'
+                  : 'Compliant Dispatch (2:00 PM • 142 Opted-In Clients)'}
+              </Badge>
+              <Badge variant="muted">WB F191 / Rule F191</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Message Segmentation:</div>
+              <strong>78 Chars (GSM-7 Single Segment • 82 Chars Remaining)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>TCPA Mandatory Notice:</div>
+              <strong style={{ color: '#2B5329' }}>Compliant: "Reply STOP to opt out" embedded</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Recipient Audience:</div>
+              <strong>142 Consented Clients (38 Non-Opted-In Excluded)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Budget &amp; Spend Metering:</div>
+              <strong style={{ color: smsQuietHoursSimulated ? '#A65B32' : '#2B5329' }}>
+                {smsQuietHoursSimulated
+                  ? '$0.00 Dispatched (Quiet Hours Safety Intercept)'
+                  : '$2.84 Estimated Spend ($0.02/segment • Cap: $25.00)'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📱 <strong>WB F191 Invariant:</strong> Requires verified marketing SMS consent; enforces TCPA quiet hours (8:00 AM - 9:00 PM local recipient window); provides accurate segment calculation; enforces strict owner budget caps.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={smsQuietHoursSimulated ? 'outline' : 'primary'}
+              onClick={() => setSmsQuietHoursSimulated(!smsQuietHoursSimulated)}
+            >
+              {smsQuietHoursSimulated ? 'Dispatch in Daytime (2:00 PM • Safe)' : 'Simulate Late Night Dispatch (11:00 PM • Trigger Quiet Hours Block)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F192: Lost Demand Ledger */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Activity size={18} color="var(--color-primary)" />
+                Lost Demand Ledger &amp; Turn-Away Tracking (F192)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Captures online availability drop-offs and manual front-desk turn-aways, segregating observed unfulfilled requests from speculative demand with client follow-up permissions.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={lostDemandFollowUpGranted ? 'sage' : 'muted'}>
+                {lostDemandFollowUpGranted ? 'Follow-Up Permission Logged (Waitlist Active)' : 'Anonymous Session Logged'}
+              </Badge>
+              <Badge variant="muted">WB F192 / Rule F192</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Logged Demand Events:</div>
+              <strong>{lostDemandEntriesCount} Logged (2 Deduplicated Unique Clients)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Top Unmet Service:</div>
+              <strong>Hydra-Dew Glass Glow Facial ($120.00 • Saturday Afternoon)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Observed Turn-Away Value:</div>
+              <strong style={{ color: '#2B5329' }}>$175.00 Deduplicated Observed Demand</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Recovery Actionability:</div>
+              <strong>{lostDemandFollowUpGranted ? 'Auto-notify token armed if Saturday slot opens' : 'Archived for capacity review'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📈 <strong>WB F192 Invariant:</strong> Deduplicates repeated searches by identical clients on the same day; separates verified observed turn-aways from speculative revenue models; links follow-up permissions directly to cancellation recovery queues.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLostDemandFollowUpGranted(!lostDemandFollowUpGranted)}
+            >
+              Follow-Up Permission: {lostDemandFollowUpGranted ? 'Granted (Armed for Auto-Recovery)' : 'Declined (Passive Log Only)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLostDemandEntriesCount(lostDemandEntriesCount === 3 ? 5 : 3)}
+            >
+              Simulate: {lostDemandEntriesCount === 3 ? 'Log 2 Walk-in Turnaways' : 'Reset Turnaway Count'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F193: Leave-By Appointment Constraint */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Timer size={18} color="var(--color-primary)" />
+                Leave-By Appointment Constraint &amp; Cushion Buffer (F193)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Client-declared hard departure deadlines, multi-stage treatment calculation, and post-departure station sanitization buffer reservation.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={leaveByTightDeadlineSimulated ? 'rose' : 'sage'}>
+                {leaveByTightDeadlineSimulated ? 'INFEASIBLE: Exceeds Deadline by 15m' : 'FEASIBLE: 30m Cushion Before Deadline'}
+              </Badge>
+              <Badge variant="muted">WB F193 / Rule F193</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Candidate Start Time:</div>
+              <strong>12:00 PM (Balayage Refresh • 90m Treatment)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Client Stated Deadline:</div>
+              <strong>{leaveByTightDeadlineSimulated ? '13:15 PM (Tight Hard Deadline)' : '14:00 PM (Comfortable Deadline)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Projected Client Departure:</div>
+              <strong style={{ color: leaveByTightDeadlineSimulated ? '#A65B32' : '#2B5329' }}>
+                13:30 PM ({leaveByTightDeadlineSimulated ? 'Exceeds by 15m' : '30m Cushion'})
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Staff Station Release:</div>
+              <strong>13:45 PM (+15m Post-Departure Cleanup Reserved)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            ⏱️ <strong>WB F193 Invariant:</strong> Respects client's hard departure deadline; reserves post-departure sanitization buffers against staff without keeping the client; declines infeasible start times exceeding the deadline.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={leaveByTightDeadlineSimulated ? 'outline' : 'primary'}
+              onClick={() => setLeaveByTightDeadlineSimulated(!leaveByTightDeadlineSimulated)}
+            >
+              {leaveByTightDeadlineSimulated ? 'Restore 14:00 Deadline (Feasible)' : 'Set Strict 13:15 Deadline (Simulate Infeasible Overrun)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F194: Budget- and Time-Constrained Visit Options */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Tag size={18} color="var(--color-primary)" />
+                Budget- &amp; Time-Constrained Visit Discovery (F194)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Recommends owner-curated treatment bundles fitting client's declared total budget ceiling and time window without arbitrary clinical combinations or aggressive upsells.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={budgetCapClientSelected >= 100 ? 'sage' : 'muted'}>
+                {budgetCapClientSelected >= 100
+                  ? 'Recommended: Express Facial + LED ($100 • 45m)'
+                  : 'Single Service: Express Facial ($65 • 30m)'}
+              </Badge>
+              <Badge variant="muted">WB F194 / Rule F194</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Client Constraint Envelope:</div>
+              <strong>Max ${budgetCapClientSelected}.00 Budget • Max {durationCapClientSelected}m Window</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Recommended Treatment:</div>
+              <strong style={{ color: '#2B5329' }}>
+                {budgetCapClientSelected >= 100
+                  ? 'Express Glow Mini Facial ($65) + LED Therapy ($35)'
+                  : 'Express Glow Mini Facial ($65.00)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Spare Budget &amp; Time Cushion:</div>
+              <strong>
+                {budgetCapClientSelected >= 100
+                  ? `$${budgetCapClientSelected - 100}.00 Spare Budget • ${durationCapClientSelected - 45}m Cushion`
+                  : `$${budgetCapClientSelected - 65}.00 Spare Budget • ${durationCapClientSelected - 30}m Cushion`}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Upsell Ethics Guardrail:</div>
+              <strong>Enforced: Zero arbitrary services invented • Client confirms exact total</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🏷️ <strong>WB F194 Invariant:</strong> Fits client's declared budget and duration constraints; avoids inventing arbitrary clinical service combinations; provides transparent trade-offs without optimizing for maximum basket spend.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBudgetCapClientSelected(budgetCapClientSelected === 100 ? 70 : 100)}
+            >
+              Budget: {budgetCapClientSelected === 100 ? 'Switch to $70 Budget Cap' : 'Switch to $100 Budget Cap'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDurationCapClientSelected(durationCapClientSelected === 45 ? 60 : 45)}
+            >
+              Window: {durationCapClientSelected === 45 ? 'Switch to 60m Window' : 'Switch to 45m Window'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F195: Assisted Completion Without a Smartphone */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PhoneCall size={18} color="var(--color-primary)" />
+                Assisted Completion Without a Smartphone (F195)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Multi-channel booking and intake access for guests without smartphones, apps, or email via phone operators, counter tablets, or physical wet-signed paper records.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={assistedChannelSelected === 'paper_wet_signed' && !assistedPaperScanAttached ? 'rose' : 'sage'}>
+                {assistedChannelSelected === 'paper_wet_signed'
+                  ? assistedPaperScanAttached
+                    ? 'Paper Scan Attached & Verified'
+                    : 'Pending Physical Paper Scan'
+                  : assistedChannelSelected === 'phone_operator'
+                  ? 'Phone-Assisted (Verbal Read-Back Confirmed)'
+                  : 'Counter Tablet Completed'}
+              </Badge>
+              <Badge variant="muted">WB F195 / Rule F195</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Guest Accessibility Profile:</div>
+              <strong>No Smartphone / No Email (Eleanor Vance • 555-0192)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Assistance Channel:</div>
+              <strong>
+                {assistedChannelSelected === 'phone_operator'
+                  ? 'Phone Operator Assisted (Staff: Claire Vance)'
+                  : assistedChannelSelected === 'counter_tablet'
+                  ? 'In-Salon Counter Tablet Assisted'
+                  : 'Physical Paper Intake Form'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>E-Signature Integrity:</div>
+              <strong style={{ color: '#2B5329' }}>ZERO FABRICATION: Digital e-signature never generated by staff</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Unresolved Digital State:</div>
+              <strong>
+                {assistedChannelSelected === 'paper_wet_signed' && !assistedPaperScanAttached
+                  ? 'PENDING: Physical wet-signed form awaiting staff scan'
+                  : 'Online portal account unrouted (Flag preserved)'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            ☎️ <strong>WB F195 Invariant:</strong> Provides full booking parity for clients without smartphones; strictly prohibits staff from fabricating e-signatures; requires verbal price/cancellation read-back for phone bookings; supports secure scanned wet-signed document attachments.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const nextChannel = assistedChannelSelected === 'phone_operator' ? 'counter_tablet' : assistedChannelSelected === 'counter_tablet' ? 'paper_wet_signed' : 'phone_operator';
+                setAssistedChannelSelected(nextChannel);
+              }}
+            >
+              Channel: {assistedChannelSelected === 'phone_operator' ? 'Switch to In-Salon Counter Tablet' : assistedChannelSelected === 'counter_tablet' ? 'Switch to Physical Paper Wet-Signed Form' : 'Switch to Phone Operator Assisted'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={assistedChannelSelected !== 'paper_wet_signed'}
+              onClick={() => setAssistedPaperScanAttached(!assistedPaperScanAttached)}
+            >
+              {assistedPaperScanAttached ? 'Remove Scanned Paper Attachment' : 'Attach Verified Wet-Signed Paper Scan (att_scan_882.pdf)'}
             </Button>
           </div>
         </Card>

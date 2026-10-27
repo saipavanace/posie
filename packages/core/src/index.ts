@@ -188,4 +188,9 @@ export * from './card_fee_offset';
 export * from './native_discovery_integrations';
 export * from './flexible_entry_plans';
 export * from './subscription_lifecycle_exit';
+export * from './sms_campaigns';
+export * from './lost_demand_ledger';
+export * from './leave_by_constraint';
+export * from './budget_constrained_options';
+export * from './assisted_completion';
 

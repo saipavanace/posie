@@ -469,6 +469,23 @@ import {
   type SalonPlanUsage,
   processSelfServiceSubscriptionExit,
   type SubscriptionExitRequest,
+  analyzeSmsMessageText,
+  executeSmsMarketingCampaign,
+  type SmsCampaignDraft,
+  type SmsRecipientProfile,
+  recordLostDemandEntry,
+  generateLostDemandReport,
+  type LostDemandEntry,
+  evaluateLeaveByConstraint,
+  type LeaveByConstraintRequest,
+  type ServiceStageBreakdown,
+  findBudgetConstrainedOptions,
+  type CuratedServiceOption,
+  type ClientVisitConstraints,
+  createAssistedNonSmartphoneBooking,
+  attachWetSignedPaperScan,
+  type NonSmartphoneBookingRecord,
+  type PaperDocumentAttachment,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -10508,6 +10525,303 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(exitSummary.retentionPolicyStatement).toContain('Full client data, appointment history');
     });
   });
+
+  describe('Posie Core Logic - F191 (SMS Marketing Campaigns)', () => {
+    it('analyzes SMS segmentation, enforces TCPA quiet hours and opt-in consent, and caps budget', () => {
+      // 1. Segmentation: GSM-7 vs Unicode emoji
+      const gsmAnalysis = analyzeSmsMessageText('Enjoy 20% off all Hydra-Dew Facials this Thursday! Reply STOP to opt out.');
+      expect(gsmAnalysis.encoding).toBe('GSM-7');
+      expect(gsmAnalysis.segmentCount).toBe(1);
+      expect(gsmAnalysis.hasMandatoryOptOutNotice).toBe(true);
+
+      const unicodeAnalysis = analyzeSmsMessageText('✨ Glowing skin awaits! Book Hydra-Dew Facial today. Text STOP to cancel.');
+      expect(unicodeAnalysis.encoding).toBe('UCS-2_Unicode');
+      expect(unicodeAnalysis.hasMandatoryOptOutNotice).toBe(true);
+
+      // 2. Reject campaign without mandatory opt-out instructions
+      const draftNoOptOut: SmsCampaignDraft = {
+        campaignId: 'cmp_spring_01',
+        salonId: 'salon_soho',
+        campaignName: 'Spring Flash Sale',
+        messageText: 'Book now for 20% off all facials!', // Missing STOP
+        targetAudience: 'all_opted_in',
+        budgetCapUsd: 50.0,
+        costPerSegmentUsd: 0.02,
+      };
+      expect(() => executeSmsMarketingCampaign(draftNoOptOut, [])).toThrow('TCPA Compliance Error');
+
+      // 3. Filter audience: only opted-in recipients receive text
+      const audience: SmsRecipientProfile[] = [
+        { clientId: 'c1', fullName: 'Alice', phoneNumber: '5551112222', marketingSmsOptIn: true, timezone: 'US/Eastern' },
+        { clientId: 'c2', fullName: 'Bob', phoneNumber: '5553334444', marketingSmsOptIn: false, timezone: 'US/Eastern' }, // Opted out
+        { clientId: 'c3', fullName: 'Carol', phoneNumber: '5555556666', marketingSmsOptIn: true, timezone: 'US/Eastern' },
+      ];
+
+      const validDraft: SmsCampaignDraft = {
+        ...draftNoOptOut,
+        messageText: 'Exclusive 20% off facial booking! Reply STOP to end.',
+      };
+
+      // Dispatched during valid business hours (2:00 PM)
+      const successResult = executeSmsMarketingCampaign(validDraft, audience, 14);
+      expect(successResult.status).toBe('dispatched');
+      expect(successResult.totalEligibleRecipients).toBe(2);
+      expect(successResult.excludedNonOptedInCount).toBe(1);
+      expect(successResult.totalSegmentsDispatched).toBe(2);
+
+      // Dispatched during quiet hours (11:00 PM = 23)
+      const quietHoursResult = executeSmsMarketingCampaign(validDraft, audience, 23);
+      expect(quietHoursResult.status).toBe('blocked_quiet_hours');
+      expect(quietHoursResult.rejectionReason).toContain('TCPA_QUIET_HOURS_ENFORCED');
+
+      // Budget cap exceeded
+      const lowBudgetDraft: SmsCampaignDraft = {
+        ...validDraft,
+        budgetCapUsd: 0.01, // Less than 2 * 0.02 = $0.04
+      };
+      const budgetResult = executeSmsMarketingCampaign(lowBudgetDraft, audience, 14);
+      expect(budgetResult.status).toBe('blocked_by_budget');
+      expect(budgetResult.rejectionReason).toContain('BUDGET_EXCEEDED');
+    });
+  });
+
+  describe('Posie Core Logic - F192 (Lost Demand Ledger & Turn-Aways)', () => {
+    it('captures turn-aways, deduplicates repeated queries, and compiles actionable lost demand reports', () => {
+      const entry1 = recordLostDemandEntry({
+        salonId: 'salon_soho',
+        source: 'walk_in_turnaway',
+        requestedServiceId: 'srv_facial',
+        requestedServiceName: 'Hydra-Dew Glass Glow Facial',
+        catalogPriceUsd: 120.0,
+        requestedDate: '2026-11-20',
+        requestedTimeWindow: 'afternoon',
+        clientIdentifier: 'client_maya_walkin',
+        permissionToFollowUp: true,
+      });
+
+      // Duplicate search by same client on same date for same service
+      const entry2 = recordLostDemandEntry({
+        salonId: 'salon_soho',
+        source: 'online_search_no_slots',
+        requestedServiceId: 'srv_facial',
+        requestedServiceName: 'Hydra-Dew Glass Glow Facial',
+        catalogPriceUsd: 120.0,
+        requestedDate: '2026-11-20',
+        requestedTimeWindow: 'afternoon',
+        clientIdentifier: 'client_maya_walkin',
+        permissionToFollowUp: true,
+      });
+
+      // Distinct client search
+      const entry3 = recordLostDemandEntry({
+        salonId: 'salon_soho',
+        source: 'phone_inquiry_turnaway',
+        requestedServiceId: 'srv_brow_sculpt',
+        requestedServiceName: 'Precision Brow Arch Sculpt',
+        catalogPriceUsd: 55.0,
+        requestedDate: '2026-11-21',
+        requestedTimeWindow: 'morning',
+        clientIdentifier: 'client_liam_phone',
+        permissionToFollowUp: false,
+      });
+
+      const report = generateLostDemandReport('salon_soho', [entry1, entry2, entry3], '2026-11-01', '2026-11-30');
+
+      expect(report.totalTurnAwaysLogged).toBe(3);
+      // Deduplicated unique demand instances = 2
+      expect(report.deduplicatedUniqueClientsCount).toBe(2);
+      expect(report.observedTurnAwayValueUsd).toBe(175.0); // $120 (deduped Maya) + $55 (Liam)
+      expect(report.mostRequestedUnmetServices[0].serviceId).toBe('srv_facial');
+      expect(report.mostRequestedUnmetServices[0].unmetRequestsCount).toBe(1);
+      expect(report.followUpPermittedCount).toBe(1);
+    });
+  });
+
+  describe('Posie Core Logic - F193 (Leave-By Appointment Constraint)', () => {
+    const stages: ServiceStageBreakdown = {
+      consultationMinutes: 10,
+      handsOnTreatmentMinutes: 45,
+      processingMinutes: 15,
+      finishingMinutes: 15,
+      checkoutMinutes: 5,
+      postDepartureCleanupMinutes: 15, // 90 min total client duration, 105 min total staff
+    };
+
+    it('validates client departure deadline and reserves staff station cleanup buffer', () => {
+      // 1. Feasible: Start 12:00, leave-by 14:00 (requires 90m -> finishes 13:30, 30m buffer)
+      const feasibleReq: LeaveByConstraintRequest = {
+        serviceId: 'srv_balayage',
+        serviceName: 'Balayage Refresh',
+        candidateStartTime: '12:00',
+        clientMustLeaveBy: '14:00',
+        stages,
+      };
+      const feasibleResult = evaluateLeaveByConstraint(feasibleReq);
+      expect(feasibleResult.isFeasible).toBe(true);
+      expect(feasibleResult.totalClientDurationMinutes).toBe(90);
+      expect(feasibleResult.projectedClientDepartureTime).toBe('13:30');
+      expect(feasibleResult.spareBufferMinutesBeforeDeadline).toBe(30);
+      expect(feasibleResult.staffStationReleaseTime).toBe('13:45'); // 13:30 + 15m cleanup
+      expect(feasibleResult.explanation).toContain('provides 30m cushion');
+
+      // 2. Infeasible: Start 12:00, leave-by 13:15 (requires 90m -> finishes 13:30, exceeds by 15m)
+      const infeasibleReq: LeaveByConstraintRequest = {
+        ...feasibleReq,
+        clientMustLeaveBy: '13:15',
+      };
+      const infeasibleResult = evaluateLeaveByConstraint(infeasibleReq);
+      expect(infeasibleResult.isFeasible).toBe(false);
+      expect(infeasibleResult.spareBufferMinutesBeforeDeadline).toBe(-15);
+      expect(infeasibleResult.explanation).toContain('exceeds the client\'s strict 13:15 departure deadline');
+    });
+  });
+
+  describe('Posie Core Logic - F194 (Budget- and Time-Constrained Visit Options)', () => {
+    const catalog: CuratedServiceOption[] = [
+      {
+        serviceId: 'srv_facial_full',
+        name: 'Hydra-Dew Glass Glow Facial',
+        priceUsd: 120.0,
+        durationMinutes: 60,
+        category: 'facial',
+        description: 'Deep cleansing and hydration infusion',
+      },
+      {
+        serviceId: 'srv_facial_express',
+        name: 'Express Glow Mini Facial',
+        priceUsd: 65.0,
+        durationMinutes: 30,
+        category: 'facial',
+        description: 'Fast lunchtime cleanse and hydration sweep',
+      },
+      {
+        serviceId: 'srv_addon_led',
+        name: 'LED Collagen Light Therapy',
+        priceUsd: 35.0,
+        durationMinutes: 15,
+        category: 'express_add_on',
+        description: '15m phototherapy rejuvenation',
+      },
+      {
+        serviceId: 'srv_deluxe_balayage',
+        name: 'Full Master Balayage & Glaze',
+        priceUsd: 250.0,
+        durationMinutes: 150,
+        category: 'hair',
+        description: 'Complete luxury hair lightening and tone',
+      },
+    ];
+
+    it('recommends feasible bundles fitting budget and time envelope without arbitrary upsells', () => {
+      // Client has $110 budget and 50 minutes max
+      const constraints: ClientVisitConstraints = {
+        maxBudgetUsd: 110.0,
+        maxDurationMinutes: 50,
+        preferredCategory: 'facial',
+      };
+
+      const result = findBudgetConstrainedOptions(catalog, constraints);
+      expect(result.hasFeasibleOptions).toBe(true);
+
+      // Full facial ($120, 60m) and Balayage ($250, 150m) are rejected
+      expect(result.matchingBundles.some((b) => b.primaryService.serviceId === 'srv_facial_full')).toBe(false);
+      expect(result.matchingBundles.some((b) => b.primaryService.serviceId === 'srv_deluxe_balayage')).toBe(false);
+
+      // Express facial ($65, 30m) and Express + LED ($100, 45m) fit cleanly
+      const expressWithLed = result.matchingBundles.find((b) => b.addServices.length > 0);
+      expect(expressWithLed).toBeDefined();
+      expect(expressWithLed?.totalPriceUsd).toBe(100.0);
+      expect(expressWithLed?.totalDurationMinutes).toBe(45);
+      expect(expressWithLed?.budgetSpareUsd).toBe(10.0);
+      expect(expressWithLed?.timeSpareMinutes).toBe(5);
+
+      // Extremely constrained envelope ($20, 10 min) -> No feasible options, guidance returned
+      const impossibleConstraints: ClientVisitConstraints = {
+        maxBudgetUsd: 20.0,
+        maxDurationMinutes: 10,
+      };
+      const noFitResult = findBudgetConstrainedOptions(catalog, impossibleConstraints);
+      expect(noFitResult.hasFeasibleOptions).toBe(false);
+      expect(noFitResult.alternativeGuidance).toContain('No standard services fit');
+    });
+  });
+
+  describe('Posie Core Logic - F195 (Assisted Completion Without a Smartphone)', () => {
+    it('creates assisted phone booking with verbal confirmation, preserves unresolved digital steps, and attaches wet-signed scans', () => {
+      // 1. Phone booking requires verbal policy read-back confirmation
+      expect(() =>
+        createAssistedNonSmartphoneBooking({
+          bookingId: 'bk_phone_01',
+          salonId: 'salon_soho',
+          serviceId: 'srv_facial',
+          clientInfo: {
+            fullName: 'Eleanor Vance',
+            contactPhone: '555-0192',
+            hasSmartphoneOrEmail: false,
+          },
+          channel: 'phone_operator_assisted',
+          assistingStaffId: 'staff_reception_claire',
+        })
+      ).toThrow('mandate verbal read-back confirmation');
+
+      // 2. Successful phone-assisted booking
+      const validBooking = createAssistedNonSmartphoneBooking({
+        bookingId: 'bk_phone_01',
+        salonId: 'salon_soho',
+        serviceId: 'srv_facial',
+        clientInfo: {
+          fullName: 'Eleanor Vance',
+          contactPhone: '555-0192',
+          hasSmartphoneOrEmail: false,
+        },
+        channel: 'phone_operator_assisted',
+        assistingStaffId: 'staff_reception_claire',
+        verbalConfirmation: {
+          policyReadBackCompleted: true,
+          readBackByStaffId: 'staff_reception_claire',
+          readBackTimestamp: '2026-11-20T10:00:00Z',
+          cancellationTermsAcknowledged: true,
+          totalServicePriceQuotedUsd: 120.0,
+        },
+      });
+
+      expect(validBooking.status).toBe('assisted_confirmed');
+      expect(validBooking.electronicSignatureFabricated).toBe(false);
+      expect(validBooking.unresolvedDigitalSteps).toContain('ONLINE_PORTAL_ACCOUNT_UNAVAILABLE');
+
+      // 3. Physical paper wet-signed scan attachment
+      const paperBooking = createAssistedNonSmartphoneBooking({
+        bookingId: 'bk_paper_02',
+        salonId: 'salon_soho',
+        serviceId: 'srv_facial',
+        clientInfo: {
+          fullName: 'Robert Sterling',
+          contactPhone: '555-0199',
+          hasSmartphoneOrEmail: false,
+        },
+        channel: 'physical_paper_wet_signed',
+        assistingStaffId: 'staff_front_desk_marcus',
+      });
+
+      expect(paperBooking.status).toBe('pending_paper_scan');
+      expect(paperBooking.unresolvedDigitalSteps).toContain('PHYSICAL_PAPER_SCAN_PENDING_ATTACHMENT');
+
+      const scanAttachment: PaperDocumentAttachment = {
+        attachmentId: 'att_scan_882',
+        documentType: 'intake_form',
+        scannedDocumentUrl: 'https://cdn.posie.app/scans/att_scan_882.pdf',
+        scannedAt: '2026-11-20T10:30:00Z',
+        uploadedByStaffId: 'staff_front_desk_marcus',
+        clientPhysicalSignatureVerified: true,
+      };
+
+      const resolvedPaperBooking = attachWetSignedPaperScan(paperBooking, scanAttachment);
+      expect(resolvedPaperBooking.status).toBe('assisted_confirmed');
+      expect(resolvedPaperBooking.paperAttachment).toBeDefined();
+      expect(resolvedPaperBooking.unresolvedDigitalSteps).not.toContain('PHYSICAL_PAPER_SCAN_PENDING_ATTACHMENT');
+    });
+  });
+
 
 
 
