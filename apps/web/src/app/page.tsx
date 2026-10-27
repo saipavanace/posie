@@ -213,6 +213,17 @@ export default function PosieStudioPage() {
   // F086 Terminal Payment State
   const [terminalSessionState, setTerminalSessionState] = useState<'idle' | 'interrupted' | 'recovered_success' | 'recovered_safe_retry'>('idle');
 
+  // F087 Refunds State
+  const [refundStage, setRefundStage] = useState<'initial' | 'refunded_cream' | 'over_refund_blocked'>('initial');
+
+  // F088 No-Show Collection State
+  const [noShowCaseState, setNoShowCaseState] = useState<'idle' | 'declined_link_sent' | 'manager_waived'>('idle');
+
+  // F089 Dispute Workspace State
+  const [disputePacketAssembled, setDisputePacketAssembled] = useState(false);
+  const [disputeUrgencyMode, setDisputeUrgencyMode] = useState<'standard' | 'urgent'>('standard');
+
+
 
 
 
@@ -2707,6 +2718,228 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F087: Refunds & Exchanges Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <RotateCcw size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Refunds, Exchanges & Inventory Restock (F087 / D15)
+              </h3>
+            </div>
+            <Badge variant="sage">Reconciled Balances • Restock Ledger</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Process full or partial refunds with immutable reason histories. Invariant: Refund states reconcile against the original charge to strictly prevent over-refunding, and retail product returns automatically manifest back into the inventory ledger.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                Kendall Jenner — Sale #TKT-8811 ($180.00 Original Charge)
+              </strong>
+              <Badge variant="sage">
+                {refundStage === 'initial' ? '$180.00 Eligible Balance' : '$120.00 Eligible Balance'}
+              </Badge>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              <div>• Bespoke Facial: $120.00 (Service)</div>
+              <div>• Nourishing Barrier Cream: $60.00 (Retail Product)</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {refundStage === 'initial' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setRefundStage('refunded_cream')}
+              >
+                Refund $60.00 Cream & Restock Unopened Bottle to Retail Inventory
+              </Button>
+            )}
+
+            {refundStage === 'refunded_cream' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRefundStage('over_refund_blocked')}
+              >
+                Attempt Excess Refund ($150.00 on $120.00 Balance)
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRefundStage('initial')}
+            >
+              Reset Refund Demo
+            </Button>
+          </div>
+
+          {refundStage === 'refunded_cream' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Partial Refund Executed (Document D15):</strong> $60.00 refunded to card under reason "medical_contraindication". Retail inventory manifest updated (+1 unit Barrier Cream returned to stock). Remaining ticket refund cap: $120.00.
+            </div>
+          )}
+
+          {refundStage === 'over_refund_blocked' && (
+            <div style={{ marginTop: '12px', background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              🚫 <strong>Over-Refund Blocked:</strong> Cannot refund $150.00. Only $120.00 is remaining after prior retail refund of $60.00. Ledger prevents staff from refunding more than the client originally paid.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F088: No-Show Collection Workflow Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserX size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                No-Show Collection & Fee Recovery (F088 / D05)
+              </h3>
+            </div>
+            <Badge variant="sage">Truth-in-Vaulting • Gentle Recovery Links</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Apply the agreed cancellation policy when a client misses an appointment. Invariant: Saved cards are never represented as 100% guaranteed funds; if a card declines, Posie initiates honest recovery links and fair manager waivers.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: '#B36B5C' }}>
+                  Bella Hadid — Missed Appointment (Hydra-Dew Facial)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Agreed Document D05 Terms: $50.00 Stipulated No-Show Fee
+                </div>
+              </div>
+              <Badge variant={noShowCaseState === 'declined_link_sent' ? 'rose' : noShowCaseState === 'manager_waived' ? 'sage' : 'muted'}>
+                {noShowCaseState === 'declined_link_sent' ? 'Card Declined • Recovery Sent' : noShowCaseState === 'manager_waived' ? 'Fee Waived as Courtesy' : 'Eligible for Charge'}
+              </Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setNoShowCaseState('declined_link_sent')}
+            >
+              Simulate Card-on-File Decline (Insufficient Funds)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setNoShowCaseState('manager_waived')}
+            >
+              Manager Courtesy Waiver (Emergency Call)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setNoShowCaseState('idle')}
+            >
+              Reset
+            </Button>
+          </div>
+
+          {noShowCaseState === 'declined_link_sent' && (
+            <div style={{ marginTop: '12px', background: '#FFF9F2', border: '1px solid #E2A76F', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8A531C' }}>
+              📱 <strong>Honest Decline Handling:</strong> Client's card declined with code <code>insufficient_funds</code>. Rather than leaving the owner in the dark, Posie texted Bella a gentle self-service settlement link (<code>posie.com/settle/rec_92a1</code>) and flagged her profile to settle before rebooking.
+            </div>
+          )}
+
+          {noShowCaseState === 'manager_waived' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Manager Waiver Recorded:</strong> Maya Lin waived the fee under audit reason: "Client called with documented sudden hospital admission." Client profile restrictions immediately lifted.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F089: Dispute Evidence Workspace Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Dispute & Chargeback Evidence Workspace (F089 / D05, D15, D18)
+              </h3>
+            </div>
+            <Badge variant="sage">5-Point Defense Packet • Deadline Countdown</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            When a client disputes a bank charge, Posie automatically compiles signed intake forms, cancellation policies, SOAP notes, and receipts into a bulletproof defense packet.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: '#B36B5C' }}>
+                  Bank Chargeback Alert: $140.00 Disputed (Olivia Rodrigo)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Reason Category: Service not recognized / unprovided
+                </div>
+              </div>
+              <Badge variant={disputeUrgencyMode === 'urgent' ? 'rose' : 'sage'}>
+                {disputeUrgencyMode === 'urgent' ? 'URGENT: 24h Remaining' : '3 Days Remaining'}
+              </Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={disputePacketAssembled ? 'outline' : 'primary'}
+              onClick={() => setDisputePacketAssembled(true)}
+            >
+              Assemble 5-Point Cryptographic Defense Packet
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDisputeUrgencyMode(disputeUrgencyMode === 'standard' ? 'urgent' : 'standard')}
+            >
+              Toggle 24h Deadline Urgency
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setDisputePacketAssembled(false); setDisputeUrgencyMode('standard'); }}
+            >
+              Reset
+            </Button>
+          </div>
+
+          {disputePacketAssembled && (
+            <div style={{ marginTop: '14px', background: '#F9FAF8', border: '1px solid #738A73', padding: '14px', borderRadius: '8px', fontSize: '0.82rem' }}>
+              <div style={{ fontWeight: 600, color: 'var(--color-primary)', marginBottom: '8px' }}>
+                ✓ Audit-Ready Dispute Bundle Generated:
+              </div>
+              <ul style={{ margin: '0 0 10px', paddingLeft: '18px', color: 'var(--color-text)', lineHeight: '1.6' }}>
+                <li><strong>1. Policy Acceptance:</strong> Document D05 agreed Nov 1 (Client IP logged).</li>
+                <li><strong>2. Signed Consent:</strong> Aesthetic Consent Form (SHA-256: <code>7f83...069</code>).</li>
+                <li><strong>3. Service Delivery:</strong> Specialist Chloe Bennett SOAP chart signed Nov 15 at 3:05 PM.</li>
+                <li><strong>4. Document D15 Receipt:</strong> Visa 4242 terminal chip authorization #rcpt_8821.</li>
+                <li><strong>5. SMS Communication Log:</strong> Two-way confirmation reply ("C") verified Nov 14.</li>
+              </ul>
+              <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', borderTop: '1px solid #DDD', paddingTop: '6px' }}>
+                ⚖️ <strong>Truth-in-Defense Assurance:</strong> Bundle compiled with cryptographic verification. Submission complies with Visa/Mastercard rules; issuing bank retains final arbitration ruling.
+              </div>
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

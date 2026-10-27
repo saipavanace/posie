@@ -150,6 +150,13 @@ import {
   initiateTerminalPayment,
   recordInterruptedTerminalTransaction,
   resolveInterruptedTerminalPayment,
+  calculateEligibleRefundBalance,
+  processRefundAndExchange,
+  executeNoShowFeeCollection,
+  waiveNoShowFee,
+  settleNoShowRecoveryLink,
+  compileDisputeDefensePacket,
+  checkDisputeDeadlineUrgency,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -3668,6 +3675,236 @@ describe('Posie Core Logic - F086 (Tap to Pay and Certified Terminals)', () => {
     expect(resolutionFailed.explanation).toContain('safely re-tapped');
   });
 });
+
+describe('Posie Core Logic - F087 (Refunds & Exchanges)', () => {
+  const tenantId = 'tenant_posie_chelsea';
+  const originalPaymentId = 'pay_orig_1001';
+  const ticketId = 'tkt_8811';
+  const clientId = 'cli_kendall';
+
+  it('reconciles eligible refund balances, blocks over-refunding, and manifests inventory restock', () => {
+    // Original payment was $180 ($120 facial + $60 retail cream)
+    const originalPaymentAmountCents = 18000;
+
+    // 1. Initial refund check: full $180 eligible
+    const initialBalance = calculateEligibleRefundBalance({
+      originalPaymentAmountCents,
+      existingRefunds: [],
+    });
+    expect(initialBalance.eligibleRefundCents).toBe(18000);
+    expect(initialBalance.totalPreviouslyRefundedCents).toBe(0);
+
+    // 2. Client returns retail cream ($60) due to mild skin sensitivity -> restock to inventory
+    const retailRefund = processRefundAndExchange({
+      tenantId,
+      originalPaymentId,
+      ticketId,
+      originalPaymentAmountCents,
+      existingRefunds: [],
+      clientId,
+      clientName: 'Kendall Jenner',
+      lines: [
+        {
+          lineId: 'line_cream_1',
+          type: 'retail_product',
+          name: 'Nourishing Barrier Cream',
+          originalAmountCents: 6000,
+          refundAmountCents: 6000,
+          restockInventory: true,
+          restockQuantity: 1,
+        },
+      ],
+      reason: 'medical_contraindication',
+      reasonNotes: 'Client experienced mild redness; unopened second bottle returned to retail stock.',
+      authorizedByStaffId: 'staff_maya_lead',
+      authorizedByStaffName: 'Maya Lin',
+    });
+
+    expect(retailRefund.success).toBe(true);
+    if (!retailRefund.success) return;
+    expect(retailRefund.refund.totalRefundedCents).toBe(6000);
+    expect(retailRefund.inventoryRestockManifest.length).toBe(1);
+    expect(retailRefund.inventoryRestockManifest[0].quantityToRestock).toBe(1);
+
+    // 3. INVARIANT TEST: Cannot refund more than remaining $120 balance
+    const overRefundAttempt = processRefundAndExchange({
+      tenantId,
+      originalPaymentId,
+      ticketId,
+      originalPaymentAmountCents,
+      existingRefunds: [retailRefund.refund],
+      clientId,
+      clientName: 'Kendall Jenner',
+      lines: [
+        {
+          lineId: 'line_facial_1',
+          type: 'service',
+          name: 'Custom Bespoke Facial',
+          originalAmountCents: 12000,
+          refundAmountCents: 15000, // $150 > $120 remaining!
+        },
+      ],
+      reason: 'client_dissatisfaction',
+      reasonNotes: 'Attempting excess goodwill refund beyond ticket balance.',
+      authorizedByStaffId: 'staff_maya_lead',
+      authorizedByStaffName: 'Maya Lin',
+    });
+
+    expect(overRefundAttempt.success).toBe(false);
+    if (overRefundAttempt.success) return;
+    expect(overRefundAttempt.reason).toContain('Cannot refund $150.00. Only $120.00 is remaining');
+  });
+});
+
+describe('Posie Core Logic - F088 (No-Show Collection Workflow)', () => {
+  const tenantId = 'tenant_posie_tribeca';
+  const appointmentId = 'apt_ns_test_44';
+  const clientId = 'cli_bella';
+
+  const policyEvidence = {
+    policyVersion: 2,
+    policyAcknowledgementId: 'ack_d05_8819',
+    cancellationCutoffHours: 24,
+    stipulatedFeeCents: 5000, // $50.00 no show fee
+    acknowledgedTimestamp: '2026-11-10T10:00:00.000Z',
+  };
+
+  it('handles card-on-file declines honestly, generates recovery link, and supports manager waiver', () => {
+    // 1. Successful charge scenario
+    const successCase = executeNoShowFeeCollection({
+      tenantId,
+      appointmentId,
+      clientId,
+      clientName: 'Bella Hadid',
+      clientPhone: '+1-212-555-9090',
+      serviceName: 'Hydra-Dew Glass Glow Facial',
+      scheduledStartTime: '2026-11-20T14:00:00.000Z',
+      feeAmountCents: 5000,
+      policyEvidence,
+      cardSimulatedResult: {
+        success: true,
+        processorChargeId: 'ch_stripe_ns_collected_1',
+      },
+    });
+
+    expect(successCase.status).toBe('fee_collected_successfully');
+    expect(successCase.isClientProfileRestricted).toBe(false);
+
+    // 2. Card Decline Invariant: A saved card is NOT guaranteed money!
+    const declinedCase = executeNoShowFeeCollection({
+      tenantId,
+      appointmentId,
+      clientId,
+      clientName: 'Bella Hadid',
+      clientPhone: '+1-212-555-9090',
+      serviceName: 'Hydra-Dew Glass Glow Facial',
+      scheduledStartTime: '2026-11-20T14:00:00.000Z',
+      feeAmountCents: 5000,
+      policyEvidence,
+      cardSimulatedResult: {
+        success: false,
+        declineCode: 'card_declined_insufficient_funds',
+      },
+    });
+
+    expect(declinedCase.status).toBe('card_declined_recovery_link_dispatched');
+    expect(declinedCase.isClientProfileRestricted).toBe(true); // Restricts booking until cleared
+    expect(declinedCase.recoveryLinkUrl).toBeDefined();
+
+    // 3. Manager courtesy waiver (e.g. client called with hospital emergency)
+    const waivedCase = waiveNoShowFee({
+      caseRecord: declinedCase,
+      waiveReason: 'Client had documented sudden hospital admission; waiving as emergency courtesy.',
+      managerName: 'Maya Lin',
+    });
+
+    expect(waivedCase.status).toBe('fee_waived_by_manager');
+    expect(waivedCase.isClientProfileRestricted).toBe(false); // Restrictions lifted
+    expect(waivedCase.waiveReason).toContain('hospital admission');
+
+    // 4. Client self-service settlement via recovery link
+    const settledCase = settleNoShowRecoveryLink({
+      caseRecord: declinedCase,
+      paymentReferenceId: 'ch_settled_link_7722',
+    });
+
+    expect(settledCase.status).toBe('debt_settled_by_client');
+    expect(settledCase.isClientProfileRestricted).toBe(false);
+  });
+});
+
+describe('Posie Core Logic - F089 (Dispute Evidence Workspace)', () => {
+  const tenantId = 'tenant_posie_soho';
+  const disputeId = 'dp_chargeback_9921';
+
+  it('compiles authoritative dispute defense packet and tracks response deadline urgency', () => {
+    // 1. Compile defense packet uniting D05 policy, signed intake, treatment SOAP proof, D15 receipt, and SMS log
+    const packet = compileDisputeDefensePacket({
+      disputeId,
+      tenantId,
+      clientName: 'Olivia Rodrigo',
+      chargeAmountCents: 14000, // $140.00
+      disputeReasonCategory: 'service_not_provided_or_not_as_described',
+      responseDeadline: '2026-11-28T23:59:59.000Z',
+      policyAcknowledgement: {
+        policyName: 'Standard Atelier Booking Policy D05',
+        policyVersion: 2,
+        acceptedAt: '2026-11-01T15:20:00.000Z',
+        stipulatedCancellationTerms: 'Late cancellations forfeit deposit; completed services final upon departure.',
+      },
+      intakeAndConsent: {
+        formName: 'Facial Aesthetics Treatment Consent',
+        signedAt: '2026-11-15T13:55:00.000Z',
+        signatureVerificationHash: 'sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
+      },
+      serviceDelivery: {
+        serviceName: 'Signature Microcurrent Lift Facial',
+        practitionerName: 'Chloe Bennett',
+        completedAt: '2026-11-15T15:05:00.000Z',
+        treatmentNoteSigned: true,
+      },
+      receipt: {
+        receiptId: 'rcpt_8821_d15',
+        transactionTimestamp: '2026-11-15T15:10:00.000Z',
+        tenderMethod: 'Visa Ending in 4242',
+        authorizedCardLast4: '4242',
+      },
+      communications: [
+        {
+          timestamp: '2026-11-14T10:00:00.000Z',
+          direction: 'outbound_sms',
+          messageSummary: 'Reminder: Your appointment is tomorrow at 2:00 PM.',
+        },
+        {
+          timestamp: '2026-11-14T10:05:00.000Z',
+          direction: 'inbound_sms',
+          messageSummary: 'Client replied "C" to confirm.',
+        },
+      ],
+    });
+
+    expect(packet.status).toBe('drafting_evidence');
+    expect(packet.legalDisclaimer).toContain('Truth-in-Defense Assurance');
+    expect(packet.legalDisclaimer).toContain('does not guarantee dispute outcomes');
+
+    // 2. Check deadline urgency: 3 days remaining (not urgent yet)
+    const normalDeadline = checkDisputeDeadlineUrgency(
+      '2026-11-28T23:59:59.000Z',
+      '2026-11-25T12:00:00.000Z'
+    );
+    expect(normalDeadline.isUrgent).toBe(false);
+    expect(normalDeadline.humanNotice).toContain('3 days');
+
+    // 3. Urgent deadline: 24 hours remaining
+    const urgentDeadline = checkDisputeDeadlineUrgency(
+      '2026-11-28T23:59:59.000Z',
+      '2026-11-27T23:59:59.000Z'
+    );
+    expect(urgentDeadline.isUrgent).toBe(true);
+    expect(urgentDeadline.humanNotice).toContain('URGENT');
+  });
+});
+
 
 
 

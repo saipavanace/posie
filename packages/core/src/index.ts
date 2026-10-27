@@ -84,4 +84,7 @@ export * from './calendar_sync';
 export * from './deposits_preauth';
 export * from './unified_checkout';
 export * from './terminal_payments';
+export * from './refunds_exchanges';
+export * from './noshow_collection';
+export * from './dispute_workspace';
 

@@ -510,6 +510,25 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** In-person contactless point-of-sale supporting certified countertop smart terminals (WisePOS E) and Tap to Pay on iPhone.
 * **Key Invariant (Basis: B; WB F31):** **Interrupted processing recovery.** When a network disconnect or reader timeout occurs mid-dip or tap, Posie locks the session and queries the gateway's authoritative transaction state before allowing a retry. If the charge executed, the receipt is finalized with zero duplicate debits; if uncharged, the reader safely resets.
 
+---
+
+## F087 — Refunds & Exchanges (Document D15)
+* **What it is:** Post-transaction adjustment suite handling full/partial refunds, retail product returns, tips, and inventory restocking manifests.
+* **Key Invariant (Basis: B; R02, Document D15):** **Reconciled balance protection.** Staff cannot issue a refund greater than the remaining balance after deducting prior refunds. Retail returns automatically manifest back into the inventory stock ledger, and every refund records an immutable audit reason (e.g. medical contraindication, client dissatisfaction).
+
+---
+
+## F088 — No-Show Collection & Fee Recovery (Document D05)
+* **What it is:** Automated cancellation policy enforcement attempting collection of stipulated no-show fees against vaulted payment cards.
+* **Key Invariant (Basis: I; WB F8 C15, Document D05):** **Truth-in-vaulting & gentle recovery.** Saved cards are never represented as guaranteed collectible funds. When a card declines (insufficient funds, expired card), Posie transparently surfaces the decline code, texts the client a gentle self-service settlement link (`posie.com/settle/...`), and provides an auditable manager courtesy waiver for emergencies.
+
+---
+
+## F089 — Dispute & Chargeback Evidence Workspace (Documents D05, D15, D18)
+* **What it is:** Automated dispute defense engine assembling signed intake forms, cancellation policies, SOAP charts, and terminal receipts into an audit-ready chargeback defense bundle.
+* **Key Invariant (Basis: I; WB F34, Documents D05/D15/D18):** **Cryptographic truth-in-defense.** Assembles 5 critical verification pillars (signed D05 policy, signed treatment consent hash, practitioner SOAP notes, terminal receipt, and two-way SMS logs) with deadline tracking. Truth-in-defense notice clarifies that evidence submission strictly follows card network rules without false promises of guaranteed bank rulings.
+
+
 
 
 
