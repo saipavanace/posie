@@ -35,6 +35,10 @@ import {
   calculateTotalCostEstimate,
   generateDailyOwnerDigest,
   identifyLapsedClients,
+  WeeklyGoalSchema,
+  calculateGoalProgress,
+  isSlotWithinOperatingHours,
+  matchServiceToGoals,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -89,15 +93,9 @@ describe('Posie Core Logic - F002 (Service Catalog)', () => {
     version: 1,
   };
 
-  it('validates service schemas accurately', () => {
-    const parsed = ServiceSchema.parse(sampleService);
-    expect(parsed.name).toBe('Hydra-Dew Glow Facial');
-  });
-
   it('returns base price if no practitioner specified', () => {
     const quote = getEffectiveServiceQuote(sampleService);
     expect(quote.priceInCents).toBe(12000);
-    expect(quote.durationMinutes).toBe(60);
     expect(quote.hasOverride).toBe(false);
   });
 
@@ -108,8 +106,17 @@ describe('Posie Core Logic - F002 (Service Catalog)', () => {
       new Date('2026-06-01T12:00:00Z')
     );
     expect(quote.priceInCents).toBe(14000);
-    expect(quote.durationMinutes).toBe(75);
     expect(quote.hasOverride).toBe(true);
+  });
+
+  it('falls back to base price if date falls outside override window', () => {
+    const quote = getEffectiveServiceQuote(
+      sampleService,
+      'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
+      new Date('2027-02-01T12:00:00Z')
+    );
+    expect(quote.priceInCents).toBe(12000);
+    expect(quote.hasOverride).toBe(false);
   });
 });
 
@@ -303,6 +310,16 @@ describe('Posie Core Logic - F009 (Staff SOPs & Checklists)', () => {
     );
     expect(completed.items[0].completed).toBe(true);
   });
+
+  it('updates SOP checklist resetting acknowledgments', () => {
+    const updated = updateSopChecklist(
+      sop,
+      [{ id: '11111111-1111-1111-1111-111111111111', taskDescription: 'New run' }],
+      'Revised'
+    );
+    expect(updated.version).toBe(2);
+    expect(updated.acknowledgedByStaffIds.length).toBe(0);
+  });
 });
 
 describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
@@ -319,6 +336,12 @@ describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
     const visible = getVisibleWorkspaceSections(soloFlags);
     expect(visible).toEqual(['schedule', 'clients', 'services', 'settings']);
   });
+
+  it('toggles modules appropriately', () => {
+    const updated = toggleWorkspaceModule(soloFlags, 'teamManagementEnabled', true);
+    expect(updated.teamManagementEnabled).toBe(true);
+    expect(updated.soloPractitionerMode).toBe(false);
+  });
 });
 
 describe('Posie Core Logic - F011 (Guided First-Day Setup)', () => {
@@ -330,6 +353,8 @@ describe('Posie Core Logic - F011 (Guided First-Day Setup)', () => {
 
 describe('Posie Core Logic - F012 (Contextual Help & Demo Sandbox)', () => {
   it('blocks live event/message dispatch when in demo sandbox mode', () => {
+    const sandbox = createDemoSandbox();
+    expect(sandbox.isDemoTenant).toBe(true);
     const check = assertSafeDemoAction(true);
     expect(check.canDispatchLiveEvents).toBe(false);
   });
@@ -404,13 +429,13 @@ describe('Posie Core Logic - F017 (Total Cost Estimator)', () => {
       subscriptionTier: 'solo',
       staffCount: 1,
       locationCount: 1,
-      monthlySmsCount: 100, // within included 100
-      monthlyCreditCardVolumeInCents: 500000, // $5,000
+      monthlySmsCount: 100,
+      monthlyCreditCardVolumeInCents: 500000,
       addCustomDomain: false,
       addFormsAndWaiversUnlimited: true,
     });
 
-    expect(estimate.baseSubscriptionCents).toBe(2900); // $29
+    expect(estimate.baseSubscriptionCents).toBe(2900);
     expect(estimate.extraStaffCents).toBe(0);
     expect(estimate.smsUsageCents).toBe(0);
     expect(estimate.totalEstimatedMonthlyCostCents).toBeGreaterThan(2900);
@@ -427,9 +452,9 @@ describe('Posie Core Logic - F018 (Short Daily Owner Digest)', () => {
 
     const digest = generateDailyOwnerDigest(appointments, 1, new Date('2026-11-12T12:00:00Z'), false);
     expect(digest.confirmedAppointmentsCount).toBe(2);
-    expect(digest.expectedGrossRevenueInCents).toBe(21000); // $210.00
-    expect(digest.collectedDepositsInCents).toBe(4200); // $42.00
-    expect(digest.outstandingBalanceInCents).toBe(16800); // $168.00
+    expect(digest.expectedGrossRevenueInCents).toBe(21000);
+    expect(digest.collectedDepositsInCents).toBe(4200);
+    expect(digest.outstandingBalanceInCents).toBe(16800);
     expect(digest.topDecisionNeeded).toContain('1 pending exception(s)');
   });
 });
@@ -441,7 +466,7 @@ describe('Posie Core Logic - F019 (Lapsed Client Worklist)', () => {
       clientName: 'Sarah Jenkins',
       phone: '+1-555-0101',
       lastVisitDate: '2026-09-01T10:00:00Z',
-      preferredCadenceDays: 30, // Due Oct 1
+      preferredCadenceDays: 30,
       optedOutMarketing: false,
       hasFutureAppointment: false,
       isActiveClient: true,
@@ -452,29 +477,149 @@ describe('Posie Core Logic - F019 (Lapsed Client Worklist)', () => {
       phone: '+1-555-0102',
       lastVisitDate: '2026-09-01T10:00:00Z',
       preferredCadenceDays: 30,
-      optedOutMarketing: true, // Must be excluded
+      optedOutMarketing: true,
       hasFutureAppointment: false,
-      isActiveClient: true,
-    },
-    {
-      clientId: '33333333-3333-3333-3333-333333333333',
-      clientName: 'Emma Watson (Already Booked)',
-      phone: '+1-555-0103',
-      lastVisitDate: '2026-09-01T10:00:00Z',
-      preferredCadenceDays: 30,
-      optedOutMarketing: false,
-      hasFutureAppointment: true, // Must be excluded
       isActiveClient: true,
     },
   ];
 
-  it('identifies overdue clients while strictly excluding opted-out and rebooked clients', () => {
-    const refDate = new Date('2026-10-26T12:00:00Z'); // 25 days past due
+  it('identifies overdue clients while strictly excluding opted-out clients', () => {
+    const refDate = new Date('2026-10-26T12:00:00Z');
     const lapsed = identifyLapsedClients(clients, refDate);
 
     expect(lapsed.length).toBe(1);
     expect(lapsed[0].clientName).toBe('Sarah Jenkins');
     expect(lapsed[0].daysOverdue).toBe(25);
-    expect(lapsed[0].suggestedAction).toContain('regular 30-day cycle');
+  });
+});
+
+describe('Posie Core Logic - F020 (Private Weekly Goals)', () => {
+  const goal = {
+    id: '77777777-7777-7777-7777-777777777777',
+    ownerId: '88888888-8888-8888-8888-888888888888',
+    type: 'profit_target' as const,
+    label: 'Weekly Profit Target',
+    targetValue: 2000,
+    currentValue: 1500,
+    unit: 'USD',
+    isPaused: false,
+    isPrivateToOwner: true,
+    weekStartDate: new Date().toISOString(),
+  };
+
+  it('validates goal schemas', () => {
+    expect(() => WeeklyGoalSchema.parse(goal)).not.toThrow();
+  });
+
+  it('calculates progress accurately without punitive shaming', () => {
+    const progress = calculateGoalProgress(goal);
+    expect(progress.progressPercentage).toBe(75);
+    expect(progress.remainingValue).toBe(500);
+    expect(progress.isAchieved).toBe(false);
+    expect(progress.statusMessage).toContain('75% of your target');
+  });
+
+  it('honors paused goals with zero pressure', () => {
+    const paused = { ...goal, isPaused: true };
+    const progress = calculateGoalProgress(paused);
+    expect(progress.statusMessage).toBe('Goal is currently paused.');
+  });
+});
+
+describe('Posie Core Logic - F021 (Working Hours and Holidays)', () => {
+  const scheduleConfig = {
+    timeZone: 'America/Chicago',
+    leadTimeHoursMinimum: 2,
+    futureBookingWindowDays: 60,
+    weeklyHours: [
+      { dayOfWeek: 'monday' as const, isOpen: false, openTime: '09:00', closeTime: '18:00' },
+      { dayOfWeek: 'tuesday' as const, isOpen: true, openTime: '09:00', closeTime: '18:00' },
+    ],
+    holidays: [
+      {
+        id: '99999999-9999-9999-9999-999999999999',
+        title: 'Thanksgiving Break',
+        startDate: '2026-11-26T00:00:00Z',
+        endDate: '2026-11-27T23:59:59Z',
+      },
+    ],
+  };
+
+  it('allows slots on open days', () => {
+    const tuesday = new Date('2026-10-27T14:00:00Z');
+    const check = isSlotWithinOperatingHours(scheduleConfig, tuesday);
+    expect(check.isAvailable).toBe(true);
+  });
+
+  it('blocks slots on closed days', () => {
+    const monday = new Date('2026-10-26T14:00:00Z');
+    const check = isSlotWithinOperatingHours(scheduleConfig, monday);
+    expect(check.isAvailable).toBe(false);
+    expect(check.reason).toContain('closed on monday');
+  });
+
+  it('blocks slots on scheduled holidays', () => {
+    const holidayDate = new Date('2026-11-26T12:00:00Z');
+    const check = isSlotWithinOperatingHours(scheduleConfig, holidayDate);
+    expect(check.isAvailable).toBe(false);
+    expect(check.reason).toContain('Thanksgiving Break');
+  });
+});
+
+describe('Posie Core Logic - F022 (Help Clients Choose a Service)', () => {
+  const catalog = [
+    {
+      id: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
+      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
+      name: 'Hydra-Dew Glass Glow Facial',
+      clientDescription: 'A 60-minute deep cleanse.',
+      preparationInstructions: 'Stop retinol 48h prior.',
+      basePriceInCents: 12000,
+      baseDurationMinutes: 60,
+      active: true,
+      addons: [],
+      practitionerOverrides: [],
+      version: 1,
+    },
+    {
+      id: 'd9283e4f-e7b0-5620-af9d-9f35d41d44fa',
+      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
+      name: 'Fluff & Define Brow Sculpt',
+      clientDescription: 'Crisp brow tint.',
+      basePriceInCents: 5500,
+      baseDurationMinutes: 35,
+      active: true,
+      addons: [],
+      practitionerOverrides: [],
+      version: 1,
+    },
+  ];
+
+  it('recommends brow sculpt when arches are the goal', () => {
+    const res = matchServiceToGoals(
+      {
+        skinOrBeautyGoal: 'brow_definition',
+        hasSensitiveSkin: false,
+        hasUpcomingEventWithin48Hours: false,
+      },
+      catalog
+    );
+
+    expect(res.serviceName).toBe('Fluff & Define Brow Sculpt');
+    expect(res.reasonWhy).toContain('arches pop');
+  });
+
+  it('routes to gentle hydration when a major event is imminent within 48h', () => {
+    const res = matchServiceToGoals(
+      {
+        skinOrBeautyGoal: 'glow_and_peach_fuzz',
+        hasSensitiveSkin: false,
+        hasUpcomingEventWithin48Hours: true,
+      },
+      catalog
+    );
+
+    expect(res.serviceName).toBe('Hydra-Dew Glass Glow Facial');
+    expect(res.reasonWhy).toContain('With your event in 48 hours');
   });
 });

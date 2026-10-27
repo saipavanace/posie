@@ -8,13 +8,15 @@ import {
   ShieldCheck,
   CheckCircle2,
   Users,
-  CheckSquare2,
   DollarSign,
   TrendingUp,
   UserCheck,
   Moon,
   Calendar,
   AlertCircle,
+  HelpCircle,
+  Target,
+  ArrowRight,
 } from 'lucide-react';
 
 // Brand Information
@@ -54,50 +56,40 @@ const services = [
   },
 ];
 
-// F018: Daily Owner Digest Data
-const ownerDigest = {
-  date: 'Today, Monday Oct 26',
-  confirmedVisits: 6,
-  grossExpected: '$645.00',
-  depositsCollected: '$129.00',
-  outstandingDueAtCheckout: '$516.00',
-  unresolvedExceptions: 1,
-  actionRequired: '1 client (Maya) requires signed glycolic acid waiver prior to 2:30 PM appointment.',
-};
+// F020: Private Weekly Goals Sample
+const initialGoals = [
+  { id: 'g1', title: 'Weekly Profit Target', current: 1500, target: 2000, unit: '$', pct: 75 },
+  { id: 'g2', title: 'Protected Days Off', current: 2, target: 2, unit: 'days', pct: 100 },
+];
 
-// F019: Lapsed Client Worklist Data
-const lapsedClients = [
-  {
-    name: 'Sarah Jenkins',
-    lastVisit: 'Sept 1, 2026',
-    cadence: '4 weeks',
-    overdue: '25 days overdue',
-    suggestedMsg: 'Hey Sarah! ✨ We miss your glow! Chloe has 2 openings this Friday if you want to refresh your Hydra-Dew facial.',
-  },
-  {
-    name: 'Jessica Miller',
-    lastVisit: 'Aug 15, 2026',
-    cadence: '6 weeks',
-    overdue: '18 days overdue',
-    suggestedMsg: 'Hey Jessica! Just checking in on your brow sculpt. Ready for a touch-up? Tap here to book without logging in.',
-  },
+// F021: Studio Hours Sample
+const studioHours = [
+  { day: 'Mon', hours: 'Closed (Rest Day)', open: false },
+  { day: 'Tue - Fri', hours: '9:00 AM - 6:00 PM', open: true },
+  { day: 'Sat', hours: '10:00 AM - 5:00 PM', open: true },
+  { day: 'Sun', hours: 'Closed (Rest Day)', open: false },
 ];
 
 export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // F017 Total Cost Estimator State
-  const [monthlyVolume, setMonthlyVolume] = useState<number>(5000); // $5,000 / mo
-  const [staffCount, setStaffCount] = useState<number>(1);
-  const [customDomain, setCustomDomain] = useState<boolean>(false);
+  // F022: Help Me Choose Navigator State
+  const [selectedGoal, setSelectedGoal] = useState<'glow' | 'brows' | 'hydration'>('hydration');
+  const [hasEventIn48h, setHasEventIn48h] = useState(false);
 
-  // Cost calculation
-  const baseSub = 29;
-  const extraStaffCost = Math.max(0, staffCount - 1) * 15;
-  const processingCost = Math.round(monthlyVolume * 0.026 + (monthlyVolume / 75) * 0.1);
-  const domainCost = customDomain ? 10 : 0;
-  const totalCost = baseSub + extraStaffCost + processingCost + domainCost;
+  // Navigator Recommendation
+  const recommendedServiceId =
+    selectedGoal === 'brows' ? 's2' : hasEventIn48h ? 's1' : selectedGoal === 'glow' ? 's3' : 's1';
+
+  const recommendationReason =
+    selectedGoal === 'brows'
+      ? 'Custom shaping and tinting will make your natural arches pop without requiring daily brow makeup.'
+      : hasEventIn48h
+      ? 'With an event within 48 hours, we recommend our gentle Hydra-Dew bath instead of dermaplaning for zero redness.'
+      : selectedGoal === 'glow'
+      ? 'Removes dead skin cells and peach fuzz so serums penetrate deeply and foundation glides on seamlessly.'
+      : 'The ultimate thirst-quencher for tired skin: double cleanse, fruit enzyme sweep, and ultra-drenching mask.';
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -138,190 +130,169 @@ export default function PosieStudioPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Badge variant="sage">Features F001 - F019 Live</Badge>
+          <Badge variant="sage">Features F001 - F022 Live</Badge>
           <Badge variant="rose">Atelier Studio</Badge>
         </div>
       </header>
 
-      {/* F018: Short Daily Owner Digest Banner */}
+      {/* F022: Interactive "Help Me Choose" Service Navigator */}
       <section style={{ marginBottom: '40px' }}>
-        <Card style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--color-primary)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <TrendingUp size={20} color="var(--color-primary)" />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-                Feature 018: Daily Owner Digest • {ownerDigest.date}
-              </span>
-            </div>
-            <Badge variant="sage">
-              <Moon size={12} style={{ marginRight: '4px' }} /> Quiet Hours Active (9 PM - 8 AM)
-            </Badge>
+        <Card style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--color-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <HelpCircle size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 022: Not Sure What to Book? We've Got You.
+            </span>
+          </div>
+          <h2 style={{ fontSize: '1.6rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Find Your Perfect Treatment in 10 Seconds
+          </h2>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '20px' }}>
+            No skincare degree needed. Tell us what your skin is craving right now:
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+            <Button
+              variant={selectedGoal === 'hydration' ? 'primary' : 'outline'}
+              size="md"
+              onClick={() => setSelectedGoal('hydration')}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              💦 Deep Thirst Quenching (Dry / Dull)
+            </Button>
+
+            <Button
+              variant={selectedGoal === 'glow' ? 'primary' : 'outline'}
+              size="md"
+              onClick={() => setSelectedGoal('glow')}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              ✨ Silky Glow & Peach-Fuzz Removal
+            </Button>
+
+            <Button
+              variant={selectedGoal === 'brows' ? 'primary' : 'outline'}
+              size="md"
+              onClick={() => setSelectedGoal('brows')}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              🪄 Fluffy, Defined Natural Brows
+            </Button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Confirmed Visits</span>
-              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-primary)' }}>
-                {ownerDigest.confirmedVisits} Appointments
-              </strong>
-            </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer', marginBottom: '20px' }}>
+            <input
+              type="checkbox"
+              checked={hasEventIn48h}
+              onChange={(e) => setHasEventIn48h(e.target.checked)}
+              style={{ accentColor: 'var(--color-primary)' }}
+            />
+            I have a wedding, photoshoot, or big event within the next 48 hours.
+          </label>
 
-            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Expected Gross</span>
-              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-primary)' }}>
-                {ownerDigest.grossExpected}
-              </strong>
-            </div>
-
-            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Deposits Secured</span>
-              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-secondary)' }}>
-                {ownerDigest.depositsCollected}
-              </strong>
-            </div>
-
-            <div style={{ backgroundColor: 'var(--color-bg)', padding: '14px', borderRadius: '12px' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Due at Checkout</span>
-              <strong style={{ fontSize: '1.4rem', display: 'block', color: 'var(--color-tertiary)' }}>
-                {ownerDigest.outstandingDueAtCheckout}
-              </strong>
-            </div>
-          </div>
-
-          {/* Top Decision Action Bar */}
+          {/* Recommendation Banner */}
           <div
             style={{
               backgroundColor: 'var(--color-secondary-light)',
-              padding: '12px 16px',
-              borderRadius: '10px',
+              borderRadius: '12px',
+              padding: '16px 20px',
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '10px',
-              fontSize: '0.88rem',
-              color: 'var(--color-primary)',
+              flexWrap: 'wrap',
+              gap: '12px',
             }}
           >
-            <AlertCircle size={18} />
-            <span><strong>Today's Focus:</strong> {ownerDigest.actionRequired}</span>
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+                Recommended Match:
+              </span>
+              <h3 style={{ fontSize: '1.25rem', color: 'var(--color-primary)', margin: '2px 0 4px' }}>
+                {services.find((s) => s.id === recommendedServiceId)?.name}
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+                {recommendationReason}
+              </p>
+            </div>
+
+            <Button
+              variant="tertiary"
+              size="sm"
+              onClick={() => setSelectedService(recommendedServiceId)}
+            >
+              Select Treatment <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+            </Button>
           </div>
         </Card>
       </section>
 
-      {/* F017 & F019 Row */}
+      {/* F020 & F021 Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        {/* F017: Total Cost Estimator */}
+        {/* F020: Private Weekly Goals */}
         <Card style={{ backgroundColor: '#FFFFFF' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <DollarSign size={20} color="var(--color-tertiary)" />
+            <Target size={20} color="var(--color-tertiary)" />
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-              Feature 017: Total Cost Estimator
+              Feature 020: Private Weekly Goals
             </span>
           </div>
           <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Honest Studio Bill Preview
+            Owner Goals & Work-Life Balance
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            No "nickel & diming". See your exact monthly costs before committing to a plan.
+            Private to you. Nonpunitive feedback that protects days off alongside contribution targets.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px' }}>
-                <span>Monthly Card Volume:</span>
-                <strong>${monthlyVolume.toLocaleString()} / mo</strong>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {initialGoals.map((g) => (
+              <div key={g.id} style={{ backgroundColor: 'var(--color-bg)', padding: '12px 14px', borderRadius: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>{g.title}</strong>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+                    {g.unit === '$' ? `$${g.current} / $${g.target}` : `${g.current} / ${g.target} ${g.unit}`}
+                  </span>
+                </div>
+                <div style={{ height: '8px', backgroundColor: 'var(--color-border)', borderRadius: '9999px', overflow: 'hidden' }}>
+                  <div style={{ width: `${g.pct}%`, height: '100%', backgroundColor: 'var(--color-secondary)' }} />
+                </div>
               </div>
-              <input
-                type="range"
-                min="1000"
-                max="25000"
-                step="1000"
-                value={monthlyVolume}
-                onChange={(e) => setMonthlyVolume(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--color-primary)' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
-              <span>Staff Specialists:</span>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {[1, 2, 3].map((num) => (
-                  <Button
-                    key={num}
-                    variant={staffCount === num ? 'primary' : 'outline'}
-                    size="sm"
-                    onClick={() => setStaffCount(num)}
-                  >
-                    {num}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={customDomain}
-                onChange={(e) => setCustomDomain(e.target.checked)}
-                style={{ accentColor: 'var(--color-primary)' }}
-              />
-              Add Custom Studio Domain ($10/mo)
-            </label>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: 'var(--color-bg)',
-              padding: '14px',
-              borderRadius: '12px',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Estimated Monthly Total:</span>
-              <strong style={{ fontSize: '1.4rem', color: 'var(--color-primary)' }}>${totalCost}.00</strong>
-            </div>
-            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              Includes $29 base + ${processingCost} card fees (2.6% + 10¢) + ${extraStaffCost} extra staff + ${domainCost} domain.
-            </p>
+            ))}
           </div>
         </Card>
 
-        {/* F019: Lapsed Client Reconnect Worklist */}
+        {/* F021: Working Hours & Holiday Calendar */}
         <Card style={{ backgroundColor: '#FFFFFF' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <UserCheck size={20} color="var(--color-primary)" />
+            <Calendar size={20} color="var(--color-primary)" />
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-              Feature 019: Lapsed Client Worklist
+              Feature 021: Hours & Lead Times
             </span>
           </div>
           <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-            Treatment Cadence Reconnect
+            Studio Working Hours
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Clients overdue past their individual treatment interval. Opted-out clients are strictly excluded.
+            2-hour minimum lead time • 60-day advance booking window • Timezone: America/Chicago.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {lapsedClients.map((client) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {studioHours.map((h) => (
               <div
-                key={client.name}
+                key={h.day}
                 style={{
-                  backgroundColor: 'var(--color-bg)',
-                  padding: '12px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: h.open ? 'var(--color-bg)' : 'transparent',
+                  border: h.open ? '1px solid var(--color-border)' : '1px dashed var(--color-border)',
+                  fontSize: '0.85rem',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>{client.name}</strong>
-                  <Badge variant="rose">{client.overdue}</Badge>
-                </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                  Regular cycle: {client.cadence} • Last seen {client.lastVisit}
-                </p>
-                <Button variant="outline" size="sm" style={{ fontSize: '0.75rem', width: '100%' }}>
-                  Preview Reconnect SMS
-                </Button>
+                <strong>{h.day}</strong>
+                <span style={{ color: h.open ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                  {h.hours}
+                </span>
               </div>
             ))}
           </div>
@@ -329,7 +300,7 @@ export default function PosieStudioPage() {
       </div>
 
       {/* Treatment Menu */}
-      <section style={{ marginBottom: '56px' }}>
+      <section style={{ marginBottom: '40px' }}>
         <div style={{ marginBottom: '24px' }}>
           <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
         </div>
@@ -421,9 +392,9 @@ export default function PosieStudioPage() {
             >
               <CheckCircle2 size={24} color="var(--color-primary)" />
               <div>
-                <strong>Appointment Snapshot Confirmed!</strong>
+                <strong>Appointment Confirmed!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  Updated in your Daily Owner Digest (F018).
+                  Slot scheduled within studio operating hours (F021).
                 </p>
               </div>
             </div>

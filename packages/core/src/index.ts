@@ -17,3 +17,6 @@ export * from './imports';
 export * from './finance';
 export * from './digest';
 export * from './retention';
+export * from './goals';
+export * from './hours';
+export * from './navigator';
