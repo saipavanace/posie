@@ -1044,6 +1044,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Telemedicine clinician network and good-faith medical clearance consultation suite for elective aesthetic and wellness procedures.
 * **Key Invariant (Basis: Expansion (X); NET CLIN LEG OPS, WB F175, Rule F175, Table 91):** **Strict State Licensure Matching & Immediate Clinical Escalation.** "Recruit and credential clinicians for permitted consultations with clear responsibility and escalation; availability and coverage are verified before sale." Matches patients exclusively with clinicians credentialed and licensed in the patient's physical state. Contraindications or acute red flags (e.g. active infection, pregnancy) trigger immediate clearance deferrals or structured escalation packets to in-person emergency care.
 
+---
+
+## F176 — Insurance Billing (WB F176, Table 91)
+* **What it is:** Electronic healthcare claims processing (CMS-1500 / 837P format), eligibility verification (270/271), and electronic remittance reconciliation (ERA 835) for covered aesthetic and therapeutic procedures.
+* **Key Invariant (Basis: Expansion (X); CLIN FIN PART, WB F176, Table 91):** **Remittance Reconciliation & Accountable Denial Ownership.** "Support eligibility, claims and remittance only for legitimate covered services and qualified providers; claims reconcile to remittances and denials have owners." Requires verified rendering provider NPI, taxonomy, and pre-verified insurance eligibility. Adjudicated claims reconcile strictly to remittance advice files, and denied claims mandate an assigned billing specialist owner with explicit corrective appeal tracking.
+
+---
+
+## F177 — Consumer Discovery Marketplace (WB F177, WB F61, WB F63, Table 91)
+* **What it is:** Opt-in consumer discovery marketplace attracting local clientele while strictly preserving provider autonomy and zero-commission client ownership.
+* **Key Invariant (Basis: Validate separately (V); NET OPS DATA, WB F177, Rule F177, Table 91):** **Opt-In Autonomy & Protected Client Attribution.** "Attract clients and providers in a local market, with opt-in listings, transparent attribution and dispute handling; a provider can use direct booking without buying marketplace distribution." Direct salon booking links, QR codes, and existing salon clients incur 0% marketplace commission. Only genuine net-new discovery incurs explicit commission (e.g. 15%), and salons retain auditable evidence dispute rights without competitor ad poaching.
+
+---
+
+## F178 — Embedded Working Capital (WB F178, WB U13, Table 91)
+* **What it is:** Merchant revenue-based working capital advances underwritten by regulated commercial banking partners, funded through daily card sales holdbacks.
+* **Key Invariant (Basis: Validate separately (V); PAY FIN LEG PART, WB F178, Rule F178, Table 91):** **Transparent Factor Pricing & Daily Percentage Holdbacks.** "Offer eligible financing through regulated partners with transparent costs and appropriate underwriting; software does not imply guaranteed eligibility or approval." Features a single transparent fixed factor fee with zero compounding interest, zero late payment penalties, and flexible daily percentage holdbacks (e.g. 10%) from settled card batches.
+
+---
+
+## F179 — Financial Protection Products (WB F179, Table 91, Table 108/109)
+* **What it is:** Underwritten no-show fee and chargeback guarantee protection backed by funded contractual insurance reserves.
+* **Key Invariant (Basis: Validate separately (V); PAY FIN LEG OPS, WB F179, Rule F179, Table 91):** **Contractually Backed Guarantees & Strict Eligibility Exclusions.** "Explore no-show or payout protection only with explicit eligibility, exclusions and financially backed coverage; promises match a funded contractual product." Coverage mandates verified pre-authorized payment methods and signed cancellation policies on file. Excludes salon-initiated cancellations. Approved claims for uncollected client no-shows disburse guaranteed reimbursement directly to the studio's ledger.
+
+---
+
+## F180 — External Staffing Marketplace (WB F180, Table 91, Table 105)
+* **What it is:** Independent professional substitute marketplace connecting salons in need of urgent shift coverage with verified freelance stylists, estheticians, and assistants.
+* **Key Invariant (Basis: Validate separately (V); NET CLIN LEG OPS, WB F180, Rule F180, Table 91, Table 105):** **Credential Verification & Escrow-Protected Shift Payouts.** "Recruit and verify substitute professionals and match paid coverage requests with dispute and incident handling; coverage quality is monitored operationally." Enforces state licensing and background check verifications before gig matching. Shift compensation is held in escrow upon booking and released upon verified completion minus transparent platform fees (10%), with immediate escrow freezing upon reported incidents or disputes.
+
+
 
 
 

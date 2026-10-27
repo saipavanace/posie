@@ -417,6 +417,24 @@ import {
   conductTelehealthConsultation,
   escalateUrgentClinicalCase,
   type TelehealthClinician,
+  createInsuranceClaim,
+  reconcileClaimRemittance,
+  assignClaimDenialAppeal,
+  type InsurancePolicyDetails,
+  type RemittanceAdvice835,
+  toggleMarketplaceListing,
+  evaluateBookingAttribution,
+  fileAttributionDispute,
+  generateWorkingCapitalOffer,
+  acceptWorkingCapitalAdvance,
+  settleDailyHoldbackDeduction,
+  evaluateProtectionEligibility,
+  fileProtectionClaim,
+  adjudicateProtectionClaim,
+  registerExternalSubstitute,
+  matchExternalShiftCoverage,
+  completeShiftAndReleaseEscrow,
+  type ExternalShiftRequest,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -9636,6 +9654,342 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       );
       expect(escalationPacket.escalationSeverity).toBe('urgent_referral');
       expect(escalationPacket.recommendedCareSetting).toBe('in_person_dermatologist');
+    });
+  });
+
+  describe('Posie Core Logic - F176 (Insurance Billing)', () => {
+    const verifiedPolicy: InsurancePolicyDetails = {
+      payerId: 'PAYER_BCBS',
+      payerName: 'Blue Cross Blue Shield',
+      memberId: 'MEM_9921448',
+      insuredName: 'Sophia Miller',
+      relationshipToInsured: 'self',
+      isEligibilityVerified: true,
+      verifiedCopayAmount: 30.0,
+      verifiedDeductibleRemaining: 0,
+    };
+
+    it('creates electronic claims, reconciles remittances, and assigns accountable owners to claim denials', () => {
+      // 1. Rejects unverified insurance eligibility
+      expect(() =>
+        createInsuranceClaim({
+          claimId: 'clm_101',
+          appointmentId: 'appt_med_1',
+          clientId: 'client_sophia',
+          clientName: 'Sophia Miller',
+          renderingProviderNpi: '1982736450',
+          renderingProviderName: 'Dr. Sarah Vance, MD',
+          renderingProviderTaxonomy: '207N00000X',
+          billingProviderNpi: '1982736450',
+          policy: { ...verifiedPolicy, isEligibilityVerified: false },
+          diagnosisCodesICD10: ['L70.0'],
+          lineItems: [{ serviceDate: '2026-11-01', cptCode: '99213', cptDescription: 'Office Visit Level 3', billedCharge: 180.0, units: 1, diagnosisPointers: ['L70.0'] }],
+        })
+      ).toThrow('Insurance eligibility must be verified');
+
+      // 2. Creates valid claim
+      const claim = createInsuranceClaim({
+        claimId: 'clm_101',
+        appointmentId: 'appt_med_1',
+        clientId: 'client_sophia',
+        clientName: 'Sophia Miller',
+        renderingProviderNpi: '1982736450',
+        renderingProviderName: 'Dr. Sarah Vance, MD',
+        renderingProviderTaxonomy: '207N00000X',
+        billingProviderNpi: '1982736450',
+        policy: verifiedPolicy,
+        diagnosisCodesICD10: ['L70.0'],
+        lineItems: [
+          { serviceDate: '2026-11-01', cptCode: '99213', cptDescription: 'Office Visit Level 3', billedCharge: 180.0, units: 1, diagnosisPointers: ['L70.0'] },
+          { serviceDate: '2026-11-01', cptCode: '17110', cptDescription: 'Destruction of Benign Lesions', billedCharge: 220.0, units: 1, diagnosisPointers: ['L70.0'] },
+        ],
+      });
+
+      expect(claim.totalBilledAmount).toBe(400.0);
+      expect(claim.status).toBe('draft');
+
+      // 3. Reconcile clean ERA 835 remittance
+      const cleanEra: RemittanceAdvice835 = {
+        remittanceId: 'era_8821',
+        claimId: 'clm_101',
+        payerName: 'Blue Cross Blue Shield',
+        allowedAmount: 320.0,
+        paidAmount: 290.0,
+        patientResponsibilityCopay: 30.0,
+        patientResponsibilityCoinsurance: 0,
+        contractualAdjustment: 80.0, // 400 - 320
+        claimStatusCode: 'processed_as_primary',
+        adjudicatedAt: '2026-11-04T12:00:00Z',
+      };
+
+      const cleanReconciliation = reconcileClaimRemittance(claim, cleanEra);
+      expect(cleanReconciliation.updatedClaim.status).toBe('adjudicated_paid');
+      expect(cleanReconciliation.denialAppealNeeded).toBe(false);
+      expect(cleanReconciliation.financialSummary.paid).toBe(290.0);
+      expect(cleanReconciliation.financialSummary.patientOwes).toBe(30.0);
+
+      // 4. Invariant: Denied remittance requires accountable owner assignment
+      const deniedEra: RemittanceAdvice835 = {
+        remittanceId: 'era_denied_991',
+        claimId: 'clm_101',
+        payerName: 'Blue Cross Blue Shield',
+        allowedAmount: 0,
+        paidAmount: 0,
+        patientResponsibilityCopay: 0,
+        patientResponsibilityCoinsurance: 0,
+        contractualAdjustment: 0,
+        claimStatusCode: 'denied',
+        denialReasonCode: 'CO-16', // Missing clinical documentation / modifier
+        adjudicatedAt: '2026-11-04T12:00:00Z',
+      };
+
+      const deniedReconciliation = reconcileClaimRemittance(claim, deniedEra);
+      expect(deniedReconciliation.updatedClaim.status).toBe('denied_pending_appeal');
+      expect(deniedReconciliation.denialAppealNeeded).toBe(true);
+
+      const appeal = assignClaimDenialAppeal(
+        claim.claimId,
+        'CO-16',
+        'Jenna Reynolds (Lead Medical Biller)',
+        'Attach signed SOAP treatment chart and append modifier -25 to E/M visit.'
+      );
+
+      expect(appeal.assignedOwnerName).toBe('Jenna Reynolds (Lead Medical Biller)');
+      expect(appeal.status).toBe('open');
+    });
+  });
+
+  describe('Posie Core Logic - F177 (Consumer Discovery Marketplace)', () => {
+    it('supports opt-in listings, protects direct and repeat clients with 0% fees, and manages attribution disputes', () => {
+      const listing = toggleMarketplaceListing(
+        {
+          listingId: 'list_soho_1',
+          salonId: 'salon_maya_soho',
+          businessName: 'Atelier Maya SoHo',
+          locationCity: 'New York, NY',
+          isOptedIn: false,
+          publishedCategories: ['hair_color', 'balayage'],
+          commissionRatePercentage: 15.0,
+        },
+        true
+      );
+      expect(listing.isOptedIn).toBe(true);
+
+      // 1. Direct booking via salon URL -> 0% fee (Invariant)
+      const directAttr = evaluateBookingAttribution(
+        {
+          bookingId: 'bk_direct_1',
+          salonId: 'salon_maya_soho',
+          clientId: 'cl_new_direct',
+          bookingAmount: 200.0,
+          referralSource: 'direct_brand_url',
+        },
+        0 // New client, but arrived directly
+      );
+
+      expect(directAttr.attributionSource).toBe('direct_pro_client');
+      expect(directAttr.commissionPercentage).toBe(0);
+      expect(directAttr.payoutToSalon).toBe(200.0);
+      expect(directAttr.disputeAvailable).toBe(false);
+
+      // 2. Existing client booking via marketplace search -> 0% fee (Invariant: Protected relationship)
+      const existingClientAttr = evaluateBookingAttribution(
+        {
+          bookingId: 'bk_repeat_2',
+          salonId: 'salon_maya_soho',
+          clientId: 'cl_charlotte_repeat',
+          bookingAmount: 300.0,
+          referralSource: 'posie_marketplace_search',
+        },
+        4 // 4 prior visits
+      );
+
+      expect(existingClientAttr.attributionSource).toBe('direct_pro_client');
+      expect(existingClientAttr.commissionPercentage).toBe(0);
+      expect(existingClientAttr.payoutToSalon).toBe(300.0);
+
+      // 3. Net-new discovery client via marketplace search -> 15% discovery fee
+      const netNewDiscovery = evaluateBookingAttribution(
+        {
+          bookingId: 'bk_netnew_3',
+          salonId: 'salon_maya_soho',
+          clientId: 'cl_stranger_netnew',
+          bookingAmount: 160.0,
+          referralSource: 'posie_marketplace_search',
+        },
+        0 // 0 prior visits
+      );
+
+      expect(netNewDiscovery.attributionSource).toBe('marketplace_discovery');
+      expect(netNewDiscovery.commissionAmountOwed).toBe(24.0); // 15% of $160
+      expect(netNewDiscovery.payoutToSalon).toBe(136.0);
+      expect(netNewDiscovery.disputeAvailable).toBe(true);
+
+      // 4. File attribution dispute
+      const dispute = fileAttributionDispute(
+        netNewDiscovery,
+        'Client was referred via personal Instagram DM with proof token.',
+        'IG_CAMPAIGN_TOKEN_MAYASOHO'
+      );
+      expect(dispute.status).toBe('under_review');
+      expect(dispute.proEvidenceToken).toBe('IG_CAMPAIGN_TOKEN_MAYASOHO');
+    });
+  });
+
+  describe('Posie Core Logic - F178 (Embedded Working Capital)', () => {
+    it('generates transparent fixed-fee offers, enforces owner acceptance, and deducts daily card holdback', () => {
+      // 1. Generate offer based on $20k monthly volume
+      const offer = generateWorkingCapitalOffer('salon_maya_soho', 20000.0, 15000.0);
+      expect(offer.advanceAmount).toBe(15000.0);
+      expect(offer.fixedFactorFee).toBe(1800.0); // 1.12 factor rate
+      expect(offer.totalRepaymentAmount).toBe(16800.0);
+      expect(offer.holdbackPercentage).toBe(10.0);
+      expect(offer.disclosures[0]).toContain('Fixed fee: No compounding interest');
+
+      // 2. Reject advance over eligibility cap (max $30k)
+      expect(() => generateWorkingCapitalOffer('salon_maya_soho', 20000.0, 35000.0)).toThrow(
+        'exceeds maximum eligible amount'
+      );
+
+      // 3. Accept advance requires owner confirmation
+      expect(() => acceptWorkingCapitalAdvance(offer, false)).toThrow('explicit salon owner acceptance');
+      const activeAdvance = acceptWorkingCapitalAdvance(offer, true);
+      expect(activeAdvance.status).toBe('active_repaying');
+      expect(activeAdvance.remainingBalance).toBe(16800.0);
+
+      // 4. Settle daily holdback deduction from $1,200 daily card batch (10% = $120)
+      const deduction1 = settleDailyHoldbackDeduction(activeAdvance, 1200.0);
+      expect(deduction1.holdbackDeducted).toBe(120.0);
+      expect(deduction1.netPayoutToSalon).toBe(1080.0);
+      expect(deduction1.remainingAdvanceBalance).toBe(16680.0);
+      expect(deduction1.isFullySettled).toBe(false);
+    });
+  });
+
+  describe('Posie Core Logic - F179 (Financial Protection Products)', () => {
+    const compliantBooking: ProtectedBookingDetails = {
+      bookingId: 'bk_prot_101',
+      salonId: 'salon_maya_soho',
+      clientId: 'cl_no_show_dan',
+      serviceName: 'Balayage & Glaze',
+      servicePrice: 280.0,
+      cancellationFeePolicyAmount: 140.0, // 50% cancellation fee
+      hasPreauthorizedCard: true,
+      hasSignedCancellationPolicy: true,
+      hasConfirmedAppointmentReminder: true,
+      wasCancelledBySalon: false,
+    };
+
+    it('enforces underwriting eligibility exclusions and reimburses approved claims from funded reserves', () => {
+      // 1. Ineligible exclusion: Salon-cancelled booking
+      const salonCancelledCheck = evaluateProtectionEligibility({
+        ...compliantBooking,
+        wasCancelledBySalon: true,
+      });
+      expect(salonCancelledCheck.eligible).toBe(false);
+      expect(salonCancelledCheck.exclusionReason).toContain('Cancellations initiated by the salon');
+
+      // 2. Ineligible exclusion: Missing card preauthorization
+      const noCardCheck = evaluateProtectionEligibility({
+        ...compliantBooking,
+        hasPreauthorizedCard: false,
+      });
+      expect(noCardCheck.eligible).toBe(false);
+      expect(noCardCheck.exclusionReason).toContain('verified pre-authorized payment method');
+
+      // 3. File valid claim for uncollectible no-show (client card declined on late charge attempt)
+      const claim = fileProtectionClaim({
+        claimId: 'claim_noshow_9921',
+        booking: compliantBooking,
+        incidentType: 'uncollectible_no_show',
+        failedChargeAttemptDetails: {
+          attemptedAmount: 140.0,
+          declineCode: 'card_declined_insufficient_funds',
+          attemptedAt: '2026-11-10T14:30:00Z',
+        },
+      });
+
+      expect(claim.status).toBe('submitted_evaluating');
+      expect(claim.claimedAmount).toBe(140.0);
+
+      // 4. Adjudicate claim: Underwriter approves and disburses reimbursement to salon
+      const adjudication = adjudicateProtectionClaim(claim, true);
+      expect(adjudication.updatedClaim.status).toBe('approved_reimbursed');
+      expect(adjudication.reimbursementPaid).toBe(140.0);
+    });
+  });
+
+  describe('Posie Core Logic - F180 (External Staffing Marketplace)', () => {
+    const verifiedStylist: ExternalSubstituteProfile = {
+      substituteId: 'sub_stylist_marcus',
+      fullName: 'Marcus Vance',
+      specialtyRole: 'hair_stylist',
+      stateLicenseNumber: 'COSM-NY-49210',
+      licensedJurisdiction: 'US-NY',
+      backgroundCheckPassed: true,
+      insurancePolicyNumber: 'POL-PRO-8819',
+      ratingAverage: 4.95,
+      completedShiftsCount: 14,
+      status: 'active_verified',
+    };
+
+    const shiftRequest: ExternalShiftRequest = {
+      shiftId: 'shift_ext_992',
+      salonId: 'salon_maya_soho',
+      salonName: 'Atelier Maya SoHo',
+      locationState: 'US-NY',
+      shiftDate: '2026-11-18',
+      startTime: '10:00',
+      endTime: '16:00',
+      durationHours: 6,
+      requiredRole: 'hair_stylist',
+      offeredHourlyRate: 45.0,
+      totalCompensationEscrow: 270.0, // 6 hrs * $45
+    };
+
+    it('verifies substitute credentials, escrows compensation, releases net payout, and freezes escrow on dispute', () => {
+      // 1. Register substitute
+      const sub = registerExternalSubstitute({
+        substituteId: 'sub_1',
+        fullName: 'Marcus Vance',
+        specialtyRole: 'hair_stylist',
+        stateLicenseNumber: 'COSM-NY-49210',
+        licensedJurisdiction: 'US-NY',
+        backgroundCheckPassed: true,
+      });
+      expect(sub.status).toBe('active_verified');
+
+      // 2. Reject role or jurisdiction mismatch
+      expect(() =>
+        matchExternalShiftCoverage(shiftRequest, { ...verifiedStylist, specialtyRole: 'nail_artist' })
+      ).toThrow('does not match shift requirement');
+
+      expect(() =>
+        matchExternalShiftCoverage(shiftRequest, { ...verifiedStylist, licensedJurisdiction: 'US-NJ' })
+      ).toThrow('does not match shift location');
+
+      // 3. Match valid shift: Escrow $270, 10% platform fee ($27), Net payout ($243)
+      const gig = matchExternalShiftCoverage(shiftRequest, verifiedStylist, 10.0);
+      expect(gig.agreedCompensation).toBe(270.0);
+      expect(gig.platformServiceFee).toBe(27.0);
+      expect(gig.netSubstitutePayout).toBe(243.0);
+      expect(gig.escrowStatus).toBe('held_in_escrow');
+
+      // 4. Clean shift completion: Releases escrow payout
+      const cleanSettlement = completeShiftAndReleaseEscrow(gig);
+      expect(cleanSettlement.updatedGig.status).toBe('completed_verified');
+      expect(cleanSettlement.payoutReleased).toBe(243.0);
+      expect(cleanSettlement.statusSummary).toContain('Net payout of $243.00 released');
+
+      // 5. Invariant: Incident lodged freezes escrow in dispute
+      const disputedSettlement = completeShiftAndReleaseEscrow(
+        gig,
+        'Substitute arrived 45 minutes late and failed to sanitize station.'
+      );
+      expect(disputedSettlement.updatedGig.status).toBe('incident_flagged');
+      expect(disputedSettlement.updatedGig.escrowStatus).toBe('frozen_in_dispute');
+      expect(disputedSettlement.payoutReleased).toBe(0);
+      expect(disputedSettlement.statusSummary).toContain('Escrow frozen pending operational dispute resolution');
     });
   });
 

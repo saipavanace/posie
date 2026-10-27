@@ -173,4 +173,9 @@ export * from './continuity_handover';
 export * from './actionable_analytics';
 export * from './electronic_prescribing';
 export * from './telehealth_network';
+export * from './insurance_billing';
+export * from './consumer_marketplace';
+export * from './working_capital';
+export * from './financial_protection';
+export * from './staffing_marketplace';
 

@@ -546,6 +546,26 @@ export default function PosieStudioPage() {
   const [telehealthMatchedState, setTelehealthMatchedState] = useState<'US-NY' | 'US-CA'>('US-NY');
   const [telehealthAcuteContraindication, setTelehealthAcuteContraindication] = useState<boolean>(false);
 
+  // F176 Insurance Billing State
+  const [insuranceRemittanceStatus, setInsuranceRemittanceStatus] = useState<'adjudicated_paid' | 'denied_pending_appeal'>('adjudicated_paid');
+  const [insuranceAppealAssigned, setInsuranceAppealAssigned] = useState<boolean>(false);
+
+  // F177 Consumer Discovery Marketplace State
+  const [marketplaceOptedIn, setMarketplaceOptedIn] = useState<boolean>(true);
+  const [attributionSourceSimulated, setAttributionSourceSimulated] = useState<'direct_brand_url' | 'marketplace_search'>('direct_brand_url');
+
+  // F178 Embedded Working Capital State
+  const [workingCapitalAdvanceActive, setWorkingCapitalAdvanceActive] = useState<boolean>(true);
+  const [workingCapitalRemainingBalance, setWorkingCapitalRemainingBalance] = useState<number>(16680);
+
+  // F179 Financial Protection Products State
+  const [protectionClaimStatus, setProtectionClaimStatus] = useState<'approved_reimbursed' | 'submitted_evaluating'>('approved_reimbursed');
+  const [protectionPreauthMissing, setProtectionPreauthMissing] = useState<boolean>(false);
+
+  // F180 External Staffing Marketplace State
+  const [staffingEscrowReleased, setStaffingEscrowReleased] = useState<boolean>(true);
+  const [staffingIncidentReported, setStaffingIncidentReported] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -566,7 +586,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F175)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F180)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -9828,6 +9848,384 @@ export default function PosieStudioPage() {
               onClick={() => setTelehealthAcuteContraindication(!telehealthAcuteContraindication)}
             >
               {telehealthAcuteContraindication ? 'Clear Acute Contraindication' : 'Simulate Acute Skin Infection (Trigger Escalation)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F176: Insurance Billing & Denial Appeal */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Receipt size={18} color="var(--color-primary)" />
+                Insurance Billing &amp; Denial Management (F176)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                CMS-1500 / 837P claims processing, 270/271 eligibility verification, ERA 835 remittance auto-reconciliation, and accountable denial workflows.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={insuranceRemittanceStatus === 'adjudicated_paid' ? 'sage' : 'rose'}>
+                {insuranceRemittanceStatus === 'adjudicated_paid'
+                  ? 'ERA 835 Reconciled (Paid $185.00)'
+                  : insuranceAppealAssigned
+                  ? 'Appeal Assigned: Dr. Sarah Lin (Lead)'
+                  : 'Denial CO-16: Prior Auth Lacking'}
+              </Badge>
+              <Badge variant="muted">WB F176 / Rule F176</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Claim &amp; Payer ID:</div>
+              <strong>claim_ny_401 (Aetna Commercial #60054)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Billing Provider NPI:</div>
+              <strong>1982736450 (Taxonomy: 207Q00000X - Family Med)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Remittance &amp; Adjudication:</div>
+              <strong style={{ color: insuranceRemittanceStatus === 'adjudicated_paid' ? '#2B5329' : '#A65B32' }}>
+                {insuranceRemittanceStatus === 'adjudicated_paid'
+                  ? 'Total Allowed: $210.00 • Paid: $185.00 • Copay: $25.00'
+                  : 'CARC CO-16: Lacks information or pre-auth'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Denial Ownership &amp; Appeal:</div>
+              <strong>
+                {insuranceRemittanceStatus === 'adjudicated_paid'
+                  ? 'Fully Reconciled &amp; Closed'
+                  : insuranceAppealAssigned
+                  ? 'Assigned: Sarah Lin, RN • Deadline: 45 Days'
+                  : 'Unassigned • Action Required'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📋 <strong>WB F176 Invariant:</strong> Generates compliant CMS-1500 claims; validates 10-digit NPI and 270/271 pre-eligibility; ingests ERA 835 remittances and routes denials with mandatory accountable human ownership and appeal strategy.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={insuranceRemittanceStatus === 'adjudicated_paid' ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextStatus = insuranceRemittanceStatus === 'adjudicated_paid' ? 'denied_pending_appeal' : 'adjudicated_paid';
+                setInsuranceRemittanceStatus(nextStatus);
+                if (nextStatus === 'adjudicated_paid') {
+                  setInsuranceAppealAssigned(false);
+                }
+              }}
+            >
+              {insuranceRemittanceStatus === 'adjudicated_paid'
+                ? 'Simulate Claim Denial (CARC CO-16)'
+                : 'Simulate ERA 835 Remittance ($185.00 Paid)'}
+            </Button>
+            {insuranceRemittanceStatus === 'denied_pending_appeal' && (
+              <Button
+                size="sm"
+                variant={insuranceAppealAssigned ? 'outline' : 'primary'}
+                onClick={() => setInsuranceAppealAssigned(!insuranceAppealAssigned)}
+              >
+                {insuranceAppealAssigned ? 'Reassign Ownership' : 'Assign Denial Specialist (Sarah Lin, RN)'}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F177: Consumer Discovery Marketplace */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Globe size={18} color="var(--color-primary)" />
+                Consumer Discovery Marketplace &amp; Attribution (F177)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Opt-in marketplace listings, zero commission on direct and existing clients, 15% net-new discovery fee, and dispute arbitration.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={marketplaceOptedIn ? (attributionSourceSimulated === 'direct_brand_url' ? 'sage' : 'muted') : 'rose'}>
+                {!marketplaceOptedIn
+                  ? 'Marketplace Delisted (Direct Only)'
+                  : attributionSourceSimulated === 'direct_brand_url'
+                  ? 'Direct Client: 0% Fee Guaranteed'
+                  : 'Net-New Discovery: 15% Fee ($18.00)'}
+              </Badge>
+              <Badge variant="muted">WB F177 / WB F61</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Listing Visibility:</div>
+              <strong>{marketplaceOptedIn ? 'Opted In (Published in Posie Discovery)' : 'Delisted (Bookings restricted to direct link)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Booking Provenance:</div>
+              <strong>{attributionSourceSimulated === 'direct_brand_url' ? 'Direct Brand Link (Existing Salon Client #c_901)' : 'Posie Marketplace Search ("hydra facial nyc")'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Commission Assessed:</div>
+              <strong style={{ color: attributionSourceSimulated === 'direct_brand_url' ? '#2B5329' : '#A65B32' }}>
+                {attributionSourceSimulated === 'direct_brand_url' ? '0.00% ($0.00 platform fee)' : '15.00% ($18.00 on $120.00 booking)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Attribution Dispute Protection:</div>
+              <strong>Arbitration Eligible (Token provenance logged)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🌐 <strong>WB F177 Invariant:</strong> Consumer marketplace participation is strictly opt-in; direct brand links and prior existing clients are legally guaranteed 0% commission; 15% fee applies solely to verified net-new marketplace discovery with arbitration recourse.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={marketplaceOptedIn ? 'outline' : 'primary'}
+              onClick={() => setMarketplaceOptedIn(!marketplaceOptedIn)}
+            >
+              {marketplaceOptedIn ? 'Opt Out of Marketplace (Delist)' : 'Opt In to Marketplace (Publish)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAttributionSourceSimulated(attributionSourceSimulated === 'direct_brand_url' ? 'marketplace_search' : 'direct_brand_url')}
+            >
+              Simulate Channel: {attributionSourceSimulated === 'direct_brand_url' ? 'Switch to Marketplace Search (15%)' : 'Switch to Direct Link (0%)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F178: Embedded Working Capital */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <DollarSign size={18} color="var(--color-primary)" />
+                Embedded Working Capital Advances (F178)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Regulated partner underwriting, transparent single factor rate (1.12), zero compounding interest, and automated daily card sales holdback.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={workingCapitalAdvanceActive ? 'sage' : 'muted'}>
+                {workingCapitalAdvanceActive ? 'Active Advance ($15,000 Funded)' : 'Advance Inactive'}
+              </Badge>
+              <Badge variant="muted">WB F178 / WB U13</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Advance Principal:</div>
+              <strong>$15,000.00 (Origination: BlueVine Capital)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Factor Rate &amp; Fee:</div>
+              <strong>1.12 Factor ($1,680.00 fee • $16,680.00 total)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Interest Structure:</div>
+              <strong style={{ color: '#2B5329' }}>0% Compounding • $0 Late Fees</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Daily Holdback &amp; Balance:</div>
+              <strong>10% Card Sales • Remaining: ${workingCapitalRemainingBalance.toLocaleString()}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🏦 <strong>WB F178 Invariant:</strong> Working capital uses a fixed single factor rate (1.12) with zero compounding interest and zero late penalties; repayment executes via transparent daily 10% card sales holdbacks until balance reaches zero.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={workingCapitalAdvanceActive ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextActive = !workingCapitalAdvanceActive;
+                setWorkingCapitalAdvanceActive(nextActive);
+                if (nextActive) setWorkingCapitalRemainingBalance(16680);
+              }}
+            >
+              {workingCapitalAdvanceActive ? 'Close Out Advance' : 'Accept $15,000 Working Capital Advance'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!workingCapitalAdvanceActive || workingCapitalRemainingBalance <= 0}
+              onClick={() => setWorkingCapitalRemainingBalance((prev) => Math.max(0, prev - 240))}
+            >
+              Simulate Daily 10% Holdback Deduction (-$240.00)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F179: Financial Protection Products */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={18} color="var(--color-primary)" />
+                Financial Protection Products &amp; Guarantee (F179)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Contractually funded no-show fee and chargeback reimbursement guarantees, explicit eligibility auditing, and direct ledger credit.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={protectionPreauthMissing ? 'rose' : (protectionClaimStatus === 'approved_reimbursed' ? 'sage' : 'muted')}>
+                {protectionPreauthMissing
+                  ? 'Claim Denied: Missing Pre-Auth Card Hold'
+                  : protectionClaimStatus === 'approved_reimbursed'
+                  ? 'Reimbursed: $140.00 Credited to Salon'
+                  : 'Claim In Adjudication'}
+              </Badge>
+              <Badge variant="muted">WB F179 / Rule F179</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Guaranteed Incident:</div>
+              <strong>Client No-Show (Balayage • $140.00 fee)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Pre-Authorization Hold:</div>
+              <strong style={{ color: protectionPreauthMissing ? '#A65B32' : '#2B5329' }}>
+                {protectionPreauthMissing ? 'MISSING: No Card Hold on File' : 'VERIFIED: Stripe PaymentMethod Hold #pm_hold_88'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Signed Cancellation Policy:</div>
+              <strong>Acknowledged (24h strict window)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Adjudication Outcome:</div>
+              <strong>
+                {protectionPreauthMissing
+                  ? 'Ineligible: Operator failed pre-auth hold'
+                  : protectionClaimStatus === 'approved_reimbursed'
+                  ? 'Reimbursement Approved: $140.00 ledger credit'
+                  : 'Pending automated reserve adjudication'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🛡️ <strong>WB F179 Invariant:</strong> Financial protection guarantees uncollected no-show fees and chargebacks via contractual insurance reserve; strictly requires verified pre-authorized card holds and signed terms; pays 100% directly to provider ledger upon adjudication.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={protectionPreauthMissing ? 'outline' : 'primary'}
+              onClick={() => setProtectionPreauthMissing(!protectionPreauthMissing)}
+            >
+              {protectionPreauthMissing ? 'Restore Card Pre-Auth Hold' : 'Simulate Missing Pre-Auth Hold (Trigger Exclusion)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={protectionPreauthMissing}
+              onClick={() => setProtectionClaimStatus(protectionClaimStatus === 'approved_reimbursed' ? 'submitted_evaluating' : 'approved_reimbursed')}
+            >
+              {protectionClaimStatus === 'approved_reimbursed' ? 'Simulate Under Adjudication' : 'Adjudicate & Release $140.00 Reimbursement'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F180: External Staffing Marketplace */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} color="var(--color-primary)" />
+                External Staffing Marketplace &amp; Shift Escrow (F180)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Vetted substitute stylist matching, verified license &amp; background check auditing, escrowed shift compensation, and dispute freezing.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={staffingIncidentReported ? 'rose' : (staffingEscrowReleased ? 'sage' : 'muted')}>
+                {staffingIncidentReported
+                  ? 'Escrow Frozen: Investigation Active'
+                  : staffingEscrowReleased
+                  ? 'Shift Complete • $243.00 Disbursed'
+                  : 'Shift Booked • $270.00 Escrowed'}
+              </Badge>
+              <Badge variant="muted">WB F180 / Rule F180</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>External Substitute:</div>
+              <strong>Marcus Vance (Master Stylist)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Vetting &amp; Licensure:</div>
+              <strong style={{ color: '#2B5329' }}>Cosmetology NY-992144 • Background Check PASSED</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Shift Duration &amp; Escrow:</div>
+              <strong>6.0 hrs @ $45.00/hr ($270.00 Escrow Vault)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Disbursement &amp; Incident Status:</div>
+              <strong style={{ color: staffingIncidentReported ? '#A65B32' : '#2B5329' }}>
+                {staffingIncidentReported
+                  ? 'FROZEN: Incident report filed by salon host'
+                  : staffingEscrowReleased
+                  ? 'Platform Fee: $27.00 (10%) • Payout: $243.00'
+                  : 'Funds safely held in Posie Escrow'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            👥 <strong>WB F180 Invariant:</strong> Matches shifts exclusively to external substitutes with verified state licensure and clear background checks; escrows compensation upon booking; releases payout net of 10% fee upon completion, or immediately freezes funds upon incident reporting.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={staffingIncidentReported ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextIncident = !staffingIncidentReported;
+                setStaffingIncidentReported(nextIncident);
+                if (nextIncident) setStaffingEscrowReleased(false);
+              }}
+            >
+              {staffingIncidentReported ? 'Resolve Incident (Unfreeze Escrow)' : 'Simulate Shift Incident Report (Freeze Escrow)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={staffingIncidentReported}
+              onClick={() => setStaffingEscrowReleased(!staffingEscrowReleased)}
+            >
+              {staffingEscrowReleased ? 'Reset to Active Escrow' : 'Complete Shift & Release Escrow ($243.00 Net)'}
             </Button>
           </div>
         </Card>
