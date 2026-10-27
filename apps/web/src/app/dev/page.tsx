@@ -67,6 +67,10 @@ import {
   Shield,
   Scale,
   ShoppingBag,
+  Target,
+  Layers,
+  Archive,
+  Smartphone,
 } from 'lucide-react';
 
 // Brand Information
@@ -329,11 +333,22 @@ export default function PosieStudioPage() {
   // F115 Service Contribution State
   const [contributionBackbarMapped, setContributionBackbarMapped] = useState<boolean>(true);
 
+  // F116 Acquisition Attribution State
+  const [attributionSource, setAttributionSource] = useState<'direct_link' | 'legacy_client_import' | 'consumer_marketplace'>('direct_link');
+  const [attributionDisputeFiled, setAttributionDisputeFiled] = useState<boolean>(false);
 
+  // F117 Booking Analytics State
+  const [funnelDropStage, setFunnelDropStage] = useState<'none' | 'deposit_authorized'>('none');
 
+  // F118 Operational Reliability State
+  const [reliabilityDegraded, setReliabilityDegraded] = useState<boolean>(false);
+  const [ambiguousPaymentResolved, setAmbiguousPaymentResolved] = useState<boolean>(false);
 
+  // F119 Exit Archive State
+  const [archiveDownloaded, setArchiveDownloaded] = useState<boolean>(false);
 
-
+  // F120 Workday Device Parity State
+  const [activeViewportMode, setActiveViewportMode] = useState<'phone' | 'tablet' | 'desktop'>('phone');
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -355,7 +370,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F115)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F120)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -5445,6 +5460,401 @@ export default function PosieStudioPage() {
               onClick={() => setContributionBackbarMapped(!contributionBackbarMapped)}
             >
               Toggle Backbar Recipe ({contributionBackbarMapped ? 'Simulate Unmapped Supplies' : 'Map Backbar Serums'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F116: Acquisition Attribution Records & Marketplace Defense */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Target size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Acquisition Attribution Records &amp; Marketplace Defense (F116)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={attributionSource === 'consumer_marketplace' && !attributionDisputeFiled ? 'rose' : 'sage'}>
+                {attributionSource === 'direct_link'
+                  ? 'Direct Pro Link: 0% Fee'
+                  : attributionSource === 'legacy_client_import'
+                  ? 'Legacy Client Import: 0% Fee'
+                  : attributionDisputeFiled
+                  ? 'Dispute Approved: 0% Fee'
+                  : 'Marketplace Discovery: 20% Fee'}
+              </Badge>
+              <Badge variant="muted">WB C9 Defense</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Protects studios from unfair platform commissions by guaranteeing 0% fees for direct links and legacy clients, with auditable dispute overrides.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                Client Attribution: Harper Vance (Visit #1)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: attributionSource === 'consumer_marketplace' && !attributionDisputeFiled ? '#8F4A3E' : '#2B5329', fontWeight: 600 }}>
+                {attributionSource === 'consumer_marketplace' && !attributionDisputeFiled ? 'Acquisition Commission: $30.00 (20%)' : 'Acquisition Commission: $0.00 (0%)'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '10px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Attribution Origin:</div>
+                <strong style={{ textTransform: 'capitalize' }}>{attributionSource.replace(/_/g, ' ')}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Protected Policy:</div>
+                <strong>{attributionSource !== 'consumer_marketplace' ? 'Immune from Platform Tax' : 'Marketplace Terms'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Dispute Audit Trail:</div>
+                <strong>{attributionDisputeFiled ? 'Overridden by Owner (Reason Stamped)' : 'None Needed'}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🛡 <strong>WB C9 Invariant:</strong> Existing clients brought to Posie by the studio via direct links or CSV import are permanently immune to marketplace fees. All dispute overrides are stamped with immutable owner rationale.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={attributionSource === 'direct_link' ? 'primary' : 'outline'}
+              onClick={() => { setAttributionSource('direct_link'); setAttributionDisputeFiled(false); }}
+            >
+              Direct Link (0% Fee)
+            </Button>
+            <Button
+              size="sm"
+              variant={attributionSource === 'legacy_client_import' ? 'primary' : 'outline'}
+              onClick={() => { setAttributionSource('legacy_client_import'); setAttributionDisputeFiled(false); }}
+            >
+              Legacy Import (0% Fee)
+            </Button>
+            <Button
+              size="sm"
+              variant={attributionSource === 'consumer_marketplace' ? 'primary' : 'outline'}
+              onClick={() => setAttributionSource('consumer_marketplace')}
+            >
+              Consumer Marketplace (20% Fee)
+            </Button>
+            {attributionSource === 'consumer_marketplace' && (
+              <Button
+                size="sm"
+                variant={attributionDisputeFiled ? 'outline' : 'primary'}
+                onClick={() => setAttributionDisputeFiled(!attributionDisputeFiled)}
+              >
+                {attributionDisputeFiled ? 'Remove Dispute' : 'Dispute & Override Fee (Rule F116)'}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F117: Booking & Product Conversion Analytics */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Layers size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Booking &amp; Product Conversion Funnel (F117)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={funnelDropStage === 'deposit_authorized' ? 'rose' : 'sage'}>
+                {funnelDropStage === 'deposit_authorized' ? 'Stage Drop Alert: Deposit (-33.3%)' : 'Funnel Health: 44.4% Conversion'}
+              </Badge>
+              <Badge variant="muted">Rule DR10 Idempotent</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Granular conversion analysis across the 6 booking milestones with idempotent event deduplication to eliminate inflated top-of-funnel noise.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', fontSize: '0.75rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ color: '#888' }}>1. View Service</div>
+                <strong>180 Sessions</strong>
+                <div style={{ color: '#2B5329', fontSize: '0.7rem' }}>Top of Funnel</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ color: '#888' }}>2. Pick Slot</div>
+                <strong>170 (94.4%)</strong>
+                <div style={{ color: '#888', fontSize: '0.7rem' }}>-5.6% Drop</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ color: '#888' }}>3. Intake Form</div>
+                <strong>150 (88.2%)</strong>
+                <div style={{ color: '#888', fontSize: '0.7rem' }}>-11.8% Drop</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ color: '#888' }}>4. Sign Consent</div>
+                <strong>140 (93.3%)</strong>
+                <div style={{ color: '#888', fontSize: '0.7rem' }}>-6.7% Drop</div>
+              </div>
+              <div style={{ background: funnelDropStage === 'deposit_authorized' ? '#FFF5F3' : '#FFF', padding: '8px', borderRadius: '4px', border: funnelDropStage === 'deposit_authorized' ? '1px solid #E5C3B8' : '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ color: '#888' }}>5. Auth Deposit</div>
+                <strong>120 (85.7%)</strong>
+                <div style={{ color: funnelDropStage === 'deposit_authorized' ? '#8F4A3E' : '#888', fontSize: '0.7rem' }}>
+                  {funnelDropStage === 'deposit_authorized' ? '⚠ High Friction' : '-14.3% Drop'}
+                </div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ color: '#888' }}>6. Confirmed</div>
+                <strong>80 (66.7%)</strong>
+                <div style={{ color: '#2B5329', fontSize: '0.7rem' }}>44.4% Overall</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📊 <strong>Rule DR10 Invariant:</strong> Client navigations, accidental back-clicks, and reloads within the same session are deduplicated by (sessionId, milestone). Drop-offs exceeding 30% trigger UX optimization recommendations.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setFunnelDropStage(funnelDropStage === 'deposit_authorized' ? 'none' : 'deposit_authorized')}
+            >
+              {funnelDropStage === 'deposit_authorized' ? 'Reset Funnel Simulation' : 'Simulate Deposit Drop-Off Alert'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F118: Operational Reliability Dashboard & Incident Recovery */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Activity size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Operational Reliability &amp; Incident Recovery (F118)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={reliabilityDegraded ? 'rose' : 'sage'}>
+                {reliabilityDegraded ? 'Hardware Timeout (Degraded)' : 'Subsystems: 100% Operational'}
+              </Badge>
+              <Badge variant="muted">WB C6 Reliability</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Subsystem operational monitoring, graceful offline read-only degradation, and ambiguous payment reconciliation to prevent double charges.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Stripe WisePOS E:</div>
+                <strong style={{ color: reliabilityDegraded ? '#8F4A3E' : '#2B5329' }}>
+                  {reliabilityDegraded ? '⚠ Latency Spike (1,400ms)' : '● Healthy (142ms)'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Twilio A2P SMS:</div>
+                <strong style={{ color: '#2B5329' }}>● Healthy (99.98%)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Scheduler Engine:</div>
+                <strong style={{ color: '#2B5329' }}>● Active (0 lag)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Offline Storage:</div>
+                <strong style={{ color: '#2B5329' }}>Cached &amp; Sync Ready</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)' }}>
+                  Ambiguous In-Flight POS Transaction: $150.00
+                </strong>
+                <Badge variant={ambiguousPaymentResolved ? 'sage' : 'muted'}>
+                  {ambiguousPaymentResolved ? 'Gateway Verified: Paid' : 'Ambiguous Terminal Status'}
+                </Badge>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#555' }}>
+                {ambiguousPaymentResolved
+                  ? 'PaymentIntent pi_8832 succeeded at Stripe gateway. Terminal transaction marked paid without double charging client.'
+                  : 'Terminal connection dropped during customer chip dip. Protocol holds transaction and queries gateway status before prompting for retry.'}
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔒 <strong>WB C6 Invariant:</strong> Posie strictly prohibits blind terminal retries during network timeouts. All ambiguous payment intents query gateway truth first, preventing duplicate card authorizations.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setReliabilityDegraded(!reliabilityDegraded)}
+            >
+              Toggle Hardware Degraded State ({reliabilityDegraded ? 'Simulate Normal' : 'Simulate Timeout'})
+            </Button>
+            <Button
+              size="sm"
+              variant={ambiguousPaymentResolved ? 'outline' : 'primary'}
+              onClick={() => setAmbiguousPaymentResolved(!ambiguousPaymentResolved)}
+            >
+              {ambiguousPaymentResolved ? 'Reset Payment Incident' : 'Reconcile Ambiguous Payment (WB C6)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F119: Complete Exit Archive & Freedom to Leave */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Archive size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Complete Exit Archive &amp; Freedom to Leave (F119)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={archiveDownloaded ? 'sage' : 'muted'}>
+                {archiveDownloaded ? 'Archive Verified (SHA-256 Digest)' : 'Extortion Fee: $0.00 Guaranteed'}
+              </Badge>
+              <Badge variant="muted">Rule DR06 Freedom</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            100% self-service, instant studio data export with zero fees, offline standalone index.html viewer, and SHA-256 cryptographic manifest.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Standard CSVs:</div>
+                <strong>Clients, Visits, Inventory</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Liabilities Ledger:</div>
+                <strong>Gift Cards &amp; Packages</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Offline Viewer:</div>
+                <strong>index.html (No lock-in)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Integrity Manifest:</div>
+                <strong>SHA-256 Checksums</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🕊 <strong>Rule DR06 Invariant:</strong> Posie guarantees total data portability with $0 fees and zero vendor lock-in. The studio can view complete past history forever via the included offline index.html without an active subscription.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={archiveDownloaded ? 'outline' : 'primary'}
+              onClick={() => setArchiveDownloaded(!archiveDownloaded)}
+            >
+              {archiveDownloaded ? 'Regenerate Archive' : 'Download Complete $0 Exit Archive (Rule DR06)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F120: Phone, Tablet, and Desktop Parity */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Smartphone size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Phone, Tablet &amp; Desktop Workday Parity (F120)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Workday Parity: 100% (5/5 Tasks)</Badge>
+              <Badge variant="muted">WCAG 2.1 AA / WB F60</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Guarantees solo practitioners can run 100% of their workday from any mobile browser with ergonomic touch targets and bottom sheet drawers.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Active Viewport Simulation: {activeViewportMode.toUpperCase()} ({activeViewportMode === 'phone' ? '390px' : activeViewportMode === 'tablet' ? '768px' : '1440px'})
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: '#2B5329', fontWeight: 600 }}>
+                Min Touch Area: ≥ 44x44px Passed
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', fontSize: '0.75rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div>Calendar Booking</div>
+                <strong style={{ color: '#2B5329' }}>✓ 100% Mobile</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div>SOAP Note Charting</div>
+                <strong style={{ color: '#2B5329' }}>✓ 100% Mobile</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div>Clinical Photos</div>
+                <strong style={{ color: '#2B5329' }}>✓ Camera API</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div>Payment Checkout</div>
+                <strong style={{ color: '#2B5329' }}>✓ Tap to Pay</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div>Client Messages</div>
+                <strong style={{ color: '#2B5329' }}>✓ Two-Way SMS</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📱 <strong>Rule DR08 &amp; WB F60 Invariant:</strong> A solo practitioner is never forced onto a desktop computer. All clinical, financial, and scheduling operations adapt seamlessly to phone viewports with mobile bottom sheet drawers and touch targets ≥ 44px.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={activeViewportMode === 'phone' ? 'primary' : 'outline'}
+              onClick={() => setActiveViewportMode('phone')}
+            >
+              Phone Viewport (390px)
+            </Button>
+            <Button
+              size="sm"
+              variant={activeViewportMode === 'tablet' ? 'primary' : 'outline'}
+              onClick={() => setActiveViewportMode('tablet')}
+            >
+              Tablet Viewport (768px)
+            </Button>
+            <Button
+              size="sm"
+              variant={activeViewportMode === 'desktop' ? 'primary' : 'outline'}
+              onClick={() => setActiveViewportMode('desktop')}
+            >
+              Desktop Viewport (1440px)
             </Button>
           </div>
         </Card>

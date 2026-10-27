@@ -113,4 +113,9 @@ export * from './metric_dictionary';
 export * from './role_dashboards';
 export * from './retention_cohorts';
 export * from './service_contribution';
+export * from './acquisition_attribution';
+export * from './funnel_analytics';
+export * from './operational_reliability';
+export * from './exit_archive';
+export * from './device_parity';
 

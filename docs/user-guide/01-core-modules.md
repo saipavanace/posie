@@ -684,6 +684,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Unit-level service profitability engine calculating net operational contribution margin (Gross Revenue minus direct backbar supplies, practitioner compensation, and merchant processing fees).
 * **Key Invariant (Basis: Growth (G); Rules R06, R07, F143, F152, F177):** **Operational contribution truth & missing cost coverage.** Estimated contribution is strictly labeled as unit operational margin and explicitly disclaims GAAP CPA-audited net profit. If backbar recipes or payment fees are unmapped, the system flags `hasMissingCostCoverage: true` and identifies missing cost inputs. Evaluates third-party discount promotions (e.g. ClassPass off-peak rates) against owner-defined dollar and percentage contribution floors to prevent margin cannibalization.
 
+---
+
+## F116 — Acquisition Attribution Records & Marketplace Defense (WB C9)
+* **What it is:** Multi-channel client acquisition origin tracking, fair commission attribution, and dispute resolution module.
+* **Key Invariant (Basis: Launch candidate (L); WB C9, Rules F019, F116, F135, DR06):** **Direct link 0% commission defense & auditable dispute override.** Platforms like Fresha and StyleSeat often inappropriately tax existing clients brought by the salon. Posie strictly enforces that imported legacy clients and direct booking link visitors are 0% commission by policy. Only genuine consumer marketplace discoveries incur acquisition fees (e.g. 20%), and owners can dispute/override attribution with a mandatory reason and immutable audit log entry.
+
+---
+
+## F117 — Booking and Product Analytics (WB F57, Rule DR10)
+* **What it is:** Granular booking and checkout conversion funnel analysis tracking client progression across discovery, slot selection, intake submission, consent signing, deposit authorization, and final checkout.
+* **Key Invariant (Basis: Foundation; WB F57, Rules F057, F117, DR10):** **Idempotent event deduplication & granular drop-off tracking.** Repeated clicks, accidental reloads, and back-button navigations within a single user session are deduplicated by `(sessionId, milestone)` to prevent false conversion drops or inflated top-of-funnel metrics. Tracks stage-by-stage drop-off rates across all 6 stages (`service_viewed` -> `slot_selected` -> `intake_submitted` -> `consent_signed` -> `deposit_authorized` -> `checkout_completed`), flagging stages with drop-offs exceeding 30% for targeted UX optimization.
+
+---
+
+## F118 — Operational Reliability Dashboard & Incident Recovery (WB C6)
+* **What it is:** Mission-critical subsystem health monitor, graceful offline degradation coordinator, and payment reconciliation engine.
+* **Key Invariant (Basis: Operational; WB C6, Rules F058, F118, DR04):** **Ambiguous payment reconciliation & read-only emergency view.** When external payment hardware or network connections interrupt an in-flight POS transaction, the system enters an ambiguous state. Rather than risking duplicate charges via blind retries, Posie verifies gateway status first before recommending a resolution (`void`, `retry`, or `mark_paid`). In degraded or offline states, practitioners can view today's schedule and clinical allergy alerts via cached local storage.
+
+---
+
+## F119 — Complete Exit Archive & Freedom to Leave (WB C10, Rule DR06)
+* **What it is:** 100% self-service, zero-fee comprehensive studio data export generating human-readable offline archives and cryptographically verified raw data.
+* **Key Invariant (Basis: Core Trust; WB C10, Rules DR06, F119, F120):** **Zero extortion fee ($0) & standalone offline browsing.** Posie guarantees complete data portability with no fee, waiting period, or required support calls. The export package includes standard CSVs (clients, appointments, formulas, inventory, transactions), an active liabilities ledger (unredeemed gift cards, unused package series), an immutable SHA-256 integrity manifest, and a self-contained offline `index.html` viewer allowing the studio to view their full history forever without an active subscription.
+
+---
+
+## F120 — Phone, Tablet, and Desktop Parity (WB F60 C13, Rule DR08)
+* **What it is:** Full responsive parity auditing and touch-optimized workflow engine ensuring solo practitioners can run their entire business from any mobile device.
+* **Key Invariant (Basis: Launch candidate (L); WB F60 C13, Rule DR08, WCAG 2.1 AA):** **Solo practitioner 100% workday parity & mobile ergonomic standards.** Solo estheticians and hairstylists are never blocked or forced onto a desktop computer to complete core workday tasks (calendar booking, SOAP note charting, client clinical photo uploads, and card checkout). Audits touch ergonomics (minimum 44x44px touch targets), mobile bottom-sheet drawers instead of desktop modals, and WCAG AA contrast ratios, guaranteeing 100% functional parity across all screen viewports.
+
+
 
 
 

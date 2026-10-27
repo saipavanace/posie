@@ -254,6 +254,15 @@ import {
   analyzeRetentionCohort,
   identifyLapsedClientsByCadence,
   calculateServiceContribution,
+  recordClientAcquisition,
+  applyAttributionOverride,
+  computeBookingFunnelAnalytics,
+  evaluateSystemReliability,
+  reconcileAmbiguousPayment,
+  generateStudioExitArchive,
+  verifyExitArchiveIntegrity,
+  CORE_WORKDAY_PARITY_SPECS,
+  auditWorkdayDeviceParity,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -5994,6 +6003,204 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(unmappedResult.hasMissingCostCoverage).toBe(true);
       expect(unmappedResult.missingCostItems).toContain('backbar_supplies_cost_unmapped');
       expect(unmappedResult.missingCostItems).toContain('merchant_processing_fee_unmapped');
+    });
+  });
+
+  describe('Posie Core Logic - F116 (Acquisition Attribution & Marketplace Defense)', () => {
+    it('exempts direct and legacy clients from marketplace fees and allows auditable dispute overrides', () => {
+      // 1. Direct booking via practitioner custom link -> 0% fee
+      const directClient = recordClientAcquisition({
+        clientId: 'cli-direct-1',
+        clientName: 'Direct Client',
+        channel: 'direct_pro_link',
+        evidence: {
+          bookingLinkToken: 'posie.com/maya/book',
+          utmSource: 'instagram_bio',
+        },
+      });
+      expect(directClient.isMarketplaceCommissionChargeable).toBe(false);
+      expect(directClient.commissionFeeRatePercent).toBe(0.0);
+
+      // 2. Legacy imported client from Vagaro -> 0% fee
+      const legacyClient = recordClientAcquisition({
+        clientId: 'cli-legacy-2',
+        clientName: 'Legacy Regular',
+        channel: 'legacy_imported_client',
+        evidence: { utmSource: 'vagaro_migration' },
+        isLegacyImport: true,
+      });
+      expect(legacyClient.isMarketplaceCommissionChargeable).toBe(false);
+      expect(legacyClient.commissionFeeRatePercent).toBe(0.0);
+
+      // 3. Marketplace discovery -> 20% commission
+      const marketplaceClient = recordClientAcquisition({
+        clientId: 'cli-mkt-3',
+        clientName: 'Marketplace Explorer',
+        channel: 'consumer_marketplace_discovery',
+        evidence: { utmSource: 'posie_explore_app' },
+      });
+      expect(marketplaceClient.isMarketplaceCommissionChargeable).toBe(true);
+      expect(marketplaceClient.commissionFeeRatePercent).toBe(20.0);
+
+      // 4. Dispute override: Pro proves client was a personal referral
+      const overridden = applyAttributionOverride(marketplaceClient, {
+        newChannel: 'client_referral',
+        reason: 'Client showed text proof of personal referral from Zendaya Coleman prior to booking',
+        staffId: 'staff-maya',
+      });
+      expect(overridden.isMarketplaceCommissionChargeable).toBe(false);
+      expect(overridden.commissionFeeRatePercent).toBe(0.0);
+      expect(overridden.overrideHistory.length).toBe(1);
+      expect(overridden.overrideHistory[0].reason).toContain('personal referral');
+    });
+  });
+
+  describe('Posie Core Logic - F117 (Booking and Product Analytics)', () => {
+    it('deduplicates retried events within sessions to prevent artificial conversion inflation', () => {
+      const rawEvents = [
+        // Session 1: Normal flow (completes checkout)
+        { eventId: 'e1', sessionId: 's1', milestone: 'service_viewed' as const, timestamp: '2026-10-27T10:00:00Z' },
+        { eventId: 'e2', sessionId: 's1', milestone: 'slot_selected' as const, timestamp: '2026-10-27T10:01:00Z' },
+        // Reloads slot selection page twice (MUST NOT inflate count!)
+        { eventId: 'e3', sessionId: 's1', milestone: 'slot_selected' as const, timestamp: '2026-10-27T10:01:10Z' },
+        { eventId: 'e4', sessionId: 's1', milestone: 'slot_selected' as const, timestamp: '2026-10-27T10:01:20Z' },
+        { eventId: 'e5', sessionId: 's1', milestone: 'intake_submitted' as const, timestamp: '2026-10-27T10:02:00Z' },
+        { eventId: 'e6', sessionId: 's1', milestone: 'consent_signed' as const, timestamp: '2026-10-27T10:03:00Z' },
+        { eventId: 'e7', sessionId: 's1', milestone: 'deposit_authorized' as const, timestamp: '2026-10-27T10:04:00Z' },
+        { eventId: 'e8', sessionId: 's1', milestone: 'checkout_completed' as const, timestamp: '2026-10-27T10:05:00Z' },
+
+        // Session 2: Drops off after service_viewed
+        { eventId: 'e9', sessionId: 's2', milestone: 'service_viewed' as const, timestamp: '2026-10-27T10:10:00Z' },
+      ];
+
+      const analytics = computeBookingFunnelAnalytics(rawEvents);
+
+      expect(analytics.totalUniqueSessions).toBe(2);
+      expect(analytics.stages[0].milestone).toBe('service_viewed');
+      expect(analytics.stages[0].uniqueSessionsCount).toBe(2); // Both s1 and s2
+
+      // Invariant: slot_selected is exactly 1 session, despite 3 duplicate reload events
+      expect(analytics.stages[1].milestone).toBe('slot_selected');
+      expect(analytics.stages[1].uniqueSessionsCount).toBe(1);
+
+      expect(analytics.overallConversionRatePercent).toBe(50.0); // 1 of 2 completed
+      expect(analytics.biggestDropOffStage).toBe('slot_selected');
+    });
+  });
+
+  describe('Posie Core Logic - F118 (Operational Reliability Dashboard & Incident Recovery)', () => {
+    it('evaluates subsystem health, reconciles ambiguous payments, and maintains emergency read views', () => {
+      const subsystems = [
+        {
+          subsystem: 'payment_gateway_stripe' as const,
+          displayName: 'Stripe Payment Gateway',
+          status: 'healthy' as const,
+          latencyMs: 145,
+          lastCheckedAt: '2026-10-27T10:30:00Z',
+          errorRatePercent: 0.01,
+          recoveryRunbookUrl: 'posie.com/ops/stripe',
+        },
+        {
+          subsystem: 'certified_terminals_pos' as const,
+          displayName: 'WisePOS E Smart Terminals',
+          status: 'degraded' as const,
+          latencyMs: 650,
+          lastCheckedAt: '2026-10-27T10:30:00Z',
+          errorRatePercent: 4.5,
+          activeIncidentMessage: 'Terminal #3 experiencing sporadic WiFi packet retransmissions',
+          recoveryRunbookUrl: 'posie.com/ops/terminals',
+        },
+      ];
+
+      const ambiguousPayments = [
+        {
+          transactionId: 'tx-ambig-1',
+          terminalId: 'term-wise-01',
+          appointmentId: 'apt-912',
+          clientName: 'Zendaya Coleman',
+          amountUSD: 180.0,
+          gatewayPaymentIntentId: 'pi_3Pqz_ambiguous',
+          status: 'ambiguous_pending_check' as const,
+          flaggedAt: '2026-10-27T10:25:00Z',
+        },
+      ];
+
+      const report = evaluateSystemReliability(subsystems, ambiguousPayments);
+
+      expect(report.overallSystemStatus).toBe('degraded');
+      expect(report.openIncidentsCount).toBe(1);
+      expect(report.ambiguousPaymentsCount).toBe(1);
+      expect(report.emergencyReadViewAvailable).toBe(true);
+
+      // Invariant: Gateway check verifies transaction status and prevents double charging
+      const reconciled = reconcileAmbiguousPayment(ambiguousPayments[0], 'succeeded');
+      expect(reconciled.status).toBe('reconciled_captured');
+      expect(reconciled.resolutionNote).toContain('without recharging client');
+    });
+  });
+
+  describe('Posie Core Logic - F119 (Complete Exit Archive & Freedom to Leave)', () => {
+    it('compiles an offline-accessible exit archive with zero fees and verifies cryptographic integrity', () => {
+      const clients = [
+        {
+          clientId: 'c1',
+          fullName: 'Zendaya Coleman',
+          email: 'zendaya@example.com',
+          phone: '(310) 555-0199',
+          firstVisitDate: '2024-11-01',
+          totalVisitsCount: 14,
+          lifetimeSpendUSD: 1450.0,
+          unredeemedGiftCardBalanceUSD: 50.0,
+          activePackageSessionsRemaining: 3,
+          signedConsentDocumentHashes: ['9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e'],
+        },
+        {
+          clientId: 'c2',
+          fullName: 'Anne Hathaway',
+          email: 'anne@example.com',
+          phone: '(310) 555-0188',
+          firstVisitDate: '2024-11-05',
+          totalVisitsCount: 4,
+          lifetimeSpendUSD: 420.0,
+          unredeemedGiftCardBalanceUSD: 0.0,
+          activePackageSessionsRemaining: 0,
+          signedConsentDocumentHashes: [],
+        },
+      ];
+
+      const manifest = generateStudioExitArchive({
+        studioLegalName: 'Posie Beverly Hills Atelier LLC',
+        clients,
+      });
+
+      // Invariants: Free export, offline index, liability accounting
+      expect(manifest.exportFeeUSD).toBe(0);
+      expect(manifest.totalClientsExported).toBe(2);
+      expect(manifest.totalActiveGiftCardLiabilityUSD).toBe(50.0);
+      expect(manifest.totalActivePackageSessions).toBe(3);
+      expect(manifest.offlineIndexHtml).toContain('Zendaya Coleman');
+      expect(manifest.offlineIndexHtml).toContain('Zero-Lock-In Guarantee');
+
+      const isValid = verifyExitArchiveIntegrity(manifest);
+      expect(isValid).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F120 (Phone, Tablet, and Desktop Parity)', () => {
+    it('verifies 100% workday functional parity on mobile browsers with documented responsive adaptations', () => {
+      const audit = auditWorkdayDeviceParity();
+
+      expect(audit.allCoreActionsSupportedOnMobile).toBe(true);
+      expect(audit.totalCoreActionsCount).toBe(6);
+      expect(audit.mobileSupportedCount).toBe(6);
+      expect(audit.minimumTapTargetCompliant).toBe(true);
+      expect(audit.contrastRatioCompliant).toBe(true);
+      expect(audit.auditPassed).toBe(true);
+
+      // Verify specific ergonomic mobile patterns
+      expect(CORE_WORKDAY_PARITY_SPECS.create_booking.mobileUIPattern).toBe('bottom_drawer');
+      expect(CORE_WORKDAY_PARITY_SPECS.create_booking.minimumTapTargetPixels).toBeGreaterThanOrEqual(44);
+      expect(CORE_WORKDAY_PARITY_SPECS.checkout_pos_payment.mobileUIPattern).toBe('bottom_sticky_bar');
     });
   });
 

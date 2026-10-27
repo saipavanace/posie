@@ -27,6 +27,8 @@ import {
   MessageSquare,
   Send,
   TrendingUp,
+  Activity,
+  Download,
 } from 'lucide-react';
 
 export default function PosieStudioAdminPage() {
@@ -85,10 +87,13 @@ export default function PosieStudioAdminPage() {
   const [adminCallIncoming, setAdminCallIncoming] = useState<boolean>(false);
   const [adminCallRecordingActive, setAdminCallRecordingActive] = useState<boolean>(true);
 
-  // F111-F115 Analytics & Insights State
+  // F111-F120 Analytics & Studio Operations State
   const [adminAnalyticsRole, setAdminAnalyticsRole] = useState<'owner' | 'practitioner'>('owner');
   const [adminContributionMissingCost, setAdminContributionMissingCost] = useState<boolean>(false);
   const [adminConsentStopSimulated, setAdminConsentStopSimulated] = useState<boolean>(false);
+  const [adminAttributionDisputed, setAdminAttributionDisputed] = useState<boolean>(false);
+  const [adminReliabilityRecovered, setAdminReliabilityRecovered] = useState<boolean>(false);
+  const [adminExitArchiveExported, setAdminExitArchiveExported] = useState<boolean>(false);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8F6F2' }}>
@@ -165,7 +170,7 @@ export default function PosieStudioAdminPage() {
                 background: '#FFF5F3',
               }}
             >
-              🧪 Feature Lab (F001–F115)
+              🧪 Feature Lab (F001–F120)
             </a>
           </div>
         </div>
@@ -1800,6 +1805,147 @@ export default function PosieStudioAdminPage() {
                   </Button>
                 </div>
               </Card>
+
+              {/* F116: Acquisition Attribution Defense & F117: Booking Funnel Analytics */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '24px' }}>
+                {/* F116 Acquisition Attribution Defense */}
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ShieldCheck size={18} color="var(--color-primary)" />
+                      <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                        Marketplace Defense &amp; Attribution (F116)
+                      </strong>
+                    </div>
+                    <Badge variant={adminAttributionDisputed ? 'sage' : 'muted'}>
+                      {adminAttributionDisputed ? 'Dispute Overridden (0% Fee)' : 'Direct Link: 0% Fee'}
+                    </Badge>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#555', marginBottom: '12px', lineHeight: 1.5 }}>
+                    <div>• <strong>Direct Pro Links &amp; QR:</strong> 0% Commission (Protected)</div>
+                    <div>• <strong>Imported Legacy Clients:</strong> 0% Commission (Protected)</div>
+                    <div>• <strong>Consumer Marketplace Discovery:</strong> 20% Acquisition Fee</div>
+                    <div>• <strong>Dispute Status:</strong> {adminAttributionDisputed ? 'Approved: Existing Instagram client booked via marketplace search' : 'No active disputes'}</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Button
+                      size="sm"
+                      variant={adminAttributionDisputed ? 'outline' : 'primary'}
+                      onClick={() => setAdminAttributionDisputed(!adminAttributionDisputed)}
+                    >
+                      {adminAttributionDisputed ? 'Reset Dispute Status' : 'Override Commission Dispute (WB C9)'}
+                    </Button>
+                    <span style={{ fontSize: '0.72rem', color: '#888' }}>WB C9 Commission Defense</span>
+                  </div>
+                </Card>
+
+                {/* F117 Booking Funnel Analytics */}
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Activity size={18} color="var(--color-primary)" />
+                      <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                        Booking Funnel Drop-off (F117)
+                      </strong>
+                    </div>
+                    <Badge variant="sage">Overall: 44.4% Conversion</Badge>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '0.75rem', marginBottom: '12px' }}>
+                    <div style={{ background: '#FAF8F5', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                      <div>Views → Slots:</div>
+                      <strong>94.4% (-5.6%)</strong>
+                    </div>
+                    <div style={{ background: '#FAF8F5', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                      <div>Slots → Intake:</div>
+                      <strong>88.2% (-11.8%)</strong>
+                    </div>
+                    <div style={{ background: '#FAF8F5', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                      <div>Intake → Consent:</div>
+                      <strong>93.3% (-6.7%)</strong>
+                    </div>
+                    <div style={{ background: '#FAF8F5', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                      <div>Consent → Deposit:</div>
+                      <strong>85.7% (-14.3%)</strong>
+                    </div>
+                    <div style={{ background: '#FAF8F5', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                      <div>Deposit → Checkout:</div>
+                      <strong>66.7% (-33.3%) ⚠</strong>
+                    </div>
+                    <div style={{ background: '#FAF8F5', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                      <div>Deduplication:</div>
+                      <strong style={{ color: '#2B5329' }}>Idempotent (Rule DR10)</strong>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#888' }}>
+                    Rule DR10: Multi-click navigations within sessions deduplicated by (sessionId, milestone).
+                  </div>
+                </Card>
+              </div>
+
+              {/* F118: Operational Reliability & F119: Complete $0 Exit Archive */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+                {/* F118 Subsystem Health & Ambiguous Payment Recovery */}
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Activity size={18} color="var(--color-primary)" />
+                      <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                        System Health &amp; Terminal Recovery (F118)
+                      </strong>
+                    </div>
+                    <Badge variant={adminReliabilityRecovered ? 'sage' : 'muted'}>
+                      {adminReliabilityRecovered ? 'Subsystems: 100% Operational' : 'Terminal: Reconciled'}
+                    </Badge>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#555', marginBottom: '12px', lineHeight: 1.5 }}>
+                    <div>• <strong>Payment Gateway (Stripe / WisePOS):</strong> Healthy (Active)</div>
+                    <div>• <strong>Telephony (Twilio A2P 10DLC):</strong> Operational</div>
+                    <div>• <strong>Offline Recovery Mode:</strong> Cached Local Storage Ready</div>
+                    <div>• <strong>Ambiguous POS Intent:</strong> Gateway verified, zero double charges (WB C6)</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAdminReliabilityRecovered(!adminReliabilityRecovered)}
+                    >
+                      {adminReliabilityRecovered ? 'Simulate Gateway Delay' : 'Check Gateway Subsystem Status'}
+                    </Button>
+                    <span style={{ fontSize: '0.72rem', color: '#888' }}>WB C6 Reliability Protocol</span>
+                  </div>
+                </Card>
+
+                {/* F119 $0 Exit Archive & Freedom to Leave */}
+                <Card>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Download size={18} color="var(--color-primary)" />
+                      <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                        $0 Exit Archive &amp; Freedom to Leave (F119)
+                      </strong>
+                    </div>
+                    <Badge variant={adminExitArchiveExported ? 'sage' : 'muted'}>
+                      {adminExitArchiveExported ? 'Archive Verified (SHA-256 Valid)' : '$0 Fee Guaranteed'}
+                    </Badge>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#555', marginBottom: '12px', lineHeight: 1.5 }}>
+                    <div>• <strong>Export Extortion Fee:</strong> $0.00 (Self-Service 1-Click)</div>
+                    <div>• <strong>Included Assets:</strong> Clients, Formulas, Appointments, Liabilities CSVs</div>
+                    <div>• <strong>Standalone Viewer:</strong> Self-contained offline index.html</div>
+                    <div>• <strong>Integrity Manifest:</strong> Cryptographic SHA-256 audit digest</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Button
+                      size="sm"
+                      variant={adminExitArchiveExported ? 'outline' : 'primary'}
+                      onClick={() => setAdminExitArchiveExported(!adminExitArchiveExported)}
+                    >
+                      {adminExitArchiveExported ? 'Reset Archive Export' : 'Generate Full Studio Exit Archive (Rule DR06)'}
+                    </Button>
+                    <span style={{ fontSize: '0.72rem', color: '#888' }}>Rule DR06 Zero Lock-In</span>
+                  </div>
+                </Card>
+              </div>
             </div>
           )}
         </main>
@@ -1850,7 +1996,7 @@ export default function PosieStudioAdminPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F115)
+          🧪 Feature Lab (F001–F120)
         </a>
       </div>
     </div>
