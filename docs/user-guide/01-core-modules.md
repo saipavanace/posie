@@ -1074,6 +1074,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Independent professional substitute marketplace connecting salons in need of urgent shift coverage with verified freelance stylists, estheticians, and assistants.
 * **Key Invariant (Basis: Validate separately (V); NET CLIN LEG OPS, WB F180, Rule F180, Table 91, Table 105):** **Credential Verification & Escrow-Protected Shift Payouts.** "Recruit and verify substitute professionals and match paid coverage requests with dispute and incident handling; coverage quality is monitored operationally." Enforces state licensing and background check verifications before gig matching. Shift compensation is held in escrow upon booking and released upon verified completion minus transparent platform fees (10%), with immediate escrow freezing upon reported incidents or disputes.
 
+---
+
+## F181 — Collective Purchasing Network (WB F181, Table 91, Table 105)
+* **What it is:** Collaborative wholesale supply aggregation network pooling purchasing volume across independent salons to unlock tier-one distributor pricing on color lines, backbar essentials, and consumables.
+* **Key Invariant (Basis: Validate separately (V); NET PART FIN OPS, WB F181, Rule F181, Table 91):** **Net Savings Integrity & End-to-End Batch Tracing.** "Aggregate voluntary purchasing demand across businesses to negotiate supplier terms and trace fulfillment; savings include shipping, waste and return costs." Transparently models freight friction, breakage/waste reserves, and handling fees to ensure net salon savings genuinely survive operational costs. Fulfills batch orders with carrier tracking and pro-rata savings distribution.
+
+---
+
+## F182 — Privacy Preserving Peer Benchmarks (WB F182, Table 91, Table 105)
+* **What it is:** Opt-in comparative intelligence network providing salons with peer quartile benchmarks (rebook rate, retail-to-service ratio, 90-day retention, chair revenue) segmented by business type, maturity, and metro tier.
+* **Key Invariant (Basis: Validate separately (V); DATA SEC LEG NET, WB F182, Rule F182, Table 91):** **K-Anonymity Cell Size Enforcement & Automatic Suppression.** "Offer opt-in aggregated comparisons by business type and maturity, with minimum cell sizes and suppression; evaluate inference risk; enforce cohort, query and release limits, suppressing outputs that fail review." Requires explicit opt-in consent. If a querying cohort has fewer than 10 independent consenting businesses, the entire report is suppressed to eliminate individual salon re-identification or revenue inference.
+
+---
+
+## F183 — Visual Service Previews (WB F183, Table 91)
+* **What it is:** Client-controlled cosmetic simulation engine for hair balayage, lash extensions, brow microblading, and lip blush consultation visualization.
+* **Key Invariant (Basis: Validate separately (V); AI CLIN LEG, WB F183, Rule F183, Table 91):** **Mandatory Disclaimer Watermarking & Right-to-Purge.** "Explore clearly labeled cosmetic simulations for hair, lash or brow consultation with client control; specialist imaging, diverse evaluation and consent; preview images are never used as evidence of actual outcomes." Requires verified client consent; permanently embeds prominent non-guarantee consultation disclaimers; allows clients to invoke instant data purging upon consultation conclusion.
+
+---
+
+## F184 — Clinical Image Interpretation (WB F184, Table 91)
+* **What it is:** Regulatory firewall and governance engine strictly separating medical/dermatological diagnostic imaging from casual aesthetic salon booking and charting workflows.
+* **Key Invariant (Basis: Validate separately (V); CLIN LEG AI, WB F184, Rule F184, Table 91):** **Strict Booking Firewall & SaMD/IRB Segregation.** "Treat medical image assessment as a separate research and regulated-product decision, not a booking feature; clinical validation, regulatory expertise and ongoing monitoring; no diagnostic launch without required evidence." Any attempt to execute automated diagnostic classification within standard booking or salon notes is blocked immediately, routing the guest to an in-person clinical physician and restricting AI interpretation exclusively to authorized IRB clinical research environments.
+
+---
+
+## F185 — Proprietary Payment Hardware Governance (WB F185, Table 91, Table 105)
+* **What it is:** Build-versus-buy decision and hardware fleet health governance engine evaluating certified partner terminals (e.g. Stripe WisePOS E) versus custom proprietary payment terminals.
+* **Key Invariant (Basis: Validate separately (V); PAY PART OPS, WB F185, Rule F185, Table 91):** **Partner-First Hierarchy & Full-Lifecycle Economics.** "Consider custom terminals only if certified partner devices demonstrably cannot meet a validated need; hardware engineers, manufacturing, certification and support; full lifecycle economics beat approved integrations." Blocks custom hardware development unless partner devices demonstrably fail a verified operational requirement and 3-year custom TCO (BOM, PCI certification, RMA logistics) beats partner integrations. Monitors hardware tamper sensors, battery health, and PCI PTS certificate validity.
+
+
 
 
 

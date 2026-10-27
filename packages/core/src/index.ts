@@ -178,4 +178,9 @@ export * from './consumer_marketplace';
 export * from './working_capital';
 export * from './financial_protection';
 export * from './staffing_marketplace';
+export * from './purchasing_network';
+export * from './peer_benchmarks';
+export * from './visual_consultation_preview';
+export * from './clinical_image_governance';
+export * from './payment_hardware_governance';
 

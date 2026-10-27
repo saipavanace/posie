@@ -435,6 +435,25 @@ import {
   matchExternalShiftCoverage,
   completeShiftAndReleaseEscrow,
   type ExternalShiftRequest,
+  createPurchasingBatchOrder,
+  allocateBatchFulfillment,
+  type PurchasingBatchItem,
+  type SalonOrderIntent,
+  generatePeerBenchmarkReport,
+  type SalonBenchmarkProfile,
+  type BenchmarkCohortQuery,
+  createVisualServicePreview,
+  purgeSimulationRecordPerClient,
+  type ClientSimulationConsent,
+  type VisualSimulationParams,
+  MANDATORY_PREVIEW_DISCLAIMER,
+  evaluateClinicalImageGovernance,
+  type ImageGovernanceContext,
+  type ClinicalDiagnosticAttempt,
+  evaluatePaymentHardwareStrategy,
+  checkTerminalHealth,
+  type CertifiedPartnerDevice,
+  type ProprietaryHardwareProposal,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -9992,6 +10011,255 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(disputedSettlement.statusSummary).toContain('Escrow frozen pending operational dispute resolution');
     });
   });
+
+  describe('Posie Core Logic - F181 (Collective Purchasing Network)', () => {
+    const item: PurchasingBatchItem = {
+      itemId: 'prod_color_tubes_6n',
+      name: 'Olaplex Bond Multiplier No. 1 (500ml Backbar)',
+      sku: 'OLA-BOND-500',
+      category: 'backbar',
+      unitPriceRetail: 120.0,
+      unitPriceNegotiated: 75.0, // $45 gross discount per unit
+      minimumOrderQuantity: 20,
+    };
+
+    const intents: SalonOrderIntent[] = [
+      {
+        salonId: 'salon_a',
+        salonName: 'Atelier SoHo',
+        itemId: 'prod_color_tubes_6n',
+        quantity: 10,
+        shippingAddress: '100 Prince St, New York, NY',
+      },
+      {
+        salonId: 'salon_b',
+        salonName: 'Luxe Brooklyn',
+        itemId: 'prod_color_tubes_6n',
+        quantity: 15,
+        shippingAddress: '45 Main St, Brooklyn, NY',
+      },
+    ];
+
+    it('aggregates demand, ensures net savings survive shipping and waste, and traces batch fulfillment', () => {
+      // 1. Unmet MOQ scenario
+      const unmetBatch = createPurchasingBatchOrder('batch_unmet', item, [intents[0]]); // 10 units < 20 MOQ
+      expect(unmetBatch.totalQuantity).toBe(10);
+      expect(unmetBatch.moqMet).toBe(false);
+      expect(unmetBatch.status).toBe('open_accumulating');
+
+      expect(() => allocateBatchFulfillment(unmetBatch, [intents[0]], 'TRACK_123')).toThrow(
+        'has not satisfied supplier minimum order quantity'
+      );
+
+      // 2. Satisfied MOQ: 25 units pooled >= 20 MOQ
+      const metBatch = createPurchasingBatchOrder('batch_met', item, intents);
+      expect(metBatch.totalQuantity).toBe(25);
+      expect(metBatch.moqMet).toBe(true);
+      expect(metBatch.status).toBe('pooled_moq_met');
+      // Gross discount = 25 * ($120 - $75) = $1,125.00
+      expect(metBatch.grossSupplierDiscount).toBe(1125.0);
+      // Net savings must survive friction (shipping $25 min, 2% waste $37.50, 5% fee $56.25)
+      expect(metBatch.netSalonSavings).toBeGreaterThan(900.0);
+      expect(metBatch.netSavingsPercentage).toBeGreaterThan(25.0);
+
+      // 3. Allocate and trace batch fulfillment
+      const fulfillment = allocateBatchFulfillment(metBatch, intents, 'FEDEX-9921448821');
+      expect(fulfillment.status).toBe('dispatched');
+      expect(fulfillment.carrierTrackingNumber).toBe('FEDEX-9921448821');
+      expect(fulfillment.allocations).toHaveLength(2);
+      expect(fulfillment.allocations[0].salonId).toBe('salon_a');
+      expect(fulfillment.allocations[0].unitsDispatched).toBe(10);
+      expect(fulfillment.allocations[1].salonId).toBe('salon_b');
+      expect(fulfillment.allocations[1].unitsDispatched).toBe(15);
+      expect(fulfillment.allocations[0].proRataNetSavings + fulfillment.allocations[1].proRataNetSavings).toBeCloseTo(
+        metBatch.netSalonSavings,
+        1
+      );
+    });
+  });
+
+  describe('Posie Core Logic - F182 (Privacy Preserving Peer Benchmarks)', () => {
+    // Generate synthetic cohort of 12 salons
+    const sampleSalons: SalonBenchmarkProfile[] = Array.from({ length: 12 }, (_, i) => ({
+      salonId: `salon_peer_${i + 1}`,
+      salonName: `Studio ${i + 1}`,
+      businessType: 'hair_salon',
+      maturityTier: 'growth_2_4yr',
+      metroTier: 'tier_1_major',
+      optInBenchmarking: i !== 11, // 11 opted-in, 1 opted-out
+      metrics: {
+        rebookRatePct: 50 + i * 2, // 50% to 72%
+        retailToServiceRatioPct: 10 + i * 0.5,
+        clientRetention90DayPct: 65 + i,
+        revPerHourChair: 80 + i * 5,
+      },
+    }));
+
+    const query: BenchmarkCohortQuery = {
+      businessType: 'hair_salon',
+      maturityTier: 'growth_2_4yr',
+      metroTier: 'tier_1_major',
+    };
+
+    it('suppresses peer benchmark output when cohort size is below k-anonymity cell size threshold', () => {
+      // Threshold 10: Cohort has 11 consenting salons -> Passes
+      const validReport = generatePeerBenchmarkReport(sampleSalons, query, 10);
+      expect(validReport.isSuppressed).toBe(false);
+      expect(validReport.qualifyingCohortSize).toBe(11);
+      expect(validReport.distributions).toBeDefined();
+      expect(validReport.distributions?.rebookRatePct.median).toBeGreaterThanOrEqual(50);
+      expect(validReport.distributions?.revPerHourChair.p75).toBeGreaterThan(validReport.distributions?.revPerHourChair.p25!);
+
+      // Threshold 15: Cohort has 11 consenting salons -> Suppressed to prevent re-identification
+      const suppressedReport = generatePeerBenchmarkReport(sampleSalons, query, 15);
+      expect(suppressedReport.isSuppressed).toBe(true);
+      expect(suppressedReport.suppressionReason).toContain('INSUFFICIENT_CELL_SIZE_K_ANONYMITY');
+      expect(suppressedReport.distributions).toBeUndefined();
+    });
+  });
+
+  describe('Posie Core Logic - F183 (Visual Service Previews)', () => {
+    const validConsent: ClientSimulationConsent = {
+      clientId: 'client_charlotte_9',
+      consentGiven: true,
+      consentedAt: '2026-11-20T11:00:00Z',
+      allowPortfolioUse: false,
+      rightToDeleteRequested: false,
+    };
+
+    const simParams: VisualSimulationParams = {
+      simulationType: 'hair_balayage_tone',
+      targetShadeOrStyle: 'Honey Melt Caramel',
+      intensityLevel: 7,
+    };
+
+    it('enforces explicit consent, embeds mandatory disclaimer, and allows client data purging', () => {
+      // 1. Blocks simulation without consent
+      expect(() =>
+        createVisualServicePreview('client_charlotte_9', 'hash_sha256_8819', simParams, {
+          ...validConsent,
+          consentGiven: false,
+        })
+      ).toThrow('verified client consultation consent is required');
+
+      // 2. Generates simulation with legal disclaimer watermark and outcome non-guarantee
+      const preview = createVisualServicePreview('client_charlotte_9', 'hash_sha256_8819', simParams, validConsent);
+      expect(preview.simulationType).toBe('hair_balayage_tone');
+      expect(preview.mandatoryDisclaimerWatermark).toBe(MANDATORY_PREVIEW_DISCLAIMER);
+      expect(preview.isGuaranteedOutcome).toBe(false);
+      expect(preview.retentionPolicy).toBe('delete_after_consultation');
+      expect(preview.status).toBe('draft_preview');
+
+      // 3. Client invokes right-to-delete
+      const purged = purgeSimulationRecordPerClient(preview);
+      expect(purged.status).toBe('purged_per_client_request');
+      expect(purged.previewImageUrl).toBe('');
+    });
+  });
+
+  describe('Posie Core Logic - F184 (Clinical Image Interpretation)', () => {
+    it('strictly segregates diagnostic image assessment from regular booking and enforces SaMD boundaries', () => {
+      const casualBookingContext: ImageGovernanceContext = {
+        imageId: 'img_facial_consult_10',
+        capturedInModule: 'booking_flow',
+        uploaderRole: 'esthetician',
+      };
+
+      // 1. Standard cosmetic photo without diagnostic claim -> allowed
+      const standardEval = evaluateClinicalImageGovernance(casualBookingContext);
+      expect(standardEval.isDiagnosticLaunchBlocked).toBe(false);
+      expect(standardEval.regulatoryStatus).toBe('standard_cosmetic_photography');
+
+      // 2. Attempting autonomous diagnosis within standard booking -> STRICTLY BLOCKED
+      const diagnosticAttempt: ClinicalDiagnosticAttempt = {
+        suspectedCondition: 'Melanocytic Nevus vs Melanoma',
+        automatedClassificationConfidence: 0.94,
+        requestingDiagnosticReport: true,
+      };
+
+      const blockedEval = evaluateClinicalImageGovernance(casualBookingContext, diagnosticAttempt);
+      expect(blockedEval.isDiagnosticLaunchBlocked).toBe(true);
+      expect(blockedEval.blockReason).toContain('REGULATORY_BOUNDARY_VIOLATION');
+      expect(blockedEval.recommendedAction).toBe('block_autonomous_diagnosis_and_refer_in_person');
+      expect(blockedEval.isSegregatedFromBooking).toBe(true);
+
+      // 3. Regulated investigational clinical trial with licensed physician -> investigational SaMD allowed
+      const trialContext: ImageGovernanceContext = {
+        imageId: 'img_samd_trial_901',
+        capturedInModule: 'investigational_dermatology',
+        uploaderRole: 'physician',
+      };
+
+      const trialEval = evaluateClinicalImageGovernance(trialContext, diagnosticAttempt);
+      expect(trialEval.isDiagnosticLaunchBlocked).toBe(false);
+      expect(trialEval.regulatoryStatus).toBe('investigational_samd_only');
+      expect(trialEval.recommendedAction).toBe('conduct_under_approved_irb_protocol');
+    });
+  });
+
+  describe('Posie Core Logic - F185 (Proprietary Payment Hardware Governance)', () => {
+    const certifiedTerminal: CertifiedPartnerDevice = {
+      deviceId: 'dev_wisepos_e_01',
+      model: 'stripe_wisepos_e',
+      pciPtsCertified: true,
+      nfcContactlessEnabled: true,
+      offlineProcessingSupport: true,
+      unitCostUsd: 249.0,
+      fieldFailureRatePct: 2.1,
+    };
+
+    it('rejects custom proprietary terminals when certified partner devices meet needs or beat lifecycle TCO', () => {
+      // Proposal 1: Partner meets needs -> Custom rejected
+      const proposalWithoutNeed: ProprietaryHardwareProposal = {
+        proposalId: 'prop_hw_01',
+        hardwareCodename: 'PosieTerminal-X1',
+        validatedNeedUnmetByPartners: false,
+        unmetNeedDescription: 'Bespoke aesthetic casing for countertop',
+        projectedBomCostUsd: 180.0,
+        certificationCostUsd: 150000.0,
+        expectedAnnualRmaRatePct: 4.5,
+        projectedVolumeUnits: 500,
+      };
+
+      const verdict1 = evaluatePaymentHardwareStrategy(proposalWithoutNeed, certifiedTerminal);
+      expect(verdict1.approvedForCustomManufacturing).toBe(false);
+      expect(verdict1.recommendedSolution).toBe('adopt_certified_partner_terminal');
+      expect(verdict1.rejectionReason).toContain('VALIDATED_NEED_UNSATISFIED');
+
+      // Proposal 2: Unmet need claimed, but custom lifecycle TCO ($180 BOM + $300 cert + $24 RMA + $450 support) > partner TCO
+      const proposalHighTco: ProprietaryHardwareProposal = {
+        ...proposalWithoutNeed,
+        validatedNeedUnmetByPartners: true,
+        unmetNeedDescription: 'Acetone-resistant capacitive touchscreen for nail salons',
+      };
+
+      const verdict2 = evaluatePaymentHardwareStrategy(proposalHighTco, certifiedTerminal);
+      expect(verdict2.approvedForCustomManufacturing).toBe(false);
+      expect(verdict2.rejectionReason).toContain('LIFECYCLE_ECONOMICS_UNFAVORABLE');
+
+      // Terminal runtime health check
+      const healthyStatus = checkTerminalHealth({
+        deviceId: 'dev_wisepos_e_01',
+        firmwareVersion: 'v2.4.1-pci',
+        batteryPct: 88,
+        tamperSensorTriggered: false,
+        pciPtsExpiryYear: 2029,
+      });
+      expect(healthyStatus.operational).toBe(true);
+      expect(healthyStatus.alerts).toHaveLength(0);
+
+      const tamperedStatus = checkTerminalHealth({
+        deviceId: 'dev_wisepos_e_02',
+        firmwareVersion: 'v2.4.1-pci',
+        batteryPct: 88,
+        tamperSensorTriggered: true,
+        pciPtsExpiryYear: 2029,
+      });
+      expect(tamperedStatus.operational).toBe(false);
+      expect(tamperedStatus.alerts[0]).toContain('Physical tamper sensor triggered');
+    });
+  });
+
 
 
 

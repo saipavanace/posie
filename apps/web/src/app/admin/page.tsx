@@ -170,7 +170,7 @@ export default function PosieStudioAdminPage() {
                 background: '#FFF5F3',
               }}
             >
-              🧪 Feature Lab (F001–F180)
+              🧪 Feature Lab (F001–F185)
             </a>
           </div>
         </div>
@@ -1996,7 +1996,7 @@ export default function PosieStudioAdminPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F180)
+          🧪 Feature Lab (F001–F185)
         </a>
       </div>
     </div>

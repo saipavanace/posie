@@ -566,6 +566,26 @@ export default function PosieStudioPage() {
   const [staffingEscrowReleased, setStaffingEscrowReleased] = useState<boolean>(true);
   const [staffingIncidentReported, setStaffingIncidentReported] = useState<boolean>(false);
 
+  // F181 Collective Purchasing Network State
+  const [collectiveMoqSatisfied, setCollectiveMoqSatisfied] = useState<boolean>(true);
+  const [collectiveBatchDispatched, setCollectiveBatchDispatched] = useState<boolean>(true);
+
+  // F182 Privacy Preserving Peer Benchmarks State
+  const [peerBenchmarkCohortSize, setPeerBenchmarkCohortSize] = useState<number>(14);
+  const [peerBenchmarkOptIn, setPeerBenchmarkOptIn] = useState<boolean>(true);
+
+  // F183 Visual Service Previews State
+  const [previewConsentGiven, setPreviewConsentGiven] = useState<boolean>(true);
+  const [previewPurgedByClient, setPreviewPurgedByClient] = useState<boolean>(false);
+
+  // F184 Clinical Image Interpretation State
+  const [imageInterpretationModule, setImageInterpretationModule] = useState<'booking_flow' | 'investigational_dermatology'>('booking_flow');
+  const [clinicalDiagnosticAttempted, setClinicalDiagnosticAttempted] = useState<boolean>(false);
+
+  // F185 Proprietary Payment Hardware Governance State
+  const [hardwareStrategyMode, setHardwareStrategyMode] = useState<'certified_partner' | 'custom_rfp_proposal'>('certified_partner');
+  const [hardwareTamperTriggered, setHardwareTamperTriggered] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -586,7 +606,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F180)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F185)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -10226,6 +10246,397 @@ export default function PosieStudioPage() {
               onClick={() => setStaffingEscrowReleased(!staffingEscrowReleased)}
             >
               {staffingEscrowReleased ? 'Reset to Active Escrow' : 'Complete Shift & Release Escrow ($243.00 Net)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F181: Collective Purchasing Network */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Package size={18} color="var(--color-primary)" />
+                Collective Purchasing Network &amp; Batch Savings (F181)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Aggregates voluntary supply demand across independent salons, unlocks wholesale volume pricing, and ensures net operational savings survive shipping and waste friction.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={collectiveMoqSatisfied ? 'sage' : 'rose'}>
+                {collectiveMoqSatisfied ? 'MOQ Satisfied (25 Units • 3 Salons)' : 'MOQ Pending (10/20 Units)'}
+              </Badge>
+              <Badge variant="muted">WB F181 / Rule F181</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Pooled Catalog Item:</div>
+              <strong>Olaplex No. 1 Bond Multiplier (500ml Backbar)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Pricing Tiers:</div>
+              <strong>$120 Retail → $75 Negotiated ($45 Unit Discount)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Batch Fulfillment Status:</div>
+              <strong style={{ color: collectiveMoqSatisfied ? '#2B5329' : '#A65B32' }}>
+                {collectiveMoqSatisfied
+                  ? collectiveBatchDispatched
+                    ? 'Dispatched (FedEx #9921448821)'
+                    : 'Pooled MOQ Met (Pending Dispatch)'
+                  : 'Accumulating Demand (10 units needed)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Net Operational Savings:</div>
+              <strong>
+                {collectiveMoqSatisfied
+                  ? '$987.25 Net (Gross $1,125 - Freight $25 - Waste $22.50 - Fee $90.25)'
+                  : 'Gross $450.00 (Friction not yet absorbed)'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📦 <strong>WB F181 Invariant:</strong> Aggregates voluntary purchasing demand across businesses to negotiate supplier terms; verifies net savings strictly survive freight, breakage/waste, and handling friction; traces end-to-end batch fulfillment with pro-rata distribution.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={collectiveMoqSatisfied ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextMoq = !collectiveMoqSatisfied;
+                setCollectiveMoqSatisfied(nextMoq);
+                if (!nextMoq) setCollectiveBatchDispatched(false);
+              }}
+            >
+              {collectiveMoqSatisfied ? 'Simulate Unmet MOQ (<20 Units)' : 'Satisfy Pooled MOQ (25 Units Aggregated)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!collectiveMoqSatisfied}
+              onClick={() => setCollectiveBatchDispatched(!collectiveBatchDispatched)}
+            >
+              {collectiveBatchDispatched ? 'Reset Batch Status' : 'Dispatch Batch Shipment (FedEx #9921448821)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F182: Privacy Preserving Peer Benchmarks */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Scale size={18} color="var(--color-primary)" />
+                Privacy Preserving Peer Benchmarks (F182)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Opt-in comparative quartiles by salon category, maturity, and metro tier with strict k-anonymity minimum cell sizes and automatic suppression.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={!peerBenchmarkOptIn ? 'rose' : peerBenchmarkCohortSize >= 10 ? 'sage' : 'rose'}>
+                {!peerBenchmarkOptIn
+                  ? 'Benchmarking Inactive (Opted Out)'
+                  : peerBenchmarkCohortSize >= 10
+                  ? `Cohort Active (k=${peerBenchmarkCohortSize} Independent Salons)`
+                  : `SUPPRESSED (k=${peerBenchmarkCohortSize} < 10 Threshold)`}
+              </Badge>
+              <Badge variant="muted">WB F182 / Rule F182</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Peer Cohort Filter:</div>
+              <strong>Hair Salons • Growth (2-4yr) • Tier 1 Metro (NYC/LA)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Rebook Rate Quartiles:</div>
+              <strong style={{ color: peerBenchmarkCohortSize >= 10 && peerBenchmarkOptIn ? '#2B5329' : '#A65B32' }}>
+                {peerBenchmarkCohortSize >= 10 && peerBenchmarkOptIn
+                  ? 'p25: 54% • Median: 62% • p75: 71% (Your Studio: 68%)'
+                  : 'SUPPRESSED: Insufficient cell size risks re-identification'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Retail-to-Service Ratio:</div>
+              <strong>
+                {peerBenchmarkCohortSize >= 10 && peerBenchmarkOptIn
+                  ? 'p25: 11.2% • Median: 14.5% • p75: 18.0%'
+                  : 'SUPPRESSED'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Revenue Per Chair Hour:</div>
+              <strong>
+                {peerBenchmarkCohortSize >= 10 && peerBenchmarkOptIn
+                  ? 'p25: $95/hr • Median: $118/hr • p75: $142/hr'
+                  : 'SUPPRESSED'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📊 <strong>WB F182 Invariant:</strong> Benchmark participation is strictly opt-in; enforces minimum cell size (k &ge; 10 independent businesses); automatically suppresses outputs failing privacy review to eliminate inference of individual salon financials.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={peerBenchmarkCohortSize >= 10 ? 'outline' : 'primary'}
+              onClick={() => setPeerBenchmarkCohortSize(peerBenchmarkCohortSize >= 10 ? 6 : 14)}
+            >
+              {peerBenchmarkCohortSize >= 10 ? 'Simulate Low Cell Size (k=6 < 10 Trigger Suppression)' : 'Restore Viable Cohort (k=14 Salons)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPeerBenchmarkOptIn(!peerBenchmarkOptIn)}
+            >
+              {peerBenchmarkOptIn ? 'Opt Out of Peer Benchmarks' : 'Opt In to Peer Benchmarks'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F183: Visual Service Previews */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Eye size={18} color="var(--color-primary)" />
+                Visual Service Previews &amp; Client Disclaimers (F183)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Client-controlled cosmetic simulations for hair, lash, and brow consultations with mandatory non-guarantee watermarking and instant right-to-purge controls.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={!previewConsentGiven ? 'rose' : previewPurgedByClient ? 'muted' : 'sage'}>
+                {!previewConsentGiven
+                  ? 'Consent Missing: Simulation Blocked'
+                  : previewPurgedByClient
+                  ? 'Simulation Purged (Zero Retention)'
+                  : 'Active Preview (Consultation Aid)'}
+              </Badge>
+              <Badge variant="muted">WB F183 / Rule F183</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Cosmetic Simulation:</div>
+              <strong>Hair Balayage Tone (Honey Melt Caramel • Level 7)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Client Consent Verification:</div>
+              <strong style={{ color: previewConsentGiven ? '#2B5329' : '#A65B32' }}>
+                {previewConsentGiven ? 'Verified In-Person Consultation Consent' : 'MISSING: Processing blocked without consent'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Legal Outcome Status:</div>
+              <strong>NON-GUARANTEED: Illustrative consultation aid only</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Disclaimer &amp; Retention:</div>
+              <strong>
+                {previewPurgedByClient
+                  ? 'PURGED: Client invoked right to delete consultation simulation'
+                  : 'Watermarked: "ILLUSTRATIVE ONLY • NOT A GUARANTEE"'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            👁️ <strong>WB F183 Invariant:</strong> Cosmetic simulations require explicit client consent; permanently embeds prominent non-guarantee consultation disclaimers; preview images are never used as evidence of actual outcomes; empowers clients with instantaneous data purging.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={previewConsentGiven ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextConsent = !previewConsentGiven;
+                setPreviewConsentGiven(nextConsent);
+                if (nextConsent) setPreviewPurgedByClient(false);
+              }}
+            >
+              {previewConsentGiven ? 'Revoke Client Consultation Consent' : 'Capture Verified Client Consent'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!previewConsentGiven}
+              onClick={() => setPreviewPurgedByClient(!previewPurgedByClient)}
+            >
+              {previewPurgedByClient ? 'Regenerate Preview Simulation' : 'Purge Simulation per Client Request (Zero-Storage)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F184: Clinical Image Interpretation */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <HeartPulse size={18} color="var(--color-primary)" />
+                Clinical Image Interpretation &amp; Diagnostic Firewall (F184)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Strict regulatory segregation barring medical diagnostic assessments from standard booking, enforcing Software as a Medical Device (SaMD) boundaries and IRB oversight.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={clinicalDiagnosticAttempted ? (imageInterpretationModule === 'booking_flow' ? 'rose' : 'sage') : 'sage'}>
+                {clinicalDiagnosticAttempted
+                  ? imageInterpretationModule === 'booking_flow'
+                    ? 'BLOCKED: Diagnostic Booking Violation'
+                    : 'Investigational SaMD Protocol Active'
+                  : 'Standard Cosmetic Photography'}
+              </Badge>
+              <Badge variant="muted">WB F184 / Rule F184</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Active Capture Module:</div>
+              <strong>{imageInterpretationModule === 'booking_flow' ? 'Standard Posie Salon Booking & Notes' : 'Regulated Investigational Dermatology Hub'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Diagnostic Assessment Query:</div>
+              <strong>{clinicalDiagnosticAttempted ? 'Melanocytic Nevus vs Melanoma (94% AI Confidence)' : 'None (Routine Aesthetic Intake Photo)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Regulatory Governance Status:</div>
+              <strong style={{ color: clinicalDiagnosticAttempted && imageInterpretationModule === 'booking_flow' ? '#A65B32' : '#2B5329' }}>
+                {clinicalDiagnosticAttempted && imageInterpretationModule === 'booking_flow'
+                  ? 'STRICT REGULATORY BLOCK: Unregulated SaMD Prohibited in Booking'
+                  : clinicalDiagnosticAttempted
+                  ? 'Investigational Protocol • Board-Certified MD Oversight'
+                  : 'Cosmetic Use Cleared'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Enforced Action Protocol:</div>
+              <strong>
+                {clinicalDiagnosticAttempted && imageInterpretationModule === 'booking_flow'
+                  ? 'Autonomous diagnosis halted • Urgent in-person physician referral issued'
+                  : 'Standard photo retention in client chart'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🩺 <strong>WB F184 Invariant:</strong> Treats medical image assessment as a separate regulated product decision, never a casual booking feature; blocks autonomous diagnosis without FDA SaMD clearance and clinical oversight; escalates potential clinical lesions to in-person physicians.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setImageInterpretationModule(imageInterpretationModule === 'booking_flow' ? 'investigational_dermatology' : 'booking_flow')}
+            >
+              Module: {imageInterpretationModule === 'booking_flow' ? 'Switch to Investigational Dermatology Hub' : 'Switch to Standard Salon Booking Flow'}
+            </Button>
+            <Button
+              size="sm"
+              variant={clinicalDiagnosticAttempted ? 'outline' : 'primary'}
+              onClick={() => setClinicalDiagnosticAttempted(!clinicalDiagnosticAttempted)}
+            >
+              {clinicalDiagnosticAttempted ? 'Clear Diagnostic Classification Attempt' : 'Attempt Automated Diagnostic Report (Trigger Firewall)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F185: Proprietary Payment Hardware Governance */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CreditCard size={18} color="var(--color-primary)" />
+                Payment Hardware Strategy &amp; Terminal Governance (F185)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Rigorous build-vs-buy hardware governance prioritizing certified partner terminals and evaluating 3-year TCO, tamper sensor security, and PCI-PTS compliance.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={hardwareTamperTriggered ? 'rose' : hardwareStrategyMode === 'certified_partner' ? 'sage' : 'rose'}>
+                {hardwareTamperTriggered
+                  ? 'SECURITY ALERT: Tamper Sensor Fired'
+                  : hardwareStrategyMode === 'certified_partner'
+                  ? 'Adopted: Stripe WisePOS E (Certified)'
+                  : 'Custom RFP Rejected (TCO $954 > $384)'}
+              </Badge>
+              <Badge variant="muted">WB F185 / Rule F185</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Evaluated Architecture:</div>
+              <strong>{hardwareStrategyMode === 'certified_partner' ? 'Certified Partner Fleet (Stripe WisePOS E)' : 'Proprietary Terminal Proposal (PosieTerminal-X1)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Full-Lifecycle 3-Yr TCO:</div>
+              <strong style={{ color: hardwareStrategyMode === 'certified_partner' ? '#2B5329' : '#A65B32' }}>
+                {hardwareStrategyMode === 'certified_partner'
+                  ? '$384.00 / Terminal (Unit $249 + 2.1% RMA + Fleet)'
+                  : '$954.00 / Terminal (BOM $180 + Cert $300 + 4.5% RMA + Support $450)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Strategic RFP Verdict:</div>
+              <strong>
+                {hardwareStrategyMode === 'certified_partner'
+                  ? 'PARTNER-FIRST APPROVED: High reliability, zero manufacturing risk'
+                  : 'REJECTED: Certified partner terminals satisfy all needs at 60% lower TCO'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Runtime Fleet Health:</div>
+              <strong style={{ color: hardwareTamperTriggered ? '#A65B32' : '#2B5329' }}>
+                {hardwareTamperTriggered
+                  ? 'LOCKED: Tamper sensor triggered • Keys zeroized per PCI-PTS'
+                  : 'Operational • Battery: 88% • PCI PTS Valid: 2029'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            💳 <strong>WB F185 Invariant:</strong> Considers custom payment terminals only if certified partner devices demonstrably cannot meet a validated need and full-lifecycle economics beat approved integrations; validates runtime tamper sensors, battery health, and PCI-PTS lifecycle.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setHardwareStrategyMode(hardwareStrategyMode === 'certified_partner' ? 'custom_rfp_proposal' : 'certified_partner')}
+            >
+              Strategy: {hardwareStrategyMode === 'certified_partner' ? 'Evaluate Custom Hardware RFP Proposal' : 'Adopt Certified Partner Device (WisePOS E)'}
+            </Button>
+            <Button
+              size="sm"
+              variant={hardwareTamperTriggered ? 'outline' : 'primary'}
+              onClick={() => setHardwareTamperTriggered(!hardwareTamperTriggered)}
+            >
+              {hardwareTamperTriggered ? 'Reset Physical Tamper Alert' : 'Simulate Terminal Physical Tamper (Trigger PCI Lock)'}
             </Button>
           </div>
         </Card>
