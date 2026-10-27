@@ -630,6 +630,31 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Comprehensive design token propagation engine controlling brand identity (logos, color palettes, typography, voice tone) across online booking, customer portals, staff dashboards, SMS/email notifications, and physical print collateral.
 * **Key Invariant (Basis: B; WB F01, F32, Rules BR03, BR05, BR10, DR04):** **Draft staging, instant rollback & historical document immutability.** Brand identity changes are prepared in an isolated draft state and tested via live previews before atomic publishing across all surfaces. If an unexpected design clash occurs, studios can instantly revert to previous revisions via one-click rollback. In strict adherence to Rules BR05 and DR04, published brand updates apply only to future views and newly generated documents. Previously issued invoices, receipts, signed treatment consents, and clinical chart exports retain their original baked brand tokens and legal entity details permanently. Multi-location studios can apply localized styling overrides without disturbing parent merchant IDs or legal registrations.
 
+---
+
+## F107 — One Link for a Complete Visit & Express Flow (Smart Visit Hub)
+* **What it is:** Unified, resumable client journey link (`posie.com/v/:token`) combining service selection, conditional medical intake questionnaires, versioned e-signatures, deposit payments, appointment itineraries, and post-service aftercare.
+* **Key Invariant (Basis: T; HoneyBook / Mangomint pattern; Rules DR04, DR05):** **Step immutability, payment decline isolation & self-checkout.** Completed steps are never repeated. If a card authorization declines, completed medical questionnaires and signed consents remain securely preserved with clear, actionable next steps for payment retry. Includes **Express Pro Booking** (staff reserves a tentative slot and sends the link for client confirmation and card vaulting) and **Self-Checkout on Client Phone** (clients review the ticket, select gratuity, and pay via Apple Pay / Card on their own mobile device, ensuring staff never touch the physical card).
+
+---
+
+## F108 — Automation Recipes with Previews & Safe Dry-Run (WB F43)
+* **What it is:** Pre-built and customizable studio engagement recipes (review invitations, early birthday perks, 48-hour clinical aftercare check-ins, 60-day win-back campaigns, and rebooking reminders).
+* **Key Invariant (Basis: I; WB F43, Rule F064):** **Transparent dry-run previews & 1-click pause.** Before enabling any automation, Posie runs a rehearsal against historical events and client cohorts. It reveals the exact recipient list, excludes opted-out clients, enforces marketing quiet hours (e.g., 9:00 PM to 8:00 AM local time), applies frequency capping (e.g., maximum 1 marketing message per 14 days), and calculates total estimated carrier messaging costs. Features an emergency pause switch that immediately cancels pending deliveries.
+
+---
+
+## F109 — Unified Client Communication Inbox & Portability (WB F20)
+* **What it is:** Consolidated multi-channel inbox unifying two-way SMS, email, and web chat into a single thread per client with team assignment, read receipts, and client history context.
+* **Key Invariant (Basis: B; WB F20, Rules F025, F063, F101, DR04):** **Delivery truth, number privacy & attributed communication firewall.** A failed or unverified message is never falsely marked as delivered. Inbound SMS replies are permanently stamped as "Attributed Client Communication" (recording author, contact number, and timestamp) and are strictly firewalled from being silently converted into signed medical SOAP chart findings without practitioner sign-off (Rule F101). Staff communicate via the studio’s verified business phone line, protecting their personal cell numbers with full carrier number portability.
+
+---
+
+## F110 — Business Calling, Voicemail & Staff Routing (WB U19)
+* **What it is:** In-app business telephony suite providing studio phone lines, caller ID with instant client profile popups, voicemail-to-text automated transcription, and after-hours call routing.
+* **Key Invariant (Basis: B; WB U19, Rules F060, F072, F110, F130):** **Approved recording controls & human escalation truth.** Staff and callers can clearly distinguish recorded, transcribed, and unrecorded calls. Audible two-party recording consent disclosures are strictly enforced before any recording activates. Publishes clear, staffed operating hours (e.g., Mon–Sat 9:00 AM – 7:00 PM) and transparent voicemail callback expectations, strictly prohibiting fraudulent or unstaffed claims of 24/7 live telephone support.
+
+
 
 
 

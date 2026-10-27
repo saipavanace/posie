@@ -23,10 +23,13 @@ import {
   Sparkles,
   ArrowRight,
   RotateCcw,
+  Phone,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 
 export default function PosieStudioAdminPage() {
-  const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials' | 'brand_migration'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials' | 'brand_migration' | 'inbox_calling' | 'automations_hub'>('calendar');
 
   // POS State
   const [posTipSplit, setPosTipSplit] = useState<boolean>(true);
@@ -64,6 +67,22 @@ export default function PosieStudioAdminPage() {
   // F106 Brand Token State
   const [adminThemeChoice, setAdminThemeChoice] = useState<'Sage & Linen' | 'Rose Terracotta' | 'Noir Atelier'>('Sage & Linen');
   const [adminThemeStaged, setAdminThemeStaged] = useState<boolean>(false);
+
+  // F107 Visit Hub State
+  const [adminVisitLinkCopied, setAdminVisitLinkCopied] = useState<boolean>(false);
+  const [adminSelfCheckoutCompleted, setAdminSelfCheckoutCompleted] = useState<boolean>(false);
+
+  // F108 Automation State
+  const [adminRecipeFilter, setAdminRecipeFilter] = useState<'review' | 'birthday' | 'aftercare'>('review');
+  const [adminRecipePaused, setAdminRecipePaused] = useState<boolean>(false);
+
+  // F109 Client Inbox State
+  const [adminOutboundSent, setAdminOutboundSent] = useState<boolean>(false);
+  const [adminTimelineNoteSaved, setAdminTimelineNoteSaved] = useState<boolean>(false);
+
+  // F110 Telephony State
+  const [adminCallIncoming, setAdminCallIncoming] = useState<boolean>(false);
+  const [adminCallRecordingActive, setAdminCallRecordingActive] = useState<boolean>(true);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8F6F2' }}>
@@ -140,7 +159,7 @@ export default function PosieStudioAdminPage() {
                 background: '#FFF5F3',
               }}
             >
-              🧪 Feature Lab (F001–F106)
+              🧪 Feature Lab (F001–F110)
             </a>
           </div>
         </div>
@@ -159,6 +178,8 @@ export default function PosieStudioAdminPage() {
               { id: 'team', label: 'Team & Commissions', icon: Briefcase },
               { id: 'financials', label: 'Accounting & Sync', icon: Scale },
               { id: 'brand_migration', label: 'Brand & Migration', icon: Sparkles },
+              { id: 'inbox_calling', label: 'Client Inbox & Calling', icon: Phone },
+              { id: 'automations_hub', label: 'Visit Hub & Flows', icon: MessageSquare },
             ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = activeTab === tab.id;
@@ -1251,6 +1272,298 @@ export default function PosieStudioAdminPage() {
               </Card>
             </div>
           )}
+
+          {/* 8. CLIENT INBOX & BUSINESS TELEPHONY (F109, F110) */}
+          {activeTab === 'inbox_calling' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.6rem', color: 'var(--color-primary)', margin: 0 }}>
+                    Client Inbox &amp; Telephony Suite
+                  </h2>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    Unified Two-Way SMS / Email (F109), Business Calling &amp; Voicemail Transcription (F110)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Badge variant="sage">Studio Line: (310) 555-7674</Badge>
+                  <Badge variant="muted">A2P 10DLC Verified</Badge>
+                </div>
+              </div>
+
+              {/* F110: Telephony & Caller ID Header Card */}
+              <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Phone size={18} color="var(--color-primary)" />
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                      Inbound Calling &amp; Voicemail Center (F110)
+                    </strong>
+                  </div>
+                  <Badge variant={adminCallRecordingActive ? 'sage' : 'muted'}>
+                    {adminCallRecordingActive ? 'Recording: Two-Party Consented (Rule U19)' : 'Unrecorded Calling'}
+                  </Badge>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  {/* Caller ID Popup */}
+                  <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Caller ID Match
+                        </span>
+                        <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)', display: 'block' }}>
+                          Zendaya Coleman ((310) 555-0199)
+                        </strong>
+                      </div>
+                      <Badge variant="sage">Gold VIP Member</Badge>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#555', lineHeight: 1.5 }}>
+                      <div><strong>Upcoming:</strong> Hydra-Dew Glass Facial • Sun Nov 01 @ 2:00 PM (Maya Lin)</div>
+                      <div><strong>Medical Alert:</strong> Discontinued Retin-A 5 days prior (Cleared)</div>
+                      <div><strong>Routing:</strong> Staff Ring Group (Operating Hours: 9 AM – 7 PM PT)</div>
+                    </div>
+                  </div>
+
+                  {/* Voicemail & Task */}
+                  <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)' }}>
+                        Automated Voicemail Transcript
+                      </strong>
+                      <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Task #VM-421</span>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: '#444', fontStyle: 'italic', margin: '0 0 8px 0' }}>
+                      &ldquo;Hi Maya, this is Zendaya! Just checking if we can add an extra hyaluronic boost tomorrow. Thank you!&rdquo;
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', color: '#777' }}>
+                      <span>AI Confidence: 99% • Audio: 14s</span>
+                      <Button size="sm" variant="outline">Callback Client</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAdminCallRecordingActive(!adminCallRecordingActive)}
+                  >
+                    Toggle Recording Consent (Rule U19: {adminCallRecordingActive ? 'Active' : 'Disabled'})
+                  </Button>
+                </div>
+              </Card>
+
+              {/* F109: Shared Messaging Thread */}
+              <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+                  <div>
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                      Two-Way Client Conversation: Zendaya Coleman
+                    </strong>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                      Communicating via Studio Business Line (310) 555-7674 • Staff cell numbers protected
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.76rem', color: '#2B5329', fontWeight: 600 }}>
+                    ● Maya Lin assigned &amp; active
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '280px', overflowY: 'auto' }}>
+                  {/* Outbound message */}
+                  <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary)', color: '#FFF', padding: '12px 16px', borderRadius: '12px 12px 2px 12px', maxWidth: '70%', fontSize: '0.84rem' }}>
+                    <div>Hi Zendaya! Looking forward to your Hydra-Dew Facial tomorrow at 2:00 PM. Please arrive 5 minutes early to settle in.</div>
+                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px', textAlign: 'right' }}>
+                      Sent via Studio SMS • 10:15 AM • Delivered ✓
+                    </div>
+                  </div>
+
+                  {/* Inbound message */}
+                  <div style={{ alignSelf: 'flex-start', background: '#FAF8F5', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px 12px 12px 2px', maxWidth: '70%', fontSize: '0.84rem' }}>
+                    <div>Thank you Maya! My skin barrier feels a little dry after my flight, can we add extra hydration?</div>
+                    <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '4px' }}>
+                      Received via SMS ((310) 555-0199) • 10:22 AM
+                    </div>
+                  </div>
+
+                  {adminOutboundSent && (
+                    <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary)', color: '#FFF', padding: '12px 16px', borderRadius: '12px 12px 2px 12px', maxWidth: '70%', fontSize: '0.84rem' }}>
+                      <div>Absolutely! I have added a chilled botanical ceramide mask to your protocol. See you tomorrow!</div>
+                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px', textAlign: 'right' }}>
+                        Sent just now • Delivered ✓
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {adminTimelineNoteSaved && (
+                  <div style={{ background: '#FFF9F7', border: '1px solid #E5C3B8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: '#8F4A3E', marginBottom: '14px' }}>
+                    ✓ <strong>Attributed Communication Record Saved (Rule F101 Firewall):</strong> Saved to Zendaya&apos;s administrative profile. Notice: This communication cannot and does not overwrite official SOAP clinical charting records without licensed practitioner examination.
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => setAdminOutboundSent(true)}
+                  >
+                    <Send size={14} style={{ marginRight: '6px' }} />
+                    Reply as Maya Lin
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAdminTimelineNoteSaved(!adminTimelineNoteSaved)}
+                  >
+                    {adminTimelineNoteSaved ? 'Remove from Timeline' : 'Save Message to Client Timeline (Rule F101)'}
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* 9. VISIT HUB & AUTOMATION FLOWS (F107, F108) */}
+          {activeTab === 'automations_hub' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.6rem', color: 'var(--color-primary)', margin: 0 }}>
+                    Visit Hub &amp; Automation Flows
+                  </h2>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    Resumable Visit Links (F107) and Pre-Rehearsed Automation Recipes (F108)
+                  </span>
+                </div>
+              </div>
+
+              {/* F107: One Link for a Complete Visit & Express Flow */}
+              <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      One Link for a Complete Visit &amp; Express Flow (F107)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      Resumable client journey combining forms, e-consents, deposits, itineraries, and client-phone self-checkout.
+                    </div>
+                  </div>
+                  <Badge variant={adminSelfCheckoutCompleted ? 'sage' : 'muted'}>
+                    {adminSelfCheckoutCompleted ? 'Self-Checkout Paid ($180.00)' : 'Active Express Session'}
+                  </Badge>
+                </div>
+
+                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div>
+                      <strong>Express Reservation: Zendaya Coleman</strong>
+                      <div style={{ fontSize: '0.8rem', color: '#555' }}>
+                        Hydra-Dew Glass Facial ($150) • Maya Lin • Sun Nov 01 @ 2:00 PM
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.78rem', background: '#FFF', border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '4px' }}>
+                      Token: <code>vtok_8941a2</code>
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', fontSize: '0.74rem', textAlign: 'center', marginBottom: '12px' }}>
+                    <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid #738A73', color: '#2B5329', fontWeight: 600 }}>1. Service ✓</div>
+                    <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid #738A73', color: '#2B5329', fontWeight: 600 }}>2. Intake ✓</div>
+                    <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid #738A73', color: '#2B5329', fontWeight: 600 }}>3. E-Consent ✓</div>
+                    <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid #738A73', color: '#2B5329', fontWeight: 600 }}>4. Deposit ✓</div>
+                    <div style={{ background: adminSelfCheckoutCompleted ? '#FFF' : '#FAF8F5', padding: '8px', borderRadius: '4px', border: adminSelfCheckoutCompleted ? '1px solid #738A73' : '1px dashed #CCC', color: adminSelfCheckoutCompleted ? '#2B5329' : '#888', fontWeight: 600 }}>
+                      5. Self-Checkout {adminSelfCheckoutCompleted ? '✓' : ''}
+                    </div>
+                  </div>
+
+                  {adminSelfCheckoutCompleted ? (
+                    <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+                      ✓ <strong>Client Phone Self-Checkout Confirmed:</strong> Zendaya paid $150 service + $30 tip via Apple Pay. Staff never touched physical credit card. Digital receipt and bathroom mirror aftercare delivered.
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                      Client can open link from confirmation SMS anytime to view arrival instructions or execute self-checkout at visit completion.
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button
+                    size="sm"
+                    variant={adminVisitLinkCopied ? 'outline' : 'primary'}
+                    onClick={() => setAdminVisitLinkCopied(true)}
+                  >
+                    {adminVisitLinkCopied ? 'Link Copied: posie.com/v/vtok_8941a2 ✓' : 'Copy Resumable Visit Link'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAdminSelfCheckoutCompleted(!adminSelfCheckoutCompleted)}
+                  >
+                    {adminSelfCheckoutCompleted ? 'Reset Self-Checkout' : 'Simulate Client Phone Self-Checkout (F107)'}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* F108: Automation Recipes with Previews & Safe Dry-Run */}
+              <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      Automation Recipes &amp; Dry-Run Rehearsal (F108)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      Rehearse flows against client cohorts before activation with quiet hours and consent protection.
+                    </div>
+                  </div>
+                  <Badge variant={adminRecipePaused ? 'rose' : 'sage'}>
+                    {adminRecipePaused ? 'Emergency Paused' : 'Active Flow: Post-Visit Review'}
+                  </Badge>
+                </div>
+
+                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '12px' }}>
+                    <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <div>Total Cohort:</div>
+                      <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>142 Clients</strong>
+                    </div>
+                    <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <div>Eligible Recipients:</div>
+                      <strong style={{ fontSize: '1.1rem', color: '#2B5329' }}>18 Verified</strong>
+                    </div>
+                    <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <div>Safely Excluded:</div>
+                      <strong style={{ fontSize: '1.1rem', color: '#8F4A3E' }}>124 Clients</strong>
+                    </div>
+                    <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <div>Estimated Cost:</div>
+                      <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>$0.36 USD</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '8px' }}>
+                    🛡 <strong>Guardrails:</strong> Frequency capping (14 days), Marketing consent verified (Rule F064), Quiet hours enforced (8 PM–9 AM local).
+                  </div>
+
+                  <div style={{ background: '#FFF', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: '#444' }}>
+                    <strong>Message Preview:</strong> &ldquo;Hi &#123;&#123;firstName&#125;&#125;, thank you for visiting Posie Atelier today! If you enjoyed your treatment with Maya, we&rsquo;d love your quick review: posie.com/review/beverlyhills&rdquo;
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button
+                    size="sm"
+                    variant={adminRecipePaused ? 'primary' : 'outline'}
+                    onClick={() => setAdminRecipePaused(!adminRecipePaused)}
+                  >
+                    {adminRecipePaused ? 'Resume Recipe' : '1-Click Emergency Pause (F108)'}
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
 
@@ -1299,7 +1612,7 @@ export default function PosieStudioAdminPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F106)
+          🧪 Feature Lab (F001–F110)
         </a>
       </div>
     </div>

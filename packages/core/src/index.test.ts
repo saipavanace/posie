@@ -226,6 +226,23 @@ import {
   issueBrandedDocument,
   verifyHistoricalArtifactIntegrity,
   rollbackBrandTheme,
+  createVisitHubSession,
+  completeHubIntake,
+  completeHubConsentSignature,
+  completeHubDepositPayment,
+  completeHubSelfCheckout,
+  getDefaultAutomationRecipes,
+  rehearseAutomationRecipe,
+  toggleAutomationPause,
+  createInboxThread,
+  sendOutboundMessage,
+  receiveInboundMessage,
+  updateMessageDeliveryStatus,
+  saveMessageToClientTimeline,
+  evaluateInboundCallRoute,
+  handleInboundCallReceived,
+  processInboundVoicemail,
+  setCallRecordingState,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -5416,6 +5433,284 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       });
       expect(rolledBackTheme.tokens.primaryColor).toBe('#2C3E30');
       expect(rolledBackTheme.changelogNotes).toContain('Rollback to Theme Version 1');
+    });
+  });
+
+  describe('Posie Core Logic - F107 (One Link for a Complete Visit & Express Flow)', () => {
+    it('manages a complete resumable visit link, preserves progress on payment decline, and executes self-checkout', () => {
+      // 1. Initialize session
+      const session = createVisitHubSession({
+        clientId: 'cli-zendaya',
+        clientName: 'Zendaya Coleman',
+        clientEmail: 'zendaya@example.com',
+        clientPhone: '+13105550199',
+        studioId: 'studio-beverly-hills',
+        appointment: {
+          serviceId: 'srv-hydra',
+          serviceName: 'Hydra-Dew Glass Facial',
+          practitionerId: 'pro-maya',
+          practitionerName: 'Maya Lin',
+          startTime: '2026-11-01T14:00:00Z',
+          durationMinutes: 60,
+          price: 150,
+        },
+      });
+
+      expect(session.status).toBe('active');
+      expect(session.currentStep).toBe('intake_forms');
+      expect(session.steps.length).toBe(5);
+
+      // 2. Complete intake
+      const withIntake = completeHubIntake(session, 'sub-intake-981');
+      expect(withIntake.steps.find((s) => s.stepId === 'intake_forms')?.isCompleted).toBe(true);
+      expect(withIntake.currentStep).toBe('consent_signature');
+
+      // 3. Complete consent signature (Rule DR05: consent is separate from payment)
+      const withConsent = completeHubConsentSignature(withIntake, 'doc-signed-consent-44');
+      expect(withConsent.steps.find((s) => s.stepId === 'consent_signature')?.isCompleted).toBe(true);
+      expect(withConsent.currentStep).toBe('payment_deposit');
+
+      // 4. Payment decline: forms and consent must be preserved!
+      const declinedAttempt = completeHubDepositPayment(withConsent, {
+        amount: 50,
+        paymentIntentId: 'pi_declined_123',
+        cardLast4: '0002',
+        status: 'failed',
+      });
+      expect(declinedAttempt.error).toContain('declined. Completed intake and consent documents were preserved');
+      expect(declinedAttempt.session.steps.find((s) => s.stepId === 'intake_forms')?.isCompleted).toBe(true);
+      expect(declinedAttempt.session.steps.find((s) => s.stepId === 'consent_signature')?.isCompleted).toBe(true);
+
+      // 5. Successful payment with alternate card
+      const succeededAttempt = completeHubDepositPayment(withConsent, {
+        amount: 50,
+        paymentIntentId: 'pi_succ_456',
+        cardLast4: '4242',
+        status: 'succeeded',
+      });
+      expect(succeededAttempt.session.status).toBe('completed');
+      expect(succeededAttempt.session.currentStep).toBe('booking_confirmation');
+
+      // 6. Express self-checkout flow on client phone
+      const selfCheckoutSession = createVisitHubSession({
+        clientId: 'cli-zendaya',
+        clientName: 'Zendaya Coleman',
+        clientEmail: 'zendaya@example.com',
+        clientPhone: '+13105550199',
+        studioId: 'studio-beverly-hills',
+        mode: 'self_checkout_remaining',
+      });
+      expect(selfCheckoutSession.currentStep).toBe('self_checkout');
+
+      const completedSelfCheckout = completeHubSelfCheckout(selfCheckoutSession, {
+        serviceAmount: 150,
+        tipAmount: 30,
+        tenderType: 'apple_pay',
+        cardLast4: '8811',
+      });
+      expect(completedSelfCheckout.status).toBe('completed');
+      expect(completedSelfCheckout.selfCheckoutPayment?.totalPaid).toBe(180);
+      expect(completedSelfCheckout.currentStep).toBe('aftercare_portal');
+    });
+  });
+
+  describe('Posie Core Logic - F108 (Automation Recipes with Previews & Dry-Run Rehearsal)', () => {
+    it('previews recipient audience, enforces quiet hours and consent exclusions, and supports emergency pause', () => {
+      const recipes = getDefaultAutomationRecipes();
+      expect(recipes.length).toBeGreaterThanOrEqual(4);
+
+      const reviewRecipe = recipes.find((r) => r.type === 'review_request')!;
+      expect(reviewRecipe.costPerMessageUSD).toBe(0.02);
+
+      const cohort = [
+        {
+          clientId: 'c1',
+          clientName: 'Zendaya Coleman',
+          phone: '+13105550199',
+          email: 'zendaya@example.com',
+          timezone: 'America/Los_Angeles',
+          hasMarketingConsent: true,
+        },
+        {
+          clientId: 'c2',
+          clientName: 'Opted Out Client',
+          phone: '+13105550100',
+          email: 'optout@example.com',
+          timezone: 'America/Los_Angeles',
+          hasMarketingConsent: false, // Should be excluded!
+        },
+        {
+          clientId: 'c3',
+          clientName: 'Recent Recipient',
+          phone: '+13105550101',
+          email: 'recent@example.com',
+          timezone: 'America/Los_Angeles',
+          hasMarketingConsent: true,
+          lastMessageSentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago (Frequency capped!)
+        },
+      ];
+
+      // Rehearse during daytime (2 PM = 14)
+      const rehearsalDay = rehearseAutomationRecipe(reviewRecipe, cohort, {
+        studioName: 'Posie Atelier',
+        currentHourLocal: 14,
+        reviewLink: 'posie.com/review/beverlyhills',
+      });
+
+      expect(rehearsalDay.totalAudienceEvaluated).toBe(3);
+      expect(rehearsalDay.eligibleRecipientCount).toBe(1); // Only Zendaya
+      expect(rehearsalDay.exclusions.optedOutCount).toBe(1);
+      expect(rehearsalDay.exclusions.frequencyCappedCount).toBe(1);
+      expect(rehearsalDay.estimatedTotalCostUSD).toBe(0.02);
+      expect(rehearsalDay.sampleRecipients[0].personalizedMessage).toContain('Hi Zendaya');
+
+      // Rehearse during quiet hours (11 PM = 23)
+      const rehearsalNight = rehearseAutomationRecipe(reviewRecipe, cohort, {
+        studioName: 'Posie Atelier',
+        currentHourLocal: 23,
+      });
+      expect(rehearsalNight.exclusions.quietHoursCount).toBe(1); // Zendaya blocked by quiet hours
+      expect(rehearsalNight.eligibleRecipientCount).toBe(0);
+
+      // Emergency pause
+      const paused = toggleAutomationPause(reviewRecipe, true);
+      expect(paused.isPaused).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F109 (Unified Communication Inbox & Attributed Firewall)', () => {
+    it('manages multi-channel messages, tracks carrier failure, and protects clinical notes firewall', () => {
+      const thread = createInboxThread({
+        clientId: 'c-zendaya',
+        clientName: 'Zendaya Coleman',
+        clientPhone: '+13105550199',
+        clientEmail: 'zendaya@example.com',
+        assignedStaffId: 'staff-maya',
+        assignedStaffName: 'Maya Lin',
+        clientContext: {
+          lifetimeSpendUSD: 1450,
+          completedVisitsCount: 8,
+          allergies: ['Retin-A'],
+        },
+      });
+
+      expect(thread.clientName).toBe('Zendaya Coleman');
+      expect(thread.clientContext.lifetimeSpendUSD).toBe(1450);
+
+      // Staff sends outbound message via studio verified business line
+      const { thread: threadWithOutbound, message: outMsg } = sendOutboundMessage(
+        thread,
+        {
+          staffId: 'staff-maya',
+          staffName: 'Maya Lin',
+          studioBusinessNumber: '+13105557674',
+        },
+        {
+          body: 'Hi Zendaya! Looking forward to seeing you tomorrow at 2 PM.',
+          channel: 'sms',
+        }
+      );
+
+      expect(threadWithOutbound.messages.length).toBe(1);
+      expect(outMsg.senderContact).toBe('+13105557674'); // Masked staff personal number
+
+      // Inbound client reply
+      const { thread: threadWithReply, message: inMsg } = receiveInboundMessage(threadWithOutbound, {
+        body: 'Thank you Maya! My barrier feels a little dry today, can we do extra hydration?',
+        channel: 'sms',
+        senderPhoneOrEmail: '+13105550199',
+      });
+
+      expect(threadWithReply.unreadCount).toBe(1);
+      expect(inMsg.deliveryStatus).toBe('delivered');
+
+      // Webhook carrier failure test
+      const threadWithFailedMsg = updateMessageDeliveryStatus(
+        threadWithReply,
+        outMsg.id,
+        'failed',
+        'Carrier handset unreachable'
+      );
+      expect(threadWithFailedMsg.messages[0].deliveryStatus).toBe('failed');
+      expect(threadWithFailedMsg.messages[0].failureReason).toContain('handset unreachable');
+
+      // Save inbound text to client timeline (Rules F025, F063, F101, DR04)
+      const { timelineRecord } = saveMessageToClientTimeline(threadWithReply, inMsg.id);
+      expect(timelineRecord.classification).toBe('client_communication_reply');
+      expect(timelineRecord.legalNotice).toContain('Does not constitute a signed clinical SOAP entry');
+    });
+  });
+
+  describe('Posie Core Logic - F110 (Business Calling, Voicemail & Staff Routing)', () => {
+    const config = {
+      phoneNumber: '+13105557674',
+      callerIdName: 'Posie Beverly Hills',
+      operatingHours: {
+        daysOfWeek: [1, 2, 3, 4, 5, 6], // Mon-Sat
+        openHourLocal: 9, // 9 AM
+        closeHourLocal: 19, // 7 PM
+        timezone: 'America/Los_Angeles',
+      },
+      ringGroupStaffIds: ['staff-maya', 'staff-frontdesk'],
+      voicemailGreetingText: 'Thank you for calling Posie Atelier. We are currently assisting clients...',
+      isCallRecordingEnabled: true,
+      recordingDisclosureAudioText: 'This call may be recorded for quality and coaching.',
+    };
+
+    const clientDirectory = [
+      {
+        clientId: 'c-zendaya',
+        clientName: 'Zendaya Coleman',
+        phone: '+13105550199',
+        tier: 'Gold VIP',
+        upcomingBooking: { date: '2026-11-01 14:00', service: 'Hydra-Dew Facial' },
+      },
+    ];
+
+    it('evaluates operating hours routing, matches caller ID, and enforces recording consent rules', () => {
+      // 1. Call during operating hours (Tuesday 2 PM = Day 2, Hour 14)
+      const dayCall = handleInboundCallReceived(
+        'call-001',
+        '+13105550199',
+        config,
+        clientDirectory,
+        { dayOfWeek: 2, hourLocal: 14 }
+      );
+      expect(dayCall.routeAction).toBe('ring_staff_group');
+      expect(dayCall.callRecord.matchedClient?.clientName).toBe('Zendaya Coleman');
+      expect(dayCall.callRecord.matchedClient?.membershipTier).toBe('Gold VIP');
+      expect(dayCall.callRecord.recordingConsentState).toBe('recording_announced');
+
+      // 2. Call after hours (Sunday = Day 0, Hour 22)
+      const nightCall = handleInboundCallReceived(
+        'call-002',
+        '+13105550199',
+        config,
+        clientDirectory,
+        { dayOfWeek: 0, hourLocal: 22 }
+      );
+      expect(nightCall.routeAction).toBe('route_to_voicemail');
+      expect(nightCall.callRecord.disposition).toBe('voicemail');
+
+      // 3. Process voicemail with transcription and task generation
+      const processedVm = processInboundVoicemail(
+        nightCall.callRecord,
+        'https://storage.posie.com/voicemail/vm-12.mp3',
+        'Hi, this is Zendaya. I wanted to see if Maya has an opening this Saturday.'
+      );
+      expect(processedVm.voicemail?.transcript).toContain('Zendaya');
+      expect(processedVm.voicemail?.followUpTaskId).toBeDefined();
+      expect(processedVm.recordingConsentState).toBe('transcription_only');
+
+      // 4. Consent control: unrecorded call test (Rule U19)
+      const unrecordedCall = setCallRecordingState(dayCall.callRecord, false);
+      expect(unrecordedCall.recordingConsentState).toBe('unrecorded');
+      expect(unrecordedCall.recordingAudioUrl).toBeUndefined();
+
+      // Consent granted
+      const activeRecordedCall = setCallRecordingState(dayCall.callRecord, true);
+      expect(activeRecordedCall.recordingConsentState).toBe('recording_active');
+      expect(activeRecordedCall.recordingAudioUrl).toContain('call-001.mp3');
     });
   });
 

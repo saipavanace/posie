@@ -295,6 +295,24 @@ export default function PosieStudioPage() {
   const [brandStagedTheme, setBrandStagedTheme] = useState<'Sage & Linen' | 'Rose Terracotta' | 'Noir Atelier'>('Sage & Linen');
   const [brandPublishedStatus, setBrandPublishedStatus] = useState<'live' | 'staged_preview' | 'rolled_back'>('live');
 
+  // F107 Visit Hub & Express Flow State
+  const [hubStepDev, setHubStepDev] = useState<'intake' | 'consent' | 'deposit' | 'confirmed' | 'self_checkout'>('intake');
+  const [hubDeclineSimulated, setHubDeclineSimulated] = useState<boolean>(false);
+
+  // F108 Automation Recipes State
+  const [automationRecipePaused, setAutomationRecipePaused] = useState<boolean>(false);
+  const [automationRehearsalShown, setAutomationRehearsalShown] = useState<boolean>(true);
+
+  // F109 Unified Inbox State
+  const [inboxChannelDev, setInboxChannelDev] = useState<'sms' | 'email'>('sms');
+  const [inboxDeliveryStateDev, setInboxDeliveryStateDev] = useState<'delivered' | 'failed'>('delivered');
+  const [inboxTimelineSavedDev, setInboxTimelineSavedDev] = useState<boolean>(false);
+
+  // F110 Calling & Voicemail State
+  const [telephonyCallSimulated, setTelephonyCallSimulated] = useState<boolean>(false);
+  const [telephonyRecordingConsentDev, setTelephonyRecordingConsentDev] = useState<boolean>(true);
+  const [telephonyAfterHoursRoute, setTelephonyAfterHoursRoute] = useState<boolean>(false);
+
 
 
 
@@ -321,7 +339,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F106)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F110)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -4740,6 +4758,335 @@ export default function PosieStudioPage() {
             >
               <RotateCcw size={14} style={{ marginRight: '6px' }} />
               1-Click Rollback to Previous Revision
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F107: One Link for a Complete Visit & Express Flow */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                One Link for a Complete Visit &amp; Express Flow (F107)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={hubStepDev === 'confirmed' ? 'sage' : (hubDeclineSimulated ? 'rose' : 'muted')}>
+                {hubStepDev === 'confirmed' ? 'Booking Confirmed ✓' : (hubDeclineSimulated ? 'Card Declined (Forms Preserved)' : 'Step: ' + hubStepDev.toUpperCase())}
+              </Badge>
+              <Badge variant="muted">Link: posie.com/v/vtok_8941</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Combines treatment selection, medical intake, signed consents, deposits, itineraries, and phone self-checkout into a single branded, resumable link.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            {/* Step Progress Tracker */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '14px', borderBottom: '1px solid #EAE6DF', paddingBottom: '10px' }}>
+              <span style={{ color: '#2B5329', fontWeight: 600 }}>1. Service ✓</span>
+              <span style={{ color: hubStepDev !== 'intake' ? '#2B5329' : 'var(--color-primary)', fontWeight: 600 }}>2. Health Intake {hubStepDev !== 'intake' ? '✓' : ''}</span>
+              <span style={{ color: ['consent', 'deposit', 'confirmed', 'self_checkout'].includes(hubStepDev) ? '#2B5329' : '#888', fontWeight: 600 }}>3. E-Consent (DR05)</span>
+              <span style={{ color: ['deposit', 'confirmed', 'self_checkout'].includes(hubStepDev) ? '#2B5329' : '#888', fontWeight: 600 }}>4. Deposit Card</span>
+              <span style={{ color: hubStepDev === 'confirmed' ? '#2B5329' : '#888', fontWeight: 600 }}>5. Itinerary</span>
+            </div>
+
+            {hubDeclineSimulated ? (
+              <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', color: '#8F4A3E', marginBottom: '10px' }}>
+                ⚠ <strong>Payment Authorization Failed (F107 Invariant):</strong> Card ending in 0002 was declined. Notice: Completed health questionnaires and signed consents remain permanently saved. Client can provide an alternate card without re-filling forms.
+              </div>
+            ) : hubStepDev === 'confirmed' ? (
+              <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A', marginBottom: '10px' }}>
+                ✓ <strong>Visit Confirmed:</strong> Hydra-Dew Glass Facial on Sunday at 2:00 PM with Maya Lin. $50 deposit vaulted. Itinerary and arrival guidance available.
+              </div>
+            ) : hubStepDev === 'self_checkout' ? (
+              <div style={{ background: '#FFF', border: '1px solid var(--color-border)', padding: '12px', borderRadius: '6px', fontSize: '0.82rem' }}>
+                <strong>Client Phone Self-Checkout (No staff card contact):</strong>
+                <div style={{ marginTop: '4px', color: '#555' }}>
+                  Service Total: $150.00 • Gratuity: $30.00 (20%) • Paid via Apple Pay (Card •••• 8811). Aftercare unlocked.
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#555' }}>
+                Active Session: <strong>Zendaya Coleman</strong> • Service: Hydra-Dew Facial ($150) with Maya Lin. Resumable link valid for 7 days.
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={hubStepDev === 'intake' ? 'primary' : 'outline'}
+              onClick={() => {
+                setHubStepDev('consent');
+                setHubDeclineSimulated(false);
+              }}
+            >
+              1. Submit Health Intake
+            </Button>
+            <Button
+              size="sm"
+              variant={hubStepDev === 'consent' ? 'primary' : 'outline'}
+              onClick={() => {
+                setHubStepDev('deposit');
+                setHubDeclineSimulated(false);
+              }}
+            >
+              2. Sign E-Consent (Rule DR05)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setHubDeclineSimulated(true)}
+            >
+              Simulate Card Decline
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                setHubStepDev('confirmed');
+                setHubDeclineSimulated(false);
+              }}
+            >
+              3. Authorize Deposit &amp; Confirm
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setHubStepDev('self_checkout');
+                setHubDeclineSimulated(false);
+              }}
+            >
+              4. Client Self-Checkout on Phone
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F108: Automation Recipes with Previews & Safe Dry-Run */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Automation Recipes with Previews &amp; Safe Dry-Run (F108)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={automationRecipePaused ? 'rose' : 'sage'}>
+                {automationRecipePaused ? 'Emergency Paused' : 'Recipe Active: Review Request'}
+              </Badge>
+              <Badge variant="muted">Cost: $0.02 / SMS</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Rehearses automation recipes against historical client cohorts with quiet hours compliance, opt-out suppression, and transparent messaging cost estimations before activation.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Audience Evaluated:</div>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>142 Clients</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Eligible to Receive:</div>
+                <strong style={{ fontSize: '1.1rem', color: '#2B5329' }}>18 Recipient(s)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Safely Excluded:</div>
+                <strong style={{ fontSize: '1.1rem', color: '#8F4A3E' }}>124 Excluded</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Estimated Campaign Cost:</div>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>$0.36 USD</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', fontSize: '0.8rem', color: '#555', marginBottom: '10px' }}>
+              <strong>Dry-Run Exclusion Breakdown:</strong>
+              <div style={{ marginTop: '4px' }}>
+                • <strong>82 Excluded:</strong> Frequency capped (already received studio message within 14 days)<br />
+                • <strong>38 Excluded:</strong> Marketing consent not granted (Rule F064 compliance)<br />
+                • <strong>4 Excluded:</strong> Local client timezone currently in quiet hours (9 PM - 8 AM)
+              </div>
+            </div>
+
+            <div style={{ background: '#F8F6F2', border: '1px solid #EAE6DF', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', color: '#444' }}>
+              💬 <strong>Sample Rendered Message:</strong> &ldquo;Hi Zendaya, thank you for visiting Posie Atelier today! If you enjoyed your treatment with Maya, we’d love your quick review: posie.com/review/beverlyhills&rdquo;
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={automationRecipePaused ? 'primary' : 'outline'}
+              onClick={() => setAutomationRecipePaused(!automationRecipePaused)}
+            >
+              {automationRecipePaused ? 'Resume Automation Recipe' : '1-Click Emergency Pause'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAutomationRehearsalShown(!automationRehearsalShown)}
+            >
+              Re-run Rehearsal Preview (Dry Run)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F109: Unified Client Communication Inbox & Portability */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Unified Client Communication Inbox &amp; Portability (F109)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={inboxDeliveryStateDev === 'delivered' ? 'sage' : 'rose'}>
+                {inboxDeliveryStateDev === 'delivered' ? 'Carrier Status: Delivered ✓' : 'Carrier Status: Failed (Unreachable)'}
+              </Badge>
+              <Badge variant="muted">Line: (310) 555-7674</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Consolidates authorized two-way SMS, email, and web chat. Protects staff phone privacy with studio business numbers, and strictly firewalls text replies from masquerading as signed clinical notes.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            {/* Thread Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid #EAE6DF', paddingBottom: '8px' }}>
+              <div>
+                <strong>Zendaya Coleman</strong> • Assigned to: <strong>Maya Lin</strong>
+                <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>VIP Gold • 14 Visits • $1,450 Spend • Allergies: Retin-A</div>
+              </div>
+              <span style={{ fontSize: '0.76rem', color: '#2B5329' }}>● Maya Lin active in thread</span>
+            </div>
+
+            {/* Messages */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary)', color: '#FFF', padding: '10px 14px', borderRadius: '12px 12px 2px 12px', maxWidth: '75%', fontSize: '0.82rem' }}>
+                <div>Hi Zendaya! Looking forward to your Hydra-Dew Facial tomorrow at 2:00 PM. Please arrive 5 minutes early!</div>
+                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px', textAlign: 'right' }}>Sent via Posie Line (310) 555-7674 • 10:15 AM</div>
+              </div>
+
+              <div style={{ alignSelf: 'flex-start', background: '#FFF', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '12px 12px 12px 2px', maxWidth: '75%', fontSize: '0.82rem' }}>
+                <div>Thank you Maya! My skin barrier feels a little dry after my flight, can we add extra hyaluronic infusion?</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '4px' }}>Received via SMS • 10:22 AM</div>
+              </div>
+            </div>
+
+            {inboxTimelineSavedDev && (
+              <div style={{ background: '#FFF9F7', border: '1px solid #E5C3B8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: '#8F4A3E', marginBottom: '10px' }}>
+                ✓ <strong>Attributed Communication Record Saved (Rule F101 Firewall):</strong> Saved to Zendaya&apos;s administrative profile. Notice: This communication cannot and does not overwrite official SOAP clinical charting records without licensed practitioner examination.
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => setInboxTimelineSavedDev(!inboxTimelineSavedDev)}
+            >
+              {inboxTimelineSavedDev ? 'Unlink from Timeline' : 'Save Text to Client Timeline (Rule F101)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setInboxDeliveryStateDev(inboxDeliveryStateDev === 'delivered' ? 'failed' : 'delivered')}
+            >
+              Toggle Carrier Webhook Status ({inboxDeliveryStateDev === 'delivered' ? 'Simulate Carrier Fail' : 'Set Delivered'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F110: Business Calling, Voicemail & Staff Routing */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Business Calling, Voicemail &amp; Staff Routing (F110)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={telephonyAfterHoursRoute ? 'rose' : 'sage'}>
+                {telephonyAfterHoursRoute ? 'After-Hours: Voicemail' : 'Operating Hours: Ringing Staff'}
+              </Badge>
+              <Badge variant={telephonyRecordingConsentDev ? 'sage' : 'muted'}>
+                {telephonyRecordingConsentDev ? 'Recording: Consented (Rule U19)' : 'Unrecorded Call'}
+              </Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Provides business calling, automated caller ID profile matching, voicemail-to-text AI transcription, and compliant two-party call recording consent controls.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '4px' }}>
+                  Caller ID Match (Inbound Call)
+                </strong>
+                <div>Caller: <strong>Zendaya Coleman</strong> ((310) 555-0199)</div>
+                <div>Status: <strong>Gold VIP Member</strong></div>
+                <div>Upcoming: <strong>Hydra-Dew Facial (Nov 01 2:00 PM)</strong></div>
+              </div>
+
+              <div style={{ background: '#FFF', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '4px' }}>
+                  Telephony Compliance &amp; Routing
+                </strong>
+                <div>Hours: <strong>Mon–Sat 9:00 AM – 7:00 PM PT</strong></div>
+                <div>Routing: <strong>{telephonyAfterHoursRoute ? 'Studio Voicemail Box' : 'Front Desk Ring Group'}</strong></div>
+                <div>Disclosure: <strong>&ldquo;This call may be recorded...&rdquo;</strong></div>
+              </div>
+            </div>
+
+            {telephonyAfterHoursRoute && (
+              <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', color: '#555', marginBottom: '10px' }}>
+                🎙 <strong>Automated Voicemail Transcript (#TASK-VM-421):</strong>
+                <p style={{ fontStyle: 'italic', margin: '4px 0 6px', color: '#333' }}>
+                  &ldquo;Hi, this is Zendaya. I wanted to see if Maya has any openings this Saturday for a quick brow sculpt. Thank you!&rdquo;
+                </p>
+                <div style={{ fontSize: '0.74rem', color: '#777' }}>
+                  ✓ Follow-up task assigned to Front Desk • Scheduled callback for Mon 9:00 AM.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={telephonyAfterHoursRoute ? 'primary' : 'outline'}
+              onClick={() => setTelephonyAfterHoursRoute(!telephonyAfterHoursRoute)}
+            >
+              Toggle Operating Hours ({telephonyAfterHoursRoute ? 'Switch to Daytime 2 PM' : 'Switch to Sunday Night 10 PM'})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTelephonyRecordingConsentDev(!telephonyRecordingConsentDev)}
+            >
+              Toggle Recording Consent (Rule U19: {telephonyRecordingConsentDev ? 'Active' : 'Unrecorded'})
             </Button>
           </div>
         </Card>

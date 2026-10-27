@@ -104,4 +104,8 @@ export * from './client_deduplication';
 export * from './migration_mapping';
 export * from './migration_cutover';
 export * from './brand_propagation';
+export * from './visit_hub';
+export * from './automation_recipes';
+export * from './communication_inbox';
+export * from './calling_and_voicemail';
 

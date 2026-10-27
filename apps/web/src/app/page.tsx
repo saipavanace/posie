@@ -1119,7 +1119,7 @@ export default function PosieClientPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F106)
+          🧪 Feature Lab (F001–F110)
         </a>
       </div>
     </div>
