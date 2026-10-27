@@ -304,6 +304,23 @@ import {
   validateCrossLocationRedemption,
   calculateBoothRenterSplit,
   checkBoothRenterClientAccess,
+  createEmbeddedPayrollRun,
+  submitPayrollRunToPartner,
+  recordPayrollCorrection,
+  calculateTotalStatutoryDeductions,
+  initOfflineOperationalQueue,
+  queueOfflineOperationalAction,
+  reconcileOfflineOperationalQueue,
+  resolveOfflineOperationalConflict,
+  generateScheduleOptimizationPlan,
+  applyOptimizationSuggestion,
+  timeToMinutes,
+  minutesToTime,
+  calculateMobileTravelFee,
+  buildMobileRouteItinerary,
+  evaluateTrafficDelayAlert,
+  processReceptionistQuery,
+  verifyCallerIdentity,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -7198,6 +7215,431 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(ownerAccess.reason).toContain('Booth renters legally own their client lists');
     });
   });
+
+  describe('Posie Core Logic - F141 (Embedded Payroll)', () => {
+    const mockPartnerConfig = {
+      provider: 'gusto_embedded' as const,
+      partnerMerchantId: 'merch_posie_sf',
+      environment: 'sandbox' as const,
+      directTaxFilingsEnabled: true,
+      webhookSecret: 'whsec_gusto_live_mock',
+      accountableAdminId: 'staff_owner_elena',
+    };
+
+    const mockStaffLines = [
+      {
+        staffId: 'staff_maya',
+        staffName: 'Maya Lin',
+        employmentType: 'w2_hourly' as const,
+        basePayCents: 150000, // $1,500.00
+        commissionCents: 50000, // $500.00
+        tipsDisbursedCents: 20000, // $200.00
+        reimbursementsCents: 0,
+        statutoryDeductions: {
+          federalIncomeTaxCents: 25000,
+          stateIncomeTaxCents: 10000,
+          ficaMedicareCents: 2900,
+          ficaSocialSecurityCents: 12400,
+          healthBenefitsCents: 5000,
+          wageGarnishmentsCents: 0,
+        },
+        directDepositAccountMask: '•••• 4412',
+      },
+      {
+        staffId: 'staff_1099_leo',
+        staffName: 'Leo Vance',
+        employmentType: '1099_contractor' as const,
+        basePayCents: 0,
+        commissionCents: 180000, // $1,800.00
+        tipsDisbursedCents: 30000, // $300.00
+        reimbursementsCents: 5000, // $50.00
+        statutoryDeductions: {
+          federalIncomeTaxCents: 0,
+          stateIncomeTaxCents: 0,
+          ficaMedicareCents: 0,
+          ficaSocialSecurityCents: 0,
+          healthBenefitsCents: 0,
+          wageGarnishmentsCents: 0,
+        },
+        directDepositAccountMask: '•••• 8831',
+      },
+    ];
+
+    it('creates draft payroll run, computes net pay, employer FICA, and enforces approver signatures', () => {
+      const run = createEmbeddedPayrollRun(
+        'run_2026_10b',
+        '2026-10-15',
+        '2026-10-31',
+        mockStaffLines,
+        mockPartnerConfig,
+        'staff_owner_elena'
+      );
+
+      expect(run.status).toBe('draft_preview');
+      expect(run.staffLines).toHaveLength(2);
+
+      // Maya W2: gross = 1500 + 500 + 200 = 2200 ($2,200). Deductions = 250 + 100 + 29 + 124 + 50 = $553 (55300 cents)
+      // Net pay = 220000 - 55300 = 164700 ($1,647.00)
+      const mayaLine = run.staffLines.find(l => l.staffId === 'staff_maya');
+      expect(mayaLine?.netPayCents).toBe(164700);
+
+      // Leo 1099: gross = 1800 + 300 + 50 = $2,150. Deductions = $0
+      const leoLine = run.staffLines.find(l => l.staffId === 'staff_1099_leo');
+      expect(leoLine?.netPayCents).toBe(215000);
+
+      // Employer tax liability calculated for W-2 employee (7.65% of $2,000 base+comm)
+      expect(run.summary.totalEmployerTaxLiabilityCents).toBeGreaterThan(0);
+
+      // Submit with authorized signature
+      const submittedRun = submitPayrollRunToPartner(
+        run,
+        { staffId: 'staff_owner_elena', staffName: 'Elena Rostova', ipAddress: '192.168.1.42' },
+        mockPartnerConfig
+      );
+
+      expect(submittedRun.status).toBe('submitted_to_partner');
+      expect(submittedRun.approvalSignature?.approvedByName).toBe('Elena Rostova');
+      expect(submittedRun.partnerSubmission?.partnerConfirmationCode).toContain('GUSTO-ACK');
+
+      // Accountable retroactive correction: Maya missed $100 tip payout
+      const correctedRun = recordPayrollCorrection(
+        submittedRun,
+        'staff_maya',
+        10000,
+        'Retroactive adjustment: client cash tip omitted from terminal batch',
+        'staff_owner_elena'
+      );
+
+      expect(correctedRun.status).toBe('filing_exception_flagged'); // Mandates partner filing sync
+      expect(correctedRun.corrections).toHaveLength(1);
+      expect(correctedRun.corrections[0].differenceCents).toBe(10000);
+      expect(correctedRun.staffLines.find(l => l.staffId === 'staff_maya')?.netPayCents).toBe(174700);
+    });
+  });
+
+  describe('Posie Core Logic - F142 (Offline Operational Changes)', () => {
+    it('queues permitted offline actions, prevents double billing on reconcile, and flags remote conflict triage', () => {
+      let queue = initOfflineOperationalQueue('ipad_frontdesk_01', true);
+      expect(queue.isOffline).toBe(true);
+
+      // Invariant: Risky destructive action forbidden offline
+      expect(() => {
+        queueOfflineOperationalAction(queue, {
+          type: 'client_checkin',
+          payload: { refundCents: 5000 },
+        });
+      }).toThrow(/forbidden offline/i);
+
+      // Queue valid check-in and service completion
+      queue = queueOfflineOperationalAction(queue, {
+        type: 'client_checkin',
+        payload: { appointmentId: 'appt_101', clientName: 'Chloe Dupont' },
+      });
+
+      // Queue action for appointment that was cancelled online while salon was disconnected
+      queue = queueOfflineOperationalAction(queue, {
+        type: 'service_complete',
+        payload: { appointmentId: 'appt_cancelled_remotely', clientName: 'Devon Smith' },
+      });
+
+      // Queue deferred card capture
+      queue = queueOfflineOperationalAction(queue, {
+        type: 'offline_payment_capture',
+        payload: { appointmentId: 'appt_101', amountCents: 12500, cardToken: 'tok_offline_reader' },
+      });
+
+      expect(queue.pendingCount).toBe(3);
+
+      // Reconnection simulation
+      const serverAppointments = [
+        {
+          appointmentId: 'appt_101',
+          currentStatus: 'confirmed' as const,
+          updatedAt: '2026-10-27T10:00:00Z',
+          clientId: 'cli_chloe',
+          assignedStaffId: 'staff_maya',
+        },
+        {
+          appointmentId: 'appt_cancelled_remotely',
+          currentStatus: 'cancelled' as const, // Client cancelled online during studio outage
+          updatedAt: '2026-10-27T10:15:00Z',
+          clientId: 'cli_devon',
+          assignedStaffId: 'staff_elena',
+        },
+      ];
+
+      const { updatedQueue, reconciledCount, conflictedCount } = reconcileOfflineOperationalQueue(queue, serverAppointments);
+
+      expect(reconciledCount).toBe(2); // appt_101 checkin + offline payment capture
+      expect(conflictedCount).toBe(1); // appt_cancelled_remotely flagged for conflict
+      expect(updatedQueue.isOffline).toBe(false);
+
+      const conflictItem = updatedQueue.queuedActions.find(a => a.status === 'conflict_flagged');
+      expect(conflictItem?.conflictDetails?.conflictType).toBe('remote_cancellation');
+      expect(conflictItem?.conflictDetails?.requiresStaffTriage).toBe(true);
+
+      // Staff triage resolution
+      const resolvedQueue = resolveOfflineOperationalConflict(
+        updatedQueue,
+        conflictItem!.actionId,
+        'discard_offline_action',
+        'staff_maya',
+        'Client cancelled appointment via online portal during internet outage; confirmed service was not provided.'
+      );
+
+      expect(resolvedQueue.conflictsCount).toBe(0);
+      expect(resolvedQueue.queuedActions.find(a => a.actionId === conflictItem!.actionId)?.status).toBe('rejected_invalid');
+    });
+  });
+
+  describe('Posie Core Logic - F143 (Schedule Optimization)', () => {
+    it('analyzes appointment schedule, respects weekly contribution floor, and generates day-off consolidation suggestions', () => {
+      const mockGoal = {
+        targetDaysOff: ['Friday'],
+        maxDailySpanMinutes: 420,
+        weeklyContributionFloorCents: 150000, // $1,500.00 floor
+        mandatoryBreakMinutes: 30,
+      };
+
+      const mockSlots = [
+        // Thursday appointments
+        {
+          appointmentId: 'appt_thurs_1',
+          clientName: 'Alice M.',
+          serviceName: 'HydraFacial Luxe',
+          dayOfWeek: 'Thursday',
+          startTime: '10:00',
+          endTime: '11:15',
+          durationMinutes: 75,
+          revenueCents: 22000,
+          contributionCents: 18000,
+          clientFlexibilityMinutes: 0,
+          isLockedByClient: true,
+        },
+        // Fragmented dead gap (11:15 to 11:35 = 20 mins)
+        {
+          appointmentId: 'appt_thurs_2',
+          clientName: 'Bria K.',
+          serviceName: 'Brow Lamination',
+          dayOfWeek: 'Thursday',
+          startTime: '11:35',
+          endTime: '12:20',
+          durationMinutes: 45,
+          revenueCents: 11000,
+          contributionCents: 9000,
+          clientFlexibilityMinutes: 30,
+          isLockedByClient: false,
+        },
+        // Friday appointment (practitioner wants Friday off!)
+        {
+          appointmentId: 'appt_fri_1',
+          clientName: 'Clara S.',
+          serviceName: 'Full Balayage & Glaze',
+          dayOfWeek: 'Friday',
+          startTime: '10:00',
+          endTime: '12:30',
+          durationMinutes: 150,
+          revenueCents: 35000,
+          contributionCents: 28000,
+          clientFlexibilityMinutes: 60,
+          isLockedByClient: false,
+        },
+      ];
+
+      const plan = generateScheduleOptimizationPlan('2026-11-02', mockSlots, mockGoal);
+
+      expect(plan.baselineMetrics.deadGapMinutes).toBe(20);
+      expect(plan.projectedMetrics.meetsContributionFloor).toBe(false); // Total is only $550 vs $1,500 floor
+
+      // Suggestions should propose compacting the 20m awkward gap and shifting Clara from Friday to Thursday
+      const gapSuggestion = plan.suggestions.find(s => s.type === 'compact_awkward_gap');
+      expect(gapSuggestion).toBeDefined();
+      expect(gapSuggestion?.proposedTime).toBe('11:15'); // Pull forward to close gap
+
+      const dayOffSuggestion = plan.suggestions.find(s => s.type === 'consolidate_day_off');
+      expect(dayOffSuggestion).toBeDefined();
+      expect(dayOffSuggestion?.currentDay).toBe('Friday');
+      expect(dayOffSuggestion?.proposedDay).toBe('Thursday');
+
+      // Apply gap suggestion
+      const { updatedAppointments, auditReceipt } = applyOptimizationSuggestion(mockSlots, gapSuggestion!, 'staff_elena');
+      const updatedBria = updatedAppointments.find(a => a.appointmentId === 'appt_thurs_2');
+      expect(updatedBria?.startTime).toBe('11:15');
+      expect(updatedBria?.endTime).toBe('12:00');
+      expect(auditReceipt).toContain('Optimization suggestion');
+    });
+  });
+
+  describe('Posie Core Logic - F144 (Mobile Service Routes)', () => {
+    const mockZoneConfig = {
+      baseLocationName: 'Posie Flagship Atelier',
+      baseLatitude: 37.7891,
+      baseLongitude: -122.4014,
+      baseAddress: '100 Maiden Lane, San Francisco, CA',
+      freeTravelRadiusMiles: 10,
+      perMileRateCents: 200, // $2.00/mile
+      fixedBaseTravelFeeCents: 3000, // $30.00
+      maxServiceRadiusMiles: 40,
+      defaultSetupBufferMinutes: 15,
+      defaultTeardownBufferMinutes: 15,
+    };
+
+    it('calculates mileage travel fees, compiles multi-stop itinerary, and evaluates traffic delay client alerts', () => {
+      // 8 miles (within free radius) -> only fixed base fee
+      const feeUnder = calculateMobileTravelFee(8, mockZoneConfig);
+      expect(feeUnder.isWithinServiceArea).toBe(true);
+      expect(feeUnder.travelFeeCents).toBe(3000);
+      expect(feeUnder.billableMiles).toBe(0);
+
+      // 25 miles (15 billable miles @ $2.00/mi = $30.00 + $30.00 base = $60.00)
+      const feeOver = calculateMobileTravelFee(25, mockZoneConfig);
+      expect(feeOver.isWithinServiceArea).toBe(true);
+      expect(feeOver.travelFeeCents).toBe(6000);
+      expect(feeOver.billableMiles).toBe(15);
+
+      // 55 miles (exceeds max radius)
+      const feeExcess = calculateMobileTravelFee(55, mockZoneConfig);
+      expect(feeExcess.isWithinServiceArea).toBe(false);
+
+      // Build itinerary
+      const candidateStops = [
+        {
+          stopId: 'stop_1_bridal_party',
+          clientId: 'cli_bride_sara',
+          clientName: 'Sara Kensington',
+          clientPhone: '415-555-0199',
+          destinationAddress: 'The Fairmont Penthouse, San Francisco',
+          distanceFromPriorStopMiles: 5,
+          estimatedTravelMinutes: 20,
+          serviceDurationMinutes: 180,
+          scheduledArrivalWindowStart: '08:00',
+          scheduledArrivalWindowEnd: '08:15',
+          serviceFeeCents: 65000,
+        },
+        {
+          stopId: 'stop_2_inhome_facial',
+          clientId: 'cli_gemma',
+          clientName: 'Gemma Ward',
+          clientPhone: '415-555-0288',
+          destinationAddress: '2400 Pacific Ave, San Francisco',
+          distanceFromPriorStopMiles: 18,
+          estimatedTravelMinutes: 35,
+          serviceDurationMinutes: 60,
+          scheduledArrivalWindowStart: '13:00',
+          scheduledArrivalWindowEnd: '13:15',
+          serviceFeeCents: 22000,
+        },
+      ];
+
+      const itinerary = buildMobileRouteItinerary('prov_daniela', 'Daniela Cruz', '2026-11-05', mockZoneConfig, candidateStops);
+      expect(itinerary.stops).toHaveLength(2);
+      expect(itinerary.totalEarningsCents.combinedTotalCents).toBeGreaterThan(87000);
+      expect(itinerary.totalSetupTeardownMinutes).toBe(60); // (15+15) * 2 stops
+
+      // Minor traffic delay (3 mins) -> suppressed
+      const minorRes = evaluateTrafficDelayAlert(itinerary, 0, 3);
+      expect(minorRes.alertGenerated).toBe(false);
+
+      // Significant traffic delay (15 mins) -> creates client SMS alert
+      const majorRes = evaluateTrafficDelayAlert(itinerary, 0, 15);
+      expect(majorRes.alertGenerated).toBe(true);
+      expect(majorRes.notification?.revisedEta).toBe('08:15');
+      expect(majorRes.notification?.notificationMessage).toContain('Sara Kensington');
+      expect(majorRes.notification?.notificationMessage).toContain('+15m');
+    });
+  });
+
+  describe('Posie Core Logic - F145 (Constrained AI Receptionist)', () => {
+    const mockKb = {
+      studioName: 'Posie Maison San Francisco',
+      businessHours: {
+        monday: { open: '09:00 AM', close: '07:00 PM' },
+        friday: { open: '09:00 AM', close: '08:00 PM' },
+      },
+      location: {
+        address: '450 Sutter St, Suite 1200, San Francisco, CA',
+        parkingInstructions: 'Valet parking available at Sutter Stockton Garage.',
+        landmarks: 'Near Union Square across from the Olympic Club.',
+      },
+      cancellationPolicy: {
+        summary: '24-hour advance notice is required to cancel or reschedule without penalty.',
+        gracePeriodHours: 24,
+        feePercentage: 50,
+      },
+      approvedServices: [
+        {
+          id: 'srv_signature_facial',
+          name: 'Signature Bespoke Facial',
+          priceCents: 19500,
+          durationMinutes: 60,
+          description: 'Custom botanical exfoliation, targeted extractions, and LED phototherapy.',
+        },
+      ],
+      approvedFaq: [
+        {
+          keywords: ['wifi', 'internet'],
+          answerText: 'Complimentary high-speed WiFi is available for all atelier guests: network "PosieGuest".',
+        },
+      ],
+    };
+
+    it('answers verified business hours, prices, routes safety queries to urgent triage, and requires PIN verification before booking', () => {
+      let caller = {
+        callerPhone: '415-555-8811',
+        isRegisteredClient: true,
+        clientId: 'cli_hannah',
+        clientName: 'Hannah Vance',
+        verifiedSession: false,
+        verificationMethod: 'unverified' as const,
+      };
+
+      // 1. Business hours query
+      const hoursRes = processReceptionistQuery('What are your hours on Monday?', caller, mockKb);
+      expect(hoursRes.intent).toBe('query_hours');
+      expect(hoursRes.responseSpeech).toContain('09:00 AM to 07:00 PM');
+      expect(hoursRes.requiresHumanHandoff).toBe(false);
+
+      // 2. Service pricing query (matches approved catalog)
+      const priceRes = processReceptionistQuery('How much does the Signature Bespoke Facial cost?', caller, mockKb);
+      expect(priceRes.intent).toBe('query_service_pricing');
+      expect(priceRes.responseSpeech).toContain('$195.00');
+      expect(priceRes.responseSpeech).toContain('60 minutes');
+
+      // 3. Clinical health / allergy question (Safety invariant: MUST trigger urgent human handoff)
+      const medRes = processReceptionistQuery('I have a severe retinol allergy and had swelling after last time', caller, mockKb);
+      expect(medRes.intent).toBe('medical_contraindication_query');
+      expect(medRes.requiresHumanHandoff).toBe(true);
+      expect(medRes.handoffUrgency).toBe('urgent_escalation');
+      expect(medRes.staffTriageTicket?.reason).toContain('health or allergy');
+
+      // 4. Booking query with unverified session prompts for OTP PIN
+      const bookUnverified = processReceptionistQuery('I want to book an appointment for tomorrow', caller, mockKb);
+      expect(bookUnverified.intent).toBe('request_booking');
+      expect(bookUnverified.responseSpeech).toContain('verification code');
+
+      // Verify OTP PIN
+      caller = verifyCallerIdentity(caller, '4921', '4921');
+      expect(caller.verifiedSession).toBe(true);
+
+      // Booking query with verified session reserves slot
+      const bookVerified = processReceptionistQuery(
+        'I want to book an appointment',
+        caller,
+        mockKb,
+        [{ time: 'Tomorrow 2:00 PM', providerName: 'Elena Rostova' }]
+      );
+      expect(bookVerified.intent).toBe('request_booking');
+      expect(bookVerified.executedAction?.type).toBe('slot_reserved');
+      expect(bookVerified.executedAction?.summary).toContain('Elena Rostova');
+
+      // 5. Unknown inquiry: does not hallucinate; creates staff triage ticket
+      const unkRes = processReceptionistQuery('Do you offer laser tattoo removal on pets?', caller, mockKb);
+      expect(unkRes.intent).toBe('unknown_inquiry');
+      expect(unkRes.requiresHumanHandoff).toBe(true);
+      expect(unkRes.staffTriageTicket?.reason).toContain('outside approved receptionist knowledge base');
+    });
+  });
+
 
 
 

@@ -834,6 +834,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Independent merchant architecture supporting 1099 booth and chair renters with dedicated Stripe Connect merchant accounts, direct destination transfers, and firewalled client databases.
 * **Key Invariant (Basis: Expansion (X); WB F37, Legal Entity & Merchant Separation, Rule F140):** **Legal Entity Autonomy & Zero Co-Mingling.** "Shared checkout does not mix legal ownership or bank balances." Customer payments for booth renter treatments route directly to the renter's designated merchant account via destination splits (minus agreed facility fees). The salon owner never co-mingles or holds renter funds, and renter client lists remain firewalled from salon management.
 
+---
+
+## F141 — Embedded Payroll (WB F55, R05)
+* **What it is:** Integrated payroll execution run directly through approved embedded payroll partners (e.g. Gusto Embedded, Check HQ), encompassing multi-state tax filings, direct deposit disbursements, statutory tax calculations (FICA, Medicare, federal/state withholdings), tip distributions, and accountable retroactive corrections.
+* **Key Invariant (Basis: Expansion (X); PART FIN LEG OPS, WB F55, Rule F141):** **Accountable Filing Signatures & Provider-Ready Precedence.** "Filing failures, corrections and employee inquiries have accountable owners. Provider-ready export precedes embedded payroll; do not build tax filing from scratch." Every payroll run requires a named studio approver signature and client IP address. Retroactive adjustments or corrections maintain an immutable audit trail and trigger partner filing synchronization flags to guarantee state and federal tax reporting integrity.
+
+---
+
+## F142 — Offline Operational Changes (WB F60, Outage Continuity)
+* **What it is:** Resilient local-first offline queueing engine enabling salon operations to proceed uninterrupted during network or internet outages, supporting client check-ins, service completions, deferred payment capture tokens, and intake signatures.
+* **Key Invariant (Basis: Expansion (X); SEC PAY OPS, WB F60, Rule F142):** **No Double-Billing & Transparent Conflict Triage.** "Local encryption and server state machine. Reconnection cannot double-charge or silently lose a booking." High-risk destructive mutations (arbitrary refunds, calendar deletions, bank account updates) are strictly forbidden while offline. Upon reconnection, actions are reconciled against authoritative server snapshots; any appointment cancelled remotely while offline triggers a non-destructive conflict flag requiring explicit staff triage.
+
+---
+
+## F143 — Schedule Optimization (WB F20, F143, F151)
+* **What it is:** Algorithmic schedule compacting and quality-of-life planning engine that consolidates awkward fragmented gaps (15–30 min dead zones) and actively facilitates practitioner lifestyle goals (such as protecting Fridays off or enforcing maximum daily working spans) while strictly monitoring weekly contribution revenue floors.
+* **Key Invariant (Basis: Expansion (X); DATA UX, WB F20, F143, Rule F143):** **Tradeoff Transparency & Practitioner Consent.** "Suggestions expose tradeoffs and require approval." Optimization proposals never silently alter client appointments. Each suggestion clearly displays disruption risk, shift delta in minutes, and client flexibility constraints, requiring practitioner authorization before mutating calendar reservations.
+
+---
+
+## F144 — Mobile Service Routes (WB F44, D22)
+* **What it is:** Route planning, travel fee calculation, and itinerary dispatch engine designed for mobile and on-location beauty professionals (bridal events, home care, pop-ups), incorporating geographic radius tiers, setup/teardown buffers, and automated traffic alerts.
+* **Key Invariant (Basis: Expansion (X); PART, WB F44, Rule F144):** **Transparent Travel Pricing & Honest Traffic Alerts.** "Route estimates cannot override client commitments without approval." Travel fees explicitly separate flat dispatch fees from per-mile surcharges outside complimentary service zones. Real-time traffic delays exceeding 5 minutes trigger courteous, automated client notifications with revised arrival windows and practitioner ETA updates.
+
+---
+
+## F145 — Constrained AI Receptionist (WB F64, AI Receptionist)
+* **What it is:** Strictly governed conversational voice and text assistant for incoming studio phone calls and messages, handling verified business inquiries (opening hours, address, parking, pricing) and permitted booking tasks with caller identity verification and immediate human handoff.
+* **Key Invariant (Basis: Growth (G); AI MSG OPS, WB F64, SQUIRE / Zenoti Parity, Rule F145):** **Zero-Hallucination Guardrails & Critical Safety Escalation.** "Unknown prices or policies trigger clarification rather than invention. Differentiate reliability and truthful handoff." The assistant is strictly constrained to the studio's verified knowledge base and pricing catalog. Any query involving medical contraindications, allergic reactions, retinol sensitivity, or clinical conditions immediately escalates to urgent staff triage with an unedited conversation transcript. Booking actions under registered profiles require OTP verification.
+
+
 
 
 

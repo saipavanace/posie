@@ -138,4 +138,9 @@ export * from './ocr_intake_assistance';
 export * from './branded_mobile_app';
 export * from './multi_location_ops';
 export * from './booth_renter_merchant';
+export * from './embedded_payroll';
+export * from './offline_operations';
+export * from './schedule_optimization';
+export * from './mobile_service_routes';
+export * from './constrained_ai_receptionist';
 

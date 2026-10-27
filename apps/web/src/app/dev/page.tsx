@@ -412,6 +412,27 @@ export default function PosieStudioPage() {
   // F140 Booth Renter Merchant State
   const [renterSplitSimulated, setRenterSplitSimulated] = useState<boolean>(true);
 
+  // F141 Embedded Payroll State
+  const [payrollSubmittedToPartner, setPayrollSubmittedToPartner] = useState<boolean>(false);
+  const [payrollCorrectionActive, setPayrollCorrectionActive] = useState<boolean>(false);
+
+  // F142 Offline Operational Changes State
+  const [offlineSimulatedMode, setOfflineSimulatedMode] = useState<boolean>(false);
+  const [offlineActionQueued, setOfflineActionQueued] = useState<boolean>(true);
+  const [offlineConflictResolved, setOfflineConflictResolved] = useState<boolean>(false);
+
+  // F143 Schedule Optimization State
+  const [scheduleOptimizationApplied, setScheduleOptimizationApplied] = useState<boolean>(false);
+  const [practitionerFridayOff, setPractitionerFridayOff] = useState<boolean>(true);
+
+  // F144 Mobile Service Routes State
+  const [mobileTrafficAlertSent, setMobileTrafficAlertSent] = useState<boolean>(false);
+  const [mobileDistanceInputMiles, setMobileDistanceInputMiles] = useState<number>(22);
+
+  // F145 Constrained AI Receptionist State
+  const [receptionistCallerVerified, setReceptionistCallerVerified] = useState<boolean>(false);
+  const [receptionistSafetyEscalation, setReceptionistSafetyEscalation] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -432,7 +453,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F140)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F145)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -7274,6 +7295,371 @@ export default function PosieStudioPage() {
           </div>
         </Card>
       </section>
+
+      {/* F141: Embedded Payroll */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Briefcase size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Embedded Payroll &amp; Multi-Provider Sync (F141)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={payrollSubmittedToPartner ? 'sage' : 'muted'}>
+                {payrollSubmittedToPartner ? 'Submitted to Gusto Embedded' : 'Draft Preview'}
+              </Badge>
+              <Badge variant="muted">WB F55 R05 / Rule F141</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Direct embedded payroll execution through approved partners with tax withholdings, tip sync, and accountable human signatory audit trails.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Pay Period: Oct 15 – Oct 31, 2026 (Partner: Gusto Embedded / Check HQ)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: payrollCorrectionActive ? '#A65B32' : '#2B5329', fontWeight: 600 }}>
+                {payrollCorrectionActive ? '⚠️ Filing Exception Flagged (Correction Audited)' : 'Compliant Filing Prepared'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Total Gross Earnings:</div>
+                <strong>{payrollCorrectionActive ? '$4,450.00' : '$4,350.00'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Statutory Withholdings:</div>
+                <strong>-$553.00 (FICA + State/Fed)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Employer FICA Match:</div>
+                <strong>$153.00 (7.65% W-2)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Net Direct Deposit:</div>
+                <strong style={{ color: '#2B5329' }}>{payrollCorrectionActive ? '$3,897.00' : '$3,797.00'}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ⚖️ <strong>WB F55 Invariant:</strong> Provider-ready export precedes embedded payroll; direct filings mandate a named human authorizer (Elena Rostova, IP 192.168.1.42). Retroactive adjustments flag exceptions for automated partner re-sync.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={payrollSubmittedToPartner ? 'primary' : 'outline'}
+              onClick={() => setPayrollSubmittedToPartner(!payrollSubmittedToPartner)}
+            >
+              {payrollSubmittedToPartner ? 'Re-open Draft Run' : 'Authorize & Submit to Gusto (Rule F141)'}
+            </Button>
+            <Button
+              size="sm"
+              variant={payrollCorrectionActive ? 'outline' : 'secondary'}
+              onClick={() => setPayrollCorrectionActive(!payrollCorrectionActive)}
+            >
+              {payrollCorrectionActive ? 'Clear Correction' : 'Simulate Retroactive Tip Correction (+$100)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F142: Offline Operational Changes */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Database size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Offline Operational Changes &amp; Outage Continuity (F142)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={offlineSimulatedMode ? 'rose' : 'sage'}>
+                {offlineSimulatedMode ? 'Network Offline (Local Queue)' : 'Connected (Synced)'}
+              </Badge>
+              <Badge variant="muted">WB F60 / Rule F142</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Local-first operational queuing during connectivity outages with zero double-billing and staff-mediated conflict triage upon reconnection.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Device: iPad Atelier Front Desk (ipad_frontdesk_01)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: offlineConflictResolved ? '#2B5329' : '#A65B32', fontWeight: 600 }}>
+                {offlineConflictResolved ? 'All Actions Reconciled' : '1 Remote Conflict Flagged'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Client Check-in:</div>
+                <strong style={{ color: '#2B5329' }}>Chloe Dupont (Synced OK)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Deferred Payment Capture:</div>
+                <strong style={{ color: '#2B5329' }}>$125.00 Tokenized (No Double Charge)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Remote Cancellation Conflict:</div>
+                <strong style={{ color: offlineConflictResolved ? '#2B5329' : '#A65B32' }}>
+                  {offlineConflictResolved ? 'Discarded by Staff (No Charge)' : 'Devon Smith (Cancelled Online)'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🛡️ <strong>Rule DR06 Invariant:</strong> Reconnection cannot double-charge or silently overwrite client bookings. Unsafe actions (refunds, calendar wipes) are hard-blocked offline.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={offlineSimulatedMode ? 'primary' : 'outline'}
+              onClick={() => setOfflineSimulatedMode(!offlineSimulatedMode)}
+            >
+              {offlineSimulatedMode ? 'Restore Network Connection' : 'Simulate Atelier Wi-Fi Outage'}
+            </Button>
+            <Button
+              size="sm"
+              variant={offlineConflictResolved ? 'outline' : 'secondary'}
+              onClick={() => setOfflineConflictResolved(!offlineConflictResolved)}
+            >
+              {offlineConflictResolved ? 'Re-open Conflict' : 'Resolve Conflict via Staff Triage (Rule F142)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F143: Schedule Optimization */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Schedule Optimization &amp; Better Working Week (F143)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={scheduleOptimizationApplied ? 'sage' : 'muted'}>
+                {scheduleOptimizationApplied ? 'Compact Schedule (Friday Off Achieved)' : 'Baseline Schedule'}
+              </Badge>
+              <Badge variant="muted">WB F20 / Rule F143</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Intelligent schedule compacting that eliminates awkward dead zones and secures practitioner lifestyle goals while monitoring contribution floors.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Target Quality-of-Life: Fridays Off | Weekly Contribution Floor: $1,500.00
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                {scheduleOptimizationApplied ? 'Zero Fragmented Dead Gaps' : '20 min Dead Gap Detected'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Dead Gap Compacting:</div>
+                <strong style={{ color: scheduleOptimizationApplied ? '#2B5329' : '#A65B32' }}>
+                  {scheduleOptimizationApplied ? 'Shifted +20m (11:15 AM)' : '20 min Gap (11:15-11:35)'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Friday Consolidation:</div>
+                <strong style={{ color: '#2B5329' }}>
+                  {scheduleOptimizationApplied ? 'Moved to Thursday 3:30 PM' : '1 Flexible Appt on Friday'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Total Time Saved:</div>
+                <strong style={{ color: '#2B5329' }}>{scheduleOptimizationApplied ? '80 Minutes Compacted' : '0 Minutes'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Disruption Risk:</div>
+                <strong style={{ color: '#2B5329' }}>Low (Client Pre-Flex Consented)</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ✨ <strong>Rule DR03 Invariant:</strong> Schedule suggestions expose transparent tradeoffs and mandate practitioner approval. Never silently moves client bookings without consent.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={scheduleOptimizationApplied ? 'primary' : 'outline'}
+              onClick={() => setScheduleOptimizationApplied(!scheduleOptimizationApplied)}
+            >
+              {scheduleOptimizationApplied ? 'Revert to Baseline Schedule' : 'Apply Optimization Plan (WB F20)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F144: Mobile Service Routes */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Truck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Mobile Service Routes &amp; Travel Fee Automation (F144)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Itinerary: 2 Stops ($870.00 Total)</Badge>
+              <Badge variant="muted">WB F44 / D22</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Travel time coordination, tiered mileage pricing, setup/teardown buffers, and automated late-arrival updates for mobile practitioners.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Provider: Daniela Cruz | Base Atelier: 100 Maiden Lane, San Francisco
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: mobileTrafficAlertSent ? '#A65B32' : '#2B5329', fontWeight: 600 }}>
+                {mobileTrafficAlertSent ? '⚠️ Traffic Alert Dispatched (+15m)' : 'On-Time Schedule'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Stop 1 (Bridal Party):</div>
+                <strong>5 mi ($30 flat dispatch fee)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Stop 2 (In-Home Facial):</div>
+                <strong>18 mi ($46 fee: $30 + 8mi @ $2)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Setup / Pack Buffers:</div>
+                <strong>15m Setup + 15m Sanitation</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Client ETA Notification:</div>
+                <strong style={{ color: mobileTrafficAlertSent ? '#A65B32' : '#2B5329' }}>
+                  {mobileTrafficAlertSent ? 'Updated to 8:15 AM (SMS Sent)' : '8:00 AM (Confirmed)'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🚗 <strong>WB F44 Invariant:</strong> Route estimates cannot override client commitments without approval. Delays exceeding 5m automatically dispatch transparent, polite arrival window updates.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={mobileTrafficAlertSent ? 'outline' : 'primary'}
+              onClick={() => setMobileTrafficAlertSent(!mobileTrafficAlertSent)}
+            >
+              {mobileTrafficAlertSent ? 'Reset Traffic Status' : 'Simulate Traffic Delay Alert (+15m SMS)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F145: Constrained AI Receptionist */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <PhoneCall size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Constrained AI Receptionist &amp; Verified Handoff (F145)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={receptionistSafetyEscalation ? 'rose' : 'sage'}>
+                {receptionistSafetyEscalation ? 'Urgent Clinical Triage' : 'Knowledge Base Constrained'}
+              </Badge>
+              <Badge variant="muted">WB F64 / SQUIRE / Rule F145</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Deterministic phone and SMS conversational assistant strictly bounded by approved studio policies, caller OTP verification, and truthful human handoff.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Caller: Hannah Vance (415-555-8811) | Studio: Posie Maison San Francisco
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: receptionistCallerVerified ? '#2B5329' : '#666', fontWeight: 600 }}>
+                {receptionistCallerVerified ? 'Identity Verified (SMS OTP)' : 'Unverified Caller Session'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Verified Catalog Pricing:</div>
+                <strong style={{ color: '#2B5329' }}>Signature Facial ($195.00 / 60m)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Booking Permissions Gate:</div>
+                <strong style={{ color: receptionistCallerVerified ? '#2B5329' : '#A65B32' }}>
+                  {receptionistCallerVerified ? 'Slot Reserved: Tomorrow 2:00 PM' : 'Blocked (Requires OTP PIN)'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Safety Escalation Triage:</div>
+                <strong style={{ color: receptionistSafetyEscalation ? '#A65B32' : '#2B5329' }}>
+                  {receptionistSafetyEscalation ? 'Allergy Query Flagged to Staff' : 'Zero Hallucinations Guarded'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🛡️ <strong>Rule DR04 &amp; DR06 Invariant:</strong> The AI receptionist never guesses or invents pricing. Clinical questions (retinol allergies, medical reactions) immediately escalate to front-desk staff with an unedited transcript.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={receptionistCallerVerified ? 'primary' : 'outline'}
+              onClick={() => setReceptionistCallerVerified(!receptionistCallerVerified)}
+            >
+              {receptionistCallerVerified ? 'Revoke Verification' : 'Verify Caller Phone via OTP (PIN 4921)'}
+            </Button>
+            <Button
+              size="sm"
+              variant={receptionistSafetyEscalation ? 'outline' : 'secondary'}
+              onClick={() => setReceptionistSafetyEscalation(!receptionistSafetyEscalation)}
+            >
+              {receptionistSafetyEscalation ? 'Clear Safety Flag' : 'Simulate Medical Allergy Query (Safety Handoff)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+
 
 
 
