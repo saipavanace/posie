@@ -163,4 +163,9 @@ export * from './training_qualifications';
 export * from './distributor_scale';
 export * from './coverage_exchanges';
 export * from './return_likelihood';
+export * from './brand_design_assistant';
+export * from './country_operations';
+export * from './bridal_event_workspace';
+export * from './safe_bulk_changes';
+export * from './late_running_recovery';
 

@@ -379,6 +379,25 @@ import {
   computeClientVisitCadence,
   rankReturnLikelihoodCandidates,
   type ClientHistoricalCandidate,
+  calculateContrastRatio,
+  generateBrandThemeSuggestion,
+  publishBrandTheme,
+  applyBrandVoiceWithFactualGuardrails,
+  getCountryOperatingConfig,
+  calculateLocalizedInvoiceTaxes,
+  validateStatutoryInvoiceCompliance,
+  createBridalEventWorkspace,
+  recordStagedMilestonePayment,
+  generateBridalDayOfPacket,
+  simulateBulkChangePlan,
+  commitBulkChangePlan,
+  rollbackBulkChange,
+  evaluateLateRunningImpact,
+  approveAndDispatchArrivalUpdates,
+  recordClientDelayResolution,
+  type CatalogItem,
+  type ActiveBookingItem,
+  type DownstreamAppointment,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -8957,6 +8976,284 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       // Diana is ranked as overdue lapse risk
       const diana = ranked.find((r) => r.clientId === 'client_overdue_diana');
       expect(diana?.urgencyLevel).toBe('overdue_lapse_risk');
+    });
+  });
+
+  describe('Posie Core Logic - F166 (Brand Design Assistant)', () => {
+    it('generates mood presets, enforces WCAG AA contrast, prevents unapproved publication, and guards factual rewrites', () => {
+      // 1. Generate calm theme suggestion
+      const theme = generateBrandThemeSuggestion({
+        businessName: 'Atelier Sage & Linen',
+        preferredMood: 'calm',
+        primaryAccentHex: '#2D4A3E',
+      });
+
+      expect(theme.typography.category).toBe('classic_editorial');
+      expect(theme.isAccessible).toBe(true);
+      expect(theme.requiresOwnerApproval).toBe(true);
+      expect(theme.contrastEvaluations[0].wcagAAMet).toBe(true);
+
+      // 2. Contrast calculation check
+      const ratio = calculateContrastRatio('#1E2D24', '#F8F6F2');
+      expect(ratio).toBeGreaterThan(4.5);
+
+      // 3. Publishing requires owner approval
+      expect(() => publishBrandTheme(theme, false)).toThrow('explicit owner review and approval');
+      const published = publishBrandTheme(theme, true);
+      expect(published.status).toBe('published_active');
+
+      // 4. Brand voice rewrite preserves factual boundaries
+      const factualTokens = ['$145.00', '24 hours notice', 'Saturday, Nov 21 at 11:30 AM'];
+      const rewrite = applyBrandVoiceWithFactualGuardrails({
+        rawMessage: 'Your haircut is booked for Sat Nov 21 at 11:30 AM for $145. Cancel within 24 hours.',
+        tone: 'warm_boutique',
+        requiredFactualTokens: factualTokens,
+      });
+
+      expect(rewrite.verifiedFactualPreservation).toBe(true);
+      for (const token of factualTokens) {
+        expect(rewrite.rewrittenMessage).toContain(token);
+      }
+    });
+  });
+
+  describe('Posie Core Logic - F167 (Country Specific Operations)', () => {
+    it('manages localized tax models, currency symbols, and statutory invoice requirements market by market', () => {
+      // 1. UK Config (VAT Inclusive)
+      const gbConfig = getCountryOperatingConfig('GB');
+      expect(gbConfig.currencyCode).toBe('GBP');
+      expect(gbConfig.taxModel).toBe('inclusive');
+
+      const gbTax = calculateLocalizedInvoiceTaxes(120.0, gbConfig);
+      expect(gbTax.totalWithTax).toBe(120.0);
+      expect(gbTax.taxAmount).toBe(20.0); // 120 / 1.20 = 100 net, 20 VAT
+      expect(gbTax.subtotal).toBe(100.0);
+
+      // 2. US Config (Sales Tax Exclusive)
+      const usConfig = getCountryOperatingConfig('US');
+      expect(usConfig.taxModel).toBe('exclusive');
+      const usTax = calculateLocalizedInvoiceTaxes(100.0, usConfig, 0.08875);
+      expect(usTax.taxAmount).toBe(8.88);
+      expect(usTax.totalWithTax).toBe(108.88);
+
+      // 3. Statutory Invoice Compliance (Canada requires Business Number)
+      const caConfig = getCountryOperatingConfig('CA');
+      const invalidCaInvoice = validateStatutoryInvoiceCompliance(
+        {
+          invoiceId: 'inv_ca_01',
+          countryCode: 'CA',
+          sellerBusinessName: 'Posie Toronto Inc',
+          subtotal: 150.0,
+          lineItems: [{ description: 'Hydrafacial', amount: 150.0 }],
+          clientName: 'Sarah Jenkins',
+        },
+        caConfig
+      );
+      expect(invalidCaInvoice.compliant).toBe(false);
+      expect(invalidCaInvoice.missingStatutoryFields[0]).toContain('Mandatory statutory tax identifier');
+
+      const validCaInvoice = validateStatutoryInvoiceCompliance(
+        {
+          invoiceId: 'inv_ca_01',
+          countryCode: 'CA',
+          sellerBusinessName: 'Posie Toronto Inc',
+          sellerTaxRegistrationNumber: 'BN 123456789 RT0001',
+          subtotal: 150.0,
+          lineItems: [{ description: 'Hydrafacial', amount: 150.0 }],
+          clientName: 'Sarah Jenkins',
+        },
+        caConfig
+      );
+      expect(validCaInvoice.compliant).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F168 (Bridal and Event Workspace)', () => {
+    it('coordinates multi-client wedding timelines, staged milestone deposits, and protects individual health privacy', () => {
+      // 1. Create bridal workspace with 3 staged payment milestones
+      const eventWorkspace = createBridalEventWorkspace({
+        eventId: 'event_wedding_sophia',
+        eventName: 'Sophia & James Wedding Morning',
+        eventDate: '2026-12-05',
+        organizerName: 'Sophia Miller (Bride)',
+        organizerEmail: 'sophia.m@luxurymail.com',
+        venueAddress: 'The Beekman Hotel, NYC',
+        travelDistanceMiles: 12.0,
+        mileageRate: 2.0, // $24 travel fee
+        setupBufferMinutes: 45,
+        serviceTotalCost: 1200.0,
+        partyMembers: [
+          {
+            memberId: 'mem_bride',
+            name: 'Sophia Miller',
+            role: 'bride',
+            serviceName: 'Bridal Updo & Airbrush Makeup',
+            durationMinutes: 90,
+            assignedStylistId: 'stylist_elena',
+            startTime: '08:00',
+            endTime: '09:30',
+            hasTrialCompleted: true,
+            privateMedicalOrAllergyNotes: 'Severe latex and adhesive sensitivity around eyes',
+          },
+          {
+            memberId: 'mem_moh',
+            name: 'Chloe Bennett',
+            role: 'maid_of_honor',
+            serviceName: 'Signature Hollywood Waves',
+            durationMinutes: 45,
+            assignedStylistId: 'stylist_elena',
+            startTime: '09:30',
+            endTime: '10:15',
+          },
+        ],
+      });
+
+      expect(eventWorkspace.totalContractValue).toBe(1224.0); // $1200 + $24 travel
+      expect(eventWorkspace.paymentMilestones).toHaveLength(3);
+      expect(eventWorkspace.paymentMilestones[0].percentage).toBe(25); // Retainer = $306.00
+
+      // 2. Pay initial booking retainer milestone
+      const paidWorkspace = recordStagedMilestonePayment(
+        eventWorkspace,
+        eventWorkspace.paymentMilestones[0].milestoneId,
+        306.0,
+        'txn_stripe_retainer_991'
+      );
+      expect(paidWorkspace.status).toBe('contract_signed');
+      expect(paidWorkspace.paymentMilestones[0].status).toBe('paid');
+
+      // 3. Privacy Invariant: Shared group packet hides confidential medical intake from organizer/guests
+      const organizerPacket = generateBridalDayOfPacket(paidWorkspace, 'event_organizer');
+      expect(organizerPacket.timeline).toHaveLength(2);
+      expect(organizerPacket.confidentialIntakeIncluded).toBe(false);
+
+      // Lead stylist packet receives clinical/allergy clearance
+      const stylistPacket = generateBridalDayOfPacket(paidWorkspace, 'lead_stylist');
+      expect(stylistPacket.confidentialIntakeIncluded).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F169 (Safe Bulk Change Planning)', () => {
+    it('simulates blast radius of price increases, demands owner approval, and supports 1-click rollback', () => {
+      const catalog: CatalogItem[] = [
+        { serviceId: 's1', name: 'Signature Haircut', price: 100.0, durationMinutes: 60, depositRequired: false, depositAmount: 0 },
+        { serviceId: 's2', name: 'Balayage Blonde', price: 250.0, durationMinutes: 150, depositRequired: true, depositAmount: 50 },
+      ];
+
+      const bookings: ActiveBookingItem[] = [
+        { bookingId: 'b1', serviceId: 's1', clientId: 'c1', clientName: 'Alice', scheduledTime: '2026-11-20T10:00:00Z', lockedPrice: 100.0, depositPaid: 0 },
+        { bookingId: 'b2', serviceId: 's2', clientId: 'c2', clientName: 'Bob', scheduledTime: '2026-11-20T14:00:00Z', lockedPrice: 250.0, depositPaid: 50 },
+      ];
+
+      // 1. Simulate +10% price increase applying to new services only
+      const simNewOnly = simulateBulkChangePlan(
+        {
+          targetCategory: 'service_pricing',
+          adjustmentType: 'percentage_increase',
+          value: 10,
+          scopeServiceIds: [],
+          applyToExistingBookings: false,
+        },
+        catalog,
+        bookings
+      );
+
+      expect(simNewOnly.affectedServicesCount).toBe(2);
+      expect(simNewOnly.totalRevenueDeltaProjected).toBe(0); // Existing bookings untouched
+
+      // 2. Simulate +10% applying to existing bookings
+      const simWithExisting = simulateBulkChangePlan(
+        {
+          targetCategory: 'service_pricing',
+          adjustmentType: 'percentage_increase',
+          value: 10,
+          scopeServiceIds: ['s1'],
+          applyToExistingBookings: true,
+        },
+        catalog,
+        bookings
+      );
+
+      expect(simWithExisting.affectedBookings).toHaveLength(1);
+      expect(simWithExisting.affectedBookings[0].priceDelta).toBe(10.0);
+      expect(simWithExisting.affectedBookings[0].requiresClientNotice).toBe(true);
+
+      // 3. Commit requires owner authorization
+      expect(() =>
+        commitBulkChangePlan(simNewOnly, catalog, { ownerId: 'own_1', ownerName: 'Maya Lin', confirmed: false })
+      ).toThrow('explicit verified owner approval');
+
+      const commitRecord = commitBulkChangePlan(simNewOnly, catalog, {
+        ownerId: 'own_1',
+        ownerName: 'Maya Lin',
+        confirmed: true,
+      });
+
+      expect(commitRecord.updatedCatalog[0].price).toBe(110.0);
+      expect(commitRecord.updatedCatalog[1].price).toBe(275.0);
+
+      // 4. Invariant: 1-click rollback restores original catalog
+      const rollback = rollbackBulkChange(commitRecord);
+      expect(rollback.status).toBe('reverted');
+      expect(rollback.restoredCatalog[0].price).toBe(100.0);
+      expect(rollback.restoredCatalog[1].price).toBe(250.0);
+    });
+  });
+
+  describe('Posie Core Logic - F170 (Late Running Recovery)', () => {
+    it('evaluates overrun delay, absorbs buffers, requires staff signoff, and offers flexible client resolution options', () => {
+      const upcoming: DownstreamAppointment[] = [
+        {
+          appointmentId: 'appt_201',
+          clientId: 'client_charlotte',
+          clientName: 'Charlotte M.',
+          clientPhone: '+1-212-555-0199',
+          scheduledStartTime: '14:00',
+          scheduledEndTime: '15:00',
+          serviceName: 'Single Process Glaze',
+          allocatedBufferMinutes: 10, // 10m buffer between appointments
+        },
+        {
+          appointmentId: 'appt_202',
+          clientId: 'client_victoria',
+          clientName: 'Victoria S.',
+          clientPhone: '+1-212-555-0288',
+          scheduledStartTime: '15:10',
+          scheduledEndTime: '16:10',
+          serviceName: 'Blowout & Style',
+          allocatedBufferMinutes: 5,
+        },
+      ];
+
+      // 1. Evaluate 25-minute active service overrun
+      // Appt 1 absorbs 10m buffer -> 15m delay -> New start: 14:15
+      // Appt 2 absorbs 5m buffer -> 10m delay -> New start: 15:20
+      const plan = evaluateLateRunningImpact('prac_maya_lin', 25, upcoming);
+
+      expect(plan.impactedAppointmentsCount).toBe(2);
+      expect(plan.impacts[0].delayMinutes).toBe(15);
+      expect(plan.impacts[0].suggestedStartTime).toBe('14:15');
+      expect(plan.impacts[0].bufferAbsorbedMinutes).toBe(10);
+      expect(plan.impacts[0].proposedMessage).toContain('running approximately 15 minutes behind');
+
+      // 2. Staff approves and dispatches arrival updates
+      const notifications = approveAndDispatchArrivalUpdates(plan, {
+        staffId: 'staff_frontdesk_claire',
+        staffName: 'Claire Front Desk',
+      });
+
+      expect(notifications).toHaveLength(2);
+      expect(notifications[0].resolutionStatus).toBe('pending_client_reply');
+      expect(notifications[0].suggestedStartTime).toBe('14:15');
+
+      // 3. Client responds with alternative choice
+      const resolution = recordClientDelayResolution(notifications[0], 'accept_delay');
+      expect(resolution.resolutionStatus).toBe('accepted_delay');
+      expect(resolution.resolutionSummary).toContain('Client confirmed new arrival time at 14:15');
+
+      const reschedResolution = recordClientDelayResolution(notifications[1], 'reschedule_complimentary');
+      expect(reschedResolution.resolutionStatus).toBe('rescheduled');
+      expect(reschedResolution.resolutionSummary).toContain('late-fee penalty waived');
     });
   });
 

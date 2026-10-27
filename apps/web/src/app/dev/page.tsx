@@ -506,6 +506,26 @@ export default function PosieStudioPage() {
   const [outreachOptOutFiltered, setOutreachOptOutFiltered] = useState<boolean>(true);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('client_claire_active');
 
+  // F166 Brand Design Assistant State
+  const [selectedBrandMood, setSelectedBrandMood] = useState<'calm' | 'warm' | 'minimal' | 'expressive'>('calm');
+  const [brandVoiceFactualVerified, setBrandVoiceFactualVerified] = useState<boolean>(true);
+
+  // F167 Country Specific Operations State
+  const [selectedCountryCode, setSelectedCountryCode] = useState<'US' | 'GB' | 'CA'>('GB');
+  const [taxInclusiveDisplay, setTaxInclusiveDisplay] = useState<boolean>(true);
+
+  // F168 Bridal & Event Workspace State
+  const [eventContractMilestonePaid, setEventContractMilestonePaid] = useState<boolean>(true);
+  const [eventIntakePrivacyRole, setEventIntakePrivacyRole] = useState<'organizer' | 'lead_stylist'>('organizer');
+
+  // F169 Safe Bulk Change Planning State
+  const [bulkChangeSimulated, setBulkChangeSimulated] = useState<boolean>(false);
+  const [bulkChangeRolledBack, setBulkChangeRolledBack] = useState<boolean>(false);
+
+  // F170 Late Running Recovery State
+  const [lateRunningDelayMinutes, setLateRunningDelayMinutes] = useState<number>(20);
+  const [arrivalUpdateDispatched, setArrivalUpdateDispatched] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -526,7 +546,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F165)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F170)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -9134,6 +9154,334 @@ export default function PosieStudioPage() {
               onClick={() => setOutreachOptOutFiltered(!outreachOptOutFiltered)}
             >
               {outreachOptOutFiltered ? 'Opt-Out Suppression: Active' : 'Show All Unsuppressed'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F166: Brand Design Assistant */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="var(--color-primary)" />
+                Brand Design Assistant &amp; Accessibility Validation (F166)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Aesthetic mood presets, WCAG 2.1 AA contrast validation, and brand voice rewriting with factual guardrails.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">WCAG 2.1 AA Passed</Badge>
+              <Badge variant="muted">WB F166 / Rule F166</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Active Mood Preset:</div>
+              <strong style={{ textTransform: 'capitalize' }}>{selectedBrandMood} Atelier</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Typography Pairing:</div>
+              <strong>{selectedBrandMood === 'warm' ? 'Playfair Display + Plus Jakarta' : selectedBrandMood === 'minimal' ? 'Inter + Inter Clean' : selectedBrandMood === 'expressive' ? 'Cinzel + Montserrat' : 'Cormorant Garamond + Plus Jakarta'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Contrast Ratio:</div>
+              <strong style={{ color: '#2B5329' }}>7.82:1 (Exceeds 4.5:1 Target)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Factual Voice Boundary:</div>
+              <strong style={{ color: '#2B5329' }}>Verbatim Preserved ($145, 24h Policy)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🎨 <strong>WB F166 Invariant:</strong> Suggests typography, layout and tone from owner assets; enforces WCAG 2.1 AA contrast checks; voice rewrites strictly preserve factual, pricing, and clinical terms.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const moods: Array<'calm' | 'warm' | 'minimal' | 'expressive'> = ['calm', 'warm', 'minimal', 'expressive'];
+                const next = moods[(moods.indexOf(selectedBrandMood) + 1) % moods.length];
+                setSelectedBrandMood(next);
+              }}
+            >
+              Cycle Mood Preset ({selectedBrandMood})
+            </Button>
+            <Button
+              size="sm"
+              variant={brandVoiceFactualVerified ? 'primary' : 'outline'}
+              onClick={() => setBrandVoiceFactualVerified(!brandVoiceFactualVerified)}
+            >
+              {brandVoiceFactualVerified ? 'Factual Guardrails Active' : 'Toggle Guardrail'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F167: Country Specific Operations */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Globe size={18} color="var(--color-primary)" />
+                Country Specific Operations &amp; Tax Compliance (F167)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                International currencies, statutory tax regimes (VAT inclusive vs sales tax exclusive), and invoice compliance.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">
+                {selectedCountryCode === 'GB' ? 'UK VAT 20% (Inclusive)' : selectedCountryCode === 'CA' ? 'Canada HST 13% (Exclusive)' : 'US Sales Tax 8.875%'}
+              </Badge>
+              <Badge variant="muted">WB F167 / Rule F167</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Country Market:</div>
+              <strong>{selectedCountryCode === 'GB' ? 'United Kingdom (£ GBP)' : selectedCountryCode === 'CA' ? 'Canada ($ CAD)' : 'United States ($ USD)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Tax Regime Model:</div>
+              <strong>{selectedCountryCode === 'GB' ? 'Tax-Inclusive (20% VAT)' : selectedCountryCode === 'CA' ? 'Tax-Exclusive (13% HST)' : 'Tax-Exclusive (Sales Tax)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Statutory Tax Number:</div>
+              <strong style={{ color: '#2B5329' }}>{selectedCountryCode === 'GB' ? 'GB 992 144 02' : selectedCountryCode === 'CA' ? 'BN 123456789 RT0001' : 'Standard W-9 / EIN'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Regional Payment Rails:</div>
+              <strong>{selectedCountryCode === 'GB' ? 'BACS, Faster Payments, Cards' : selectedCountryCode === 'CA' ? 'Interac, EFT, Cards' : 'ACH Debit, Apple Pay'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🌍 <strong>WB F167 Invariant:</strong> Local currencies, tax regimes, and statutory invoice requirements market by market; tax calculations follow local statutory conventions.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const countries: Array<'US' | 'GB' | 'CA'> = ['GB', 'CA', 'US'];
+                const next = countries[(countries.indexOf(selectedCountryCode) + 1) % countries.length];
+                setSelectedCountryCode(next);
+              }}
+            >
+              Cycle Country ({selectedCountryCode})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTaxInclusiveDisplay(!taxInclusiveDisplay)}
+            >
+              Tax Display ({taxInclusiveDisplay ? 'Inclusive Mode' : 'Exclusive Mode'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F168: Bridal and Event Workspace */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} color="var(--color-primary)" />
+                Bridal &amp; Event Workspace &amp; Staged Payments (F168)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Multi-guest wedding timelines, artist travel fees, staged milestone retainers, and private medical protection.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={eventContractMilestonePaid ? 'sage' : 'muted'}>
+                {eventContractMilestonePaid ? 'Contract Active (25% Retainer Paid)' : 'Proposal Draft'}
+              </Badge>
+              <Badge variant="muted">WB F168 / Rule F168</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Event Workspace:</div>
+              <strong>Sophia &amp; James Wedding Morning</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Contract Value &amp; Travel:</div>
+              <strong>$1,224.00 ($24 Travel Fee • 12 Miles)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Staged Milestone:</div>
+              <strong style={{ color: '#2B5329' }}>25% Retainer ($306.00 Paid)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Intake Privacy Guard:</div>
+              <strong style={{ color: eventIntakePrivacyRole === 'organizer' ? '#2B5329' : '#A65B32' }}>
+                {eventIntakePrivacyRole === 'organizer' ? 'Organizer: Sensitive Health Stripped' : 'Lead Stylist: Latex Sensitivity Visible'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            💍 <strong>WB F168 Invariant:</strong> Multi-client party timelines, artist travel fees, and staged milestone retainers; individual health and intake privacy strictly survives shared event administration.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={eventContractMilestonePaid ? 'outline' : 'primary'}
+              onClick={() => setEventContractMilestonePaid(!eventContractMilestonePaid)}
+            >
+              {eventContractMilestonePaid ? 'Revert to Unpaid Milestone' : 'Record 25% Retainer Payment ($306.00)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEventIntakePrivacyRole(eventIntakePrivacyRole === 'organizer' ? 'lead_stylist' : 'organizer')}
+            >
+              Simulate Role ({eventIntakePrivacyRole === 'organizer' ? 'View as Lead Stylist' : 'View as Organizer'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F169: Safe Bulk Change Planning */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={18} color="var(--color-primary)" />
+                Safe Bulk Change Planning &amp; Consequence Preview (F169)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Consequence preview, blast-radius dependency inspection, owner approval gates, and 1-click snapshot rollbacks.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={bulkChangeSimulated ? (bulkChangeRolledBack ? 'muted' : 'sage') : 'muted'}>
+                {bulkChangeSimulated ? (bulkChangeRolledBack ? 'Reverted to Snapshot' : 'Committed (+10%)') : 'Draft Plan'}
+              </Badge>
+              <Badge variant="muted">WB F169 / Rule F169</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Proposed Rule:</div>
+              <strong>+10% Catalog Price Increase</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Blast Radius:</div>
+              <strong>2 Services • 2 Upcoming Bookings</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Grandfathering Status:</div>
+              <strong style={{ color: '#2B5329' }}>Existing Appointments Protected</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Snapshot Identifier:</div>
+              <strong style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>snap_pre_179308291</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🛡️ <strong>WB F169 Invariant:</strong> Previews every appointment, price, and message affected by a rule change; commits only on owner approval; prior configuration can be rolled back instantly.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={bulkChangeSimulated && !bulkChangeRolledBack ? 'outline' : 'primary'}
+              onClick={() => {
+                setBulkChangeSimulated(true);
+                setBulkChangeRolledBack(false);
+              }}
+            >
+              Simulate &amp; Authorize Bulk Increase (Owner Signoff)
+            </Button>
+            {bulkChangeSimulated && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setBulkChangeRolledBack(!bulkChangeRolledBack)}
+              >
+                {bulkChangeRolledBack ? 'Re-Apply Bulk Change' : '1-Click Rollback to Snapshot'}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F170: Late Running Recovery */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} color="var(--color-primary)" />
+                Late Running Recovery &amp; Buffer Absorption (F170)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Overrun cascade calculation, schedule buffer absorption, and staff-approved realistic arrival notifications.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={arrivalUpdateDispatched ? 'sage' : 'rose'}>
+                {arrivalUpdateDispatched ? 'Update Dispatched (Approved)' : `Overrun Active (+${lateRunningDelayMinutes}m)`}
+              </Badge>
+              <Badge variant="muted">WB F170 / Rule F170</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Active Service Overrun:</div>
+              <strong style={{ color: '#A65B32' }}>Foil Lightening (+{lateRunningDelayMinutes}m)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Buffer Absorbed:</div>
+              <strong style={{ color: '#2B5329' }}>10 Minutes (Cleaning Buffer)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Net Downstream Delay:</div>
+              <strong style={{ color: '#A65B32' }}>+{Math.max(0, lateRunningDelayMinutes - 10)} Minutes (New: 14:{lateRunningDelayMinutes - 10})</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Guest Resolution Status:</div>
+              <strong>{arrivalUpdateDispatched ? 'Client Accepted Delay' : 'Pending Staff Review'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            ⏱️ <strong>WB F170 Invariant:</strong> When visits overrun, calculates cascading delay while absorbing buffer intervals; staff approve realistic updates; guests receive flexible recovery options.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={arrivalUpdateDispatched ? 'outline' : 'primary'}
+              onClick={() => setArrivalUpdateDispatched(!arrivalUpdateDispatched)}
+            >
+              {arrivalUpdateDispatched ? 'Reset Overrun Simulation' : 'Approve & Dispatch Realistic Arrival Update'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLateRunningDelayMinutes(lateRunningDelayMinutes === 20 ? 30 : 20)}
+            >
+              Adjust Overrun ({lateRunningDelayMinutes === 20 ? 'Set to +30m' : 'Set to +20m'})
             </Button>
           </div>
         </Card>

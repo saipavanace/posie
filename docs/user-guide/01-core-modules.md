@@ -984,6 +984,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Transparent, cadence-driven client retention engine identifying lapsed or rebooking candidates based on verified historical visit intervals and explicit scheduling preferences.
 * **Key Invariant (Basis: Expansion (X); DATA LEG, WB F165, Rule F165, Table 110):** **Transparent Cadence Ranking & Absolute Opt-Out Respect.** "Rank optional outreach candidates using prior visit cadence and explicit preferences, with reasons and opt-outs; no sensitive characteristics or opaque client value labels are exposed." Analyzes visit intervals and preferred appointment days without black-box scores, opaque tiers, or demographic proxies. Clients with active marketing or rebooking opt-outs are strictly suppressed from outreach queues.
 
+---
+
+## F166 — Brand Design Assistant (WB F166, BR01, BR02, BR04, BR06)
+* **What it is:** AI-assisted and curated aesthetic brand styling suite providing mood presets, accessible typography pairings, WCAG 2.1 AA contrast validation, and voice rewrites with strict factual guardrails.
+* **Key Invariant (Basis: Growth (G); AI DES UX, WB F166, BR01, BR04, BR06):** **Accessibility Ratios & Protected Factual Boundaries.** "Suggest typography, layout and tone from owner-provided assets, then preview across approved templates; outputs meet accessibility checks and require owner publication." Enforces WCAG 2.1 AA contrast requirements (minimum 4.5:1 for body copy). Tone and vocabulary rewriting strictly preserves dates, prices, cancellation policies, and required clinical disclosures verbatim.
+
+---
+
+## F167 — Country Specific Operations (WB F167, Table 90)
+* **What it is:** International expansion configuration manager adding statutory tax models (sales tax, GST/HST, VAT inclusive/exclusive), local currencies, payment rails, and country-specific invoicing metadata.
+* **Key Invariant (Basis: Expansion (X); LEG FIN LANG PART, WB F167, Table 90):** **Deterministic Tax Regimes & Mandatory Statutory Fields.** "Add local currencies, tax, messaging, payment and record requirements market by market; every supported country's operating and support processes are owned." Taxes follow statutory conventions (e.g., UK VAT is tax-inclusive; US sales tax is tax-exclusive). Invoices mandate jurisdiction-specific compliance fields (e.g., VAT registration numbers, CRA business numbers).
+
+---
+
+## F168 — Bridal and Event Workspace (WB F168, D22, Table 82)
+* **What it is:** Multi-client event and bridal party coordination workspace managing complex party timelines, artist assistants, travel buffers, and staged payment schedules.
+* **Key Invariant (Basis: Expansion (X); LEG PART, WB F168, Rule F168, Table 82):** **Multi-Tier Milestone Retainers & Individual Health Privacy.** "Coordinate multiple clients, trials, shared timelines, contracts, travel, assistants and staged payments; individual privacy survives shared event administration." Organizes multi-guest schedules with milestone payments (25% retainer, 50% milestone, 25% day-of balance). While the organizer approves commercial terms and pays invoices, sensitive individual medical/allergy notes remain strictly confidential and outside shared group packets.
+
+---
+
+## F169 — Safe Bulk Change Planning (WB F169, Table 51, BR10)
+* **What it is:** Impact simulation and consequence preview engine modeling the blast radius of proposed catalog pricing, duration, and policy modifications across upcoming appointments.
+* **Key Invariant (Basis: Expansion (X); CORE SEC, WB F169, Rule F169, Table 51):** **Dependency Blast Radius Preview & 1-Click Rollback Guarantees.** "Preview every appointment, price, consent and message affected by a proposed rule or catalog change; dependency model and snapshots; owner approval commits one version with a recoverable change log." Previews impacted appointments and revenue deltas before committing. Prior state snapshots ensure immediate 1-click reversal without altering settled financial ledgers or historical records.
+
+---
+
+## F170 — Late Running Recovery (WB F170, Table 90)
+* **What it is:** Real-time appointment overrun mitigation and guest recovery suite calculating downstream schedule impact, absorbing buffer intervals, and dispatching staff-approved realistic arrival updates.
+* **Key Invariant (Basis: Expansion (X); DATA MSG, WB F170, Rule F170, Table 90):** **Buffer Absorption & Staff-Approved Transparent Updates.** "When a visit overruns, suggest limited schedule changes and send approved, realistic arrival updates; staff approve changes and clients can request alternatives." Automatically calculates net downstream delays while absorbing available buffer intervals. Arrival notices require staff signoff, offering guests clear options: accept adjusted time, reschedule with late fee waived, or switch to an available peer provider.
+
+
 
 
 
