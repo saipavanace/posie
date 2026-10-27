@@ -88,6 +88,15 @@ import {
   checkMediaPublishingEligibility,
   createVirtualConsultation,
   completeVirtualConsultation,
+  recordClientArrival,
+  reverseAccidentalCheckin,
+  seatClientInChair,
+  getSanitizedPublicWaitingQueue,
+  generateAccessibilityStyles,
+  setDevicePreferences,
+  issueClientBalance,
+  redeemClientBalance,
+  maskGiftCardSecret,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -2111,6 +2120,151 @@ describe('Posie Core Logic - F065 (Virtual Consultation Connection - WB A6)', ()
     expect(completed.recommendedServiceId).toBe('55555555-5555-5555-5555-555555555555');
   });
 });
+
+describe('Posie Core Logic - F066 (Arrival and Waiting Status)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const appointmentId = '33333333-3333-3333-3333-333333333333';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('manages private queue, sanitizes public displays, and reverses accidental check-ins', () => {
+    // 1. Record client arrival
+    const arrival = recordClientArrival({
+      appointmentId,
+      businessId,
+      clientId,
+      fullClientName: 'Maya Lin',
+      clientPhone: '+15125550199',
+      specialistStaffId: staffId,
+      specialistName: 'Elena Rostova',
+      serviceName: 'Hydra-Dew Glass Facial',
+      scheduledTime: '2026-11-05T14:00:00Z',
+      isVipClient: true,
+      privateStaffAlertNotes: 'VIP Member: Prefers sparkling water with cucumber.',
+      estimatedWaitMinutes: 5,
+    });
+
+    expect(arrival.state).toBe('arrived_waiting');
+    expect(arrival.publicDisplayName).toBe('Maya L.'); // Sanitized
+    expect(arrival.isVipClient).toBe(true);
+
+    // 2. Sanitized public waiting room queue strictly hides VIP flags & phone numbers
+    const publicView = getSanitizedPublicWaitingQueue([arrival]);
+    expect(publicView.length).toBe(1);
+    expect(publicView[0].publicDisplayName).toBe('Maya L.');
+    expect((publicView[0] as any).clientPhone).toBeUndefined();
+    expect((publicView[0] as any).privateStaffAlertNotes).toBeUndefined();
+
+    // 3. Duplicate check-in is rejected
+    expect(() =>
+      recordClientArrival({
+        appointmentId,
+        businessId,
+        clientId,
+        fullClientName: 'Maya Lin',
+        clientPhone: '+15125550199',
+        specialistStaffId: staffId,
+        specialistName: 'Elena Rostova',
+        serviceName: 'Hydra-Dew Glass Facial',
+        scheduledTime: '2026-11-05T14:00:00Z',
+        existingQueue: [arrival],
+      })
+    ).toThrow('Duplicate check-in rejected');
+
+    // 4. Reverse accidental check-in
+    const reversed = reverseAccidentalCheckin(arrival, 'Client called to say running 10 mins late; front desk tapped early.');
+    expect(reversed.state).toBe('accidental_checkin_reversed');
+    expect(reversed.reversalReason).toContain('running 10 mins late');
+
+    // 5. Seat client in chair
+    const seated = seatClientInChair(arrival, 'Treatment Room 2');
+    expect(seated.state).toBe('in_chair');
+    expect(seated.seatAssigned).toBe('Treatment Room 2');
+  });
+});
+
+describe('Posie Core Logic - F067 (Local Device Preferences & Accessibility)', () => {
+  it('generates CSS variables and accessibility overrides for typography, contrast, and focus', () => {
+    const prefs = setDevicePreferences('device-ipad-reception-01', {
+      textSize: 'large',
+      contrastMode: 'high_contrast',
+      reducedMotion: true,
+      focusRingStyle: 'high_visibility',
+    });
+
+    const styles = generateAccessibilityStyles(prefs);
+
+    expect(styles.dataAttributes['data-text-size']).toBe('large');
+    expect(styles.dataAttributes['data-contrast']).toBe('high_contrast');
+    expect(styles.cssVariables['--posie-font-scale']).toBe('1.15');
+    expect(styles.cssVariables['--posie-transition-duration']).toBe('0ms');
+    expect(styles.cssVariables['--posie-focus-outline']).toContain('3px solid');
+    expect(styles.htmlClassNames).toContain('posie-high-contrast');
+    expect(styles.htmlClassNames).toContain('posie-reduce-motion');
+  });
+});
+
+describe('Posie Core Logic - F068 (Client Credit & Balance Explanations - D15, D17)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const appointmentId = '33333333-3333-3333-3333-333333333333';
+
+  it('manages transparent entitlement ledgers, masks gift card codes, and translates balances into plain English', () => {
+    // 1. Issue Package Series (3 sessions, $300 value)
+    const packageInstrument = issueClientBalance({
+      businessId,
+      clientId,
+      type: 'package_series',
+      instrumentTitle: 'Signature HydraFacial 3-Pack',
+      initialValueCents: 30000,
+      totalUnits: 3,
+      expiresAt: '2027-10-15T00:00:00Z',
+    });
+
+    expect(packageInstrument.remainingValueCents).toBe(30000);
+    expect(packageInstrument.remainingUnits).toBe(3);
+    expect(packageInstrument.plainEnglishSummary).toContain('You have 3 of 3 sessions remaining');
+    expect(packageInstrument.ledger.length).toBe(1);
+
+    // 2. Redeem 1 session ($100) at appointment checkout
+    const redeemed = redeemClientBalance(packageInstrument, {
+      redeemAmountCents: 10000,
+      redeemUnits: 1,
+      linkedAppointmentId: appointmentId,
+      serviceName: 'Signature HydraFacial',
+    });
+
+    expect(redeemed.remainingValueCents).toBe(20000); // $200
+    expect(redeemed.remainingUnits).toBe(2);
+    expect(redeemed.plainEnglishSummary).toContain('You have 2 of 3 sessions remaining');
+    expect(redeemed.ledger.length).toBe(2);
+    expect(redeemed.ledger[1].linkedAppointmentId).toBe(appointmentId);
+
+    // 3. Invariant: Insufficient balance rejects redemption
+    expect(() =>
+      redeemClientBalance(redeemed, {
+        redeemAmountCents: 25000, // $250 > $200 available
+        redeemUnits: 1,
+        linkedAppointmentId: appointmentId,
+        serviceName: 'Signature HydraFacial',
+      })
+    ).toThrow('Insufficient balance');
+
+    // 4. Issue Gift Card with masked code (Document D17)
+    const giftCard = issueClientBalance({
+      businessId,
+      clientId,
+      type: 'gift_card',
+      instrumentTitle: 'Mother\'s Day Pampering Gift Card',
+      initialValueCents: 7500, // $75
+      rawGiftCode: 'POSIE-GIFT-CARD-9842',
+    });
+
+    expect(giftCard.maskedCode).toBe('GIFT-****-9842');
+    expect(giftCard.plainEnglishSummary).toContain('$75.00 spendable store credit');
+  });
+});
+
 
 
 

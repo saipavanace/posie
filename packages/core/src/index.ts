@@ -63,3 +63,6 @@ export * from './communication_preferences';
 export * from './visit_checkins';
 export * from './media_consent';
 export * from './virtual_consultations';
+export * from './arrival_status';
+export * from './device_preferences';
+export * from './client_balances';

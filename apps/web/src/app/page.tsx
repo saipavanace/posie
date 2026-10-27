@@ -58,6 +58,8 @@ import {
   Activity,
   Camera,
   Video,
+  Type,
+  Wallet,
 } from 'lucide-react';
 
 // Brand Information
@@ -134,6 +136,16 @@ export default function PosieStudioPage() {
   // F065 Virtual Consultation State (WB A6)
   const [consultRoomCreated, setConsultRoomCreated] = useState(false);
   const [consultCompleted, setConsultCompleted] = useState(false);
+
+  // F066 Arrival & Private Waiting Queue State
+  const [clientArrivedState, setClientArrivedState] = useState<'idle' | 'arrived' | 'reversed' | 'in_chair'>('idle');
+
+  // F067 Local Device Preferences State
+  const [textSizeSelection, setTextSizeSelection] = useState<'default' | 'large' | 'extra_large'>('default');
+  const [contrastSelection, setContrastSelection] = useState<'standard' | 'high_contrast'>('standard');
+
+  // F068 Client Balances & Entitlement State
+  const [redeemedSessionCount, setRedeemedSessionCount] = useState(1);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -977,6 +989,237 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F066: Arrival and Private Waiting Room Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Accessible Arrival & Private Waiting Queue (F066)
+              </h3>
+            </div>
+            <Badge variant="sage">Privacy-Preserving Queue</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Clients check in with a single tap. The public salon display shows only sanitized tokens (e.g. "Maya L."), strictly shielding full names, phone numbers, and private VIP member notes.
+          </p>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            {clientArrivedState === 'idle' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setClientArrivedState('arrived')}
+              >
+                Simulate Client Arrival Tap: "I've Arrived"
+              </Button>
+            )}
+
+            {clientArrivedState === 'arrived' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => setClientArrivedState('in_chair')}
+                >
+                  Call Client to Station ("In Chair")
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setClientArrivedState('reversed')}
+                >
+                  Reverse Accidental Check-in
+                </Button>
+              </>
+            )}
+
+            {(clientArrivedState === 'in_chair' || clientArrivedState === 'reversed') && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setClientArrivedState('idle')}
+              >
+                Reset Queue Simulation
+              </Button>
+            )}
+          </div>
+
+          {clientArrivedState === 'arrived' && (
+            <div style={{ background: '#F8F9F8', border: '1px solid #738A73', padding: '14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>Private Queue Item: Maya L. (Token #14)</span>
+                <Badge variant="sage">Arrived (Est. Wait: 5 mins)</Badge>
+              </div>
+              <p style={{ margin: '0 0 6px', color: 'var(--color-text)' }}>
+                Treatment: <strong>Hydra-Dew Glass Glow Facial</strong> with specialist Elena Rostova.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#8A531C', background: '#FFF9F2', padding: '6px 10px', borderRadius: '4px' }}>
+                🔒 <strong>Private Staff Alert:</strong> VIP Client (Prefers cucumber infused water). Hidden from public screens.
+              </div>
+            </div>
+          )}
+
+          {clientArrivedState === 'in_chair' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: '#3A523A' }}>
+              ✓ Client seated in <strong>Treatment Room 2</strong>. Service timer started.
+            </div>
+          )}
+
+          {clientArrivedState === 'reversed' && (
+            <div style={{ background: '#FAF8F5', border: '1px solid #E2A76F', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: '#735A42' }}>
+              Accidental check-in reversed back to "Scheduled". Appointment preserved without dropping from calendar.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F067: Local Device Preferences & Accessibility Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card style={{
+          fontSize: textSizeSelection === 'large' ? '1.08rem' : textSizeSelection === 'extra_large' ? '1.2rem' : '0.95rem',
+          border: contrastSelection === 'high_contrast' ? '2px solid #000000' : '1px solid var(--color-border)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Type size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Device Preferences & Universal Accessibility (F067)
+              </h3>
+            </div>
+            <Badge variant="sage">WCAG AAA Ready</Badge>
+          </div>
+
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Zero drag-only or memory puzzle interactions. Complete reservations and checkout using high contrast, enlarged touch targets, and full keyboard focus accessibility.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Text Size:</span>
+              <Button
+                size="sm"
+                variant={textSizeSelection === 'default' ? 'primary' : 'outline'}
+                onClick={() => setTextSizeSelection('default')}
+              >
+                Default
+              </Button>
+              <Button
+                size="sm"
+                variant={textSizeSelection === 'large' ? 'primary' : 'outline'}
+                onClick={() => setTextSizeSelection('large')}
+              >
+                Large (+15%)
+              </Button>
+              <Button
+                size="sm"
+                variant={textSizeSelection === 'extra_large' ? 'primary' : 'outline'}
+                onClick={() => setTextSizeSelection('extra_large')}
+              >
+                XL (+30%)
+              </Button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Contrast:</span>
+              <Button
+                size="sm"
+                variant={contrastSelection === 'standard' ? 'primary' : 'outline'}
+                onClick={() => setContrastSelection('standard')}
+              >
+                Standard
+              </Button>
+              <Button
+                size="sm"
+                variant={contrastSelection === 'high_contrast' ? 'primary' : 'outline'}
+                onClick={() => setContrastSelection('high_contrast')}
+              >
+                High Contrast
+              </Button>
+            </div>
+          </div>
+
+          <div style={{ background: contrastSelection === 'high_contrast' ? '#FFFFFF' : '#FAF8F5', border: '1px solid #CCC', padding: '12px 14px', borderRadius: '8px' }}>
+            <div style={{ fontWeight: 600, color: contrastSelection === 'high_contrast' ? '#000000' : 'var(--color-primary)' }}>
+              Accessibility Preview Card
+            </div>
+            <div style={{ color: contrastSelection === 'high_contrast' ? '#000000' : 'var(--color-text)' }}>
+              Buttons feature high-visibility 3px focus rings and reduced-motion transitions.
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* F068: Client Credit & Balance Explanations Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Wallet size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Transparent Client Credit & Balances (F068 / D15 / D17)
+              </h3>
+            </div>
+            <Badge variant="sage">Document D17 Certified</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            No mysterious expired funds or confusing math. Every package session, gift card dollar, and monthly credit is written out in warm, plain English with a complete redemption ledger.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+            <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <strong>HydraFacial 3-Pack Series</strong>
+                <Badge variant="sage">{3 - redeemedSessionCount} of 3 Left</Badge>
+              </div>
+              <p style={{ fontSize: '0.84rem', color: 'var(--color-text)', margin: '4px 0 8px' }}>
+                "You have {3 - redeemedSessionCount} of 3 sessions remaining (${(3 - redeemedSessionCount) * 100}.00 value), valid through Oct 15, 2027."
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                Last used: Oct 20, 2026 at Checkout (#33333333)
+              </div>
+            </div>
+
+            <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <strong>Mother's Day Gift Card</strong>
+                <Badge variant="sage">$75.00 Available</Badge>
+              </div>
+              <p style={{ fontSize: '0.84rem', color: 'var(--color-text)', margin: '4px 0 8px' }}>
+                "You have $75.00 spendable store credit from your Mother's Day pampering gift card, with no expiration date."
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                Protected Code: <code>GIFT-****-9842</code> (Secret masked)
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={redeemedSessionCount >= 3}
+              onClick={() => setRedeemedSessionCount(redeemedSessionCount + 1)}
+            >
+              Simulate Redeeming 1 Package Session at Checkout
+            </Button>
+            {redeemedSessionCount > 1 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRedeemedSessionCount(1)}
+              >
+                Reset Balance
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
 
 
 

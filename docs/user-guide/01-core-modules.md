@@ -381,3 +381,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F065 — Virtual Consultation Connection
 * **What it is:** Video consultation suite connecting scheduled virtual skin/hair appointments with approved video providers (Daily.co, Google Meet, Zoom Healthcare).
 * **Key Invariant (WB A6, Row 6):** **Zero-friction access** via one-click guest browser links requiring no app installations or account creation. Call recording is **strictly disabled by default**, and rooms link directly to pre-call intake photos and post-consult treatment proposals.
+
+
+---
+
+## F066 — Arrival and Waiting Status
+* **What it is:** Digital front-desk arrival check-in and private waiting queue workspace with client SMS arrival confirmations.
+* **Key Invariant (WB T, Row 14):** **Waiting room privacy.** Public reception screens strictly display sanitized display names (e.g. `Maya L.`), never leaking full identities, phone numbers, treatment histories, or VIP member tags. Staff can reverse accidental check-ins without corrupting or dropping calendar bookings.
+
+---
+
+## F067 — Local Device Preferences & Universal Accessibility
+* **What it is:** Device-level accessibility preferences supporting enlarged typography (+15% / +30%), high-contrast themes, reduced motion, and high-visibility focus indicators.
+* **Key Invariant (R04, UX):** Full booking and checkout operability **without drag-only gestures or memory puzzle interactions**. Accessibility settings dynamically emit standard CSS variables and data attributes so all interactive buttons and modals remain WCAG AAA compliant.
+
+---
+
+## F068 — Client Credit & Balance Explanations (Documents D15, D17)
+* **What it is:** Entitlement ledger translating gift cards, prepaid package series, and monthly membership allowances into plain, friendly English explanations.
+* **Key Invariant (D15, D17):** Every balance reduction **strictly links to an authoritative appointment ID or checkout event**, preventing untracked balance deductions. Gift card certificates automatically mask secret redemption codes (`GIFT-****-9842`) to protect balances from public exposure.
