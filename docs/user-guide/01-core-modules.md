@@ -1102,7 +1102,38 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 
 ## F185 — Proprietary Payment Hardware Governance (WB F185, Table 91, Table 105)
 * **What it is:** Build-versus-buy decision and hardware fleet health governance engine evaluating certified partner terminals (e.g. Stripe WisePOS E) versus custom proprietary payment terminals.
-* **Key Invariant (Basis: Validate separately (V); PAY PART OPS, WB F185, Rule F185, Table 91):** **Partner-First Hierarchy & Full-Lifecycle Economics.** "Consider custom terminals only if certified partner devices demonstrably cannot meet a validated need; hardware engineers, manufacturing, certification and support; full lifecycle economics beat approved integrations." Blocks custom hardware development unless partner devices demonstrably fail a verified operational requirement and 3-year custom TCO (BOM, PCI certification, RMA logistics) beats partner integrations. Monitors hardware tamper sensors, battery health, and PCI PTS certificate validity.
+* **Key Invariant (Basis: Validate separately (V); PAY PART OPS, WB F185, Rule F185, Table 91, Table 105):** **Partner-First Hierarchy & Full-Lifecycle Economics.** "Consider custom terminals only if certified partner devices demonstrably cannot meet a validated need; hardware engineers, manufacturing, certification and support; full lifecycle economics beat approved integrations." Blocks custom hardware development unless partner devices demonstrably fail a verified operational requirement and 3-year custom TCO (BOM, PCI certification, RMA logistics) beats partner integrations. Monitors hardware tamper sensors, battery health, and PCI PTS certificate validity.
+
+---
+
+## F186 — Client Pay Over Time (WB F186, WB F32, WB U14, WB A8, Table 91, Table 105)
+* **What it is:** Regulated Buy-Now-Pay-Later (BNPL) consumer installment checkout (e.g. Klarna, Affirm, Afterpay) for salon guests, separate from merchant financing (F178) and payout timing (F090).
+* **Key Invariant (Basis: Expansion (X); PAY LEG PART, WB F186, Rule F186, Table 91):** **100% Upfront Payout Protection & Partner Default Risk.** "Offer eligible buy-now-pay-later options for clients through an approved provider, with full costs, refunds and eligibility explained; merchant working capital is a separate product; no approval or repayment promise is implied." Salons receive 100% upfront payout upon booking confirmation (minus standard partner interchange fee), while the financing partner assumes complete collection and default risk. Transparent refund adjustments modify client installment schedules and salon ledger balance proportionally.
+
+---
+
+## F187 — Optional Card Fee Offset (WB F187, WB F33, WB U15, Table 91, Table 105)
+* **What it is:** Compliant credit card surcharge and cash discount calculation engine adhering strictly to statutory state bans, card-network operating rules, and the Durbin Amendment.
+* **Key Invariant (Basis: Expansion (X); PAY FIN LEG, WB F187, Rule F187, Table 91):** **Debit Card Surcharge Prohibition & Upfront Line-Item Transparency.** "Where permitted and supported, show lawful card surcharges or other approved fee treatment before the client accepts; debit restrictions, disclosures, refunds and fee caps follow the chosen program." Strictly prohibits surcharges on debit and prepaid cards under federal law and network rules. Honors state statutory bans (e.g. CT, MA, ME, OK) and caps permitted credit card surcharges at statutory limits (maximum 3.0%), itemized clearly prior to transaction authorization.
+
+---
+
+## F188 — Native Discovery Booking Integrations (WB F188, WB F10, WB F11, Table 91)
+* **What it is:** Direct native scheduling integration connecting salon appointment books to Reserve with Google (Google Maps & Search) and native social booking actions (Instagram Book button).
+* **Key Invariant (Basis: Growth (G); PART, WB F188, Rule F188, Table 91):** **Atomic Calendar Locking & Live Catalog Price Sync.** "Connect eligible businesses to Reserve with Google and supported social booking actions, with controlled source attribution; partner eligibility and API access; a native booking creates one appointment and carries the correct current price." Synchronizes active catalog items and live availability feeds; validates client-quoted price against live salon prices; creates exactly one atomic calendar appointment to prevent double-bookings, tagging source attribution for analytics.
+
+---
+
+## F189 — Flexible Entry Plans & Acquisition Fees (WB F189, WB A5, WB A10, WB A16, Table 91)
+* **What it is:** Transparent subscription tier model offering a sustainable low-volume entry tier (Sole Practitioner Starter at $0/mo up to 30 appointments), clear volume caps, and optional marketplace acquisition fees.
+* **Key Invariant (Basis: Growth (G); FIN LEG, WB F189, Rule F189, Table 91):** **Zero Surprise Client Convenience Fees & Transparent Upgrades.** "Support a trial or sustainable low-volume entry tier, clear usage caps and optional marketplace acquisition fees with explicit attribution; billing, unit economics and consent; no surprise client convenience fee or automatic paid add-on is hidden at checkout." Strictly prohibits sneaky consumer booking markups; calculates transparent overages; proactively flags when volume justifies upgrading to higher tiers.
+
+---
+
+## F190 — Self-Service Subscription Exit (WB F190, WB F71, WB C10, Table 91)
+* **What it is:** Frictionless 1-click subscription cancellation and downgrade workflow with guaranteed historical read-only data access and comprehensive export archives.
+* **Key Invariant (Basis: Launch candidate (L); LEG FIN OPS, WB F190, Rule F190, Table 91):** **90-Day Read-Only Archive & Published Data Purge Schedule.** "Allow clear cancellation and downgrade, with a specified historical read-only period, export and published retention policy; subscription and record permissions; the owner sees what stops, what remains accessible and when data will be deleted." Provides immediate self-service exit without retention calls; guarantees 90 days of read-only historical archive access; produces downloadable CSV/ZIP export packages across clients, bookings, and ledger records; publishes exact scheduled data deletion date.
+
 
 
 

@@ -454,6 +454,21 @@ import {
   checkTerminalHealth,
   type CertifiedPartnerDevice,
   type ProprietaryHardwareProposal,
+  evaluateBnplCheckoutEligibility,
+  settleBnplBooking,
+  processBnplRefund,
+  type BnplInstallmentPlan,
+  evaluateCardFeeOffset,
+  type CardFeeEvaluationRequest,
+  formatPartnerCatalogFeed,
+  processNativePartnerBooking,
+  type NativeCatalogFeedItem,
+  type NativePartnerBookingRequest,
+  calculateFlexiblePlanBilling,
+  verifyConsumerCheckoutFeeIntegrity,
+  type SalonPlanUsage,
+  processSelfServiceSubscriptionExit,
+  type SubscriptionExitRequest,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -10259,6 +10274,241 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(tamperedStatus.alerts[0]).toContain('Physical tamper sensor triggered');
     });
   });
+
+  describe('Posie Core Logic - F186 (Client Pay Over Time / BNPL)', () => {
+    it('evaluates consumer installment eligibility, funds salon upfront with partner default risk, and processes refunds', () => {
+      // 1. Ineligible thresholds (<$50 and >$4000)
+      const lowEval = evaluateBnplCheckoutEligibility(35.0, 'klarna');
+      expect(lowEval.isEligible).toBe(false);
+      expect(lowEval.ineligibilityReason).toContain('below minimum BNPL threshold');
+
+      const highEval = evaluateBnplCheckoutEligibility(5000.0, 'klarna');
+      expect(highEval.isEligible).toBe(false);
+      expect(highEval.ineligibilityReason).toContain('exceeds maximum BNPL threshold');
+
+      // 2. Eligible: $300 service -> 4 bi-weekly payments of $75
+      const validEval = evaluateBnplCheckoutEligibility(300.0, 'klarna');
+      expect(validEval.isEligible).toBe(true);
+      expect(validEval.offeredPlans).toHaveLength(1);
+      const plan = validEval.offeredPlans[0];
+      expect(plan.numberOfInstallments).toBe(4);
+      expect(plan.installmentAmount).toBe(75.0);
+      expect(plan.dueDates).toHaveLength(4);
+
+      // 3. Upfront salon settlement: Salon gets $300 - ($300 * 5.9% + $0.30) = $282.00
+      const settlement = settleBnplBooking('booking_bnpl_99', plan, 0.059, 0.3);
+      expect(settlement.status).toBe('settled_funded');
+      expect(settlement.partnerInterchangeFee).toBe(18.0);
+      expect(settlement.salonImmediatePayoutAmount).toBe(282.0);
+      expect(settlement.defaultRiskAssumedBy).toBe('financing_partner_exclusive');
+
+      // 4. Refund adjustment: $100 partial refund adjusts client installments and salon ledger
+      const { updatedSettlement, refundAdjustment } = processBnplRefund(settlement, 100.0);
+      expect(updatedSettlement.status).toBe('refunded_partially');
+      expect(refundAdjustment.refundAmount).toBe(100.0);
+      expect(refundAdjustment.salonLedgerDeduction).toBe(100.0);
+      expect(refundAdjustment.clientRemainingInstallmentReduction).toBe(100.0);
+    });
+  });
+
+  describe('Posie Core Logic - F187 (Optional Card Fee Offset / Compliant Surcharging)', () => {
+    it('strictly prohibits debit card surcharging, enforces statutory state bans, and caps credit surcharges', () => {
+      // 1. Invariant: Debit and prepaid cards are NEVER surcharged
+      const debitEval = evaluateCardFeeOffset({
+        serviceSubtotal: 100.0,
+        tenderType: 'debit_card',
+        jurisdictionState: 'US-NY',
+        configuredSurchargePercentage: 3.0,
+      });
+      expect(debitEval.isSurchargeApplicable).toBe(false);
+      expect(debitEval.surchargeAmount).toBe(0);
+      expect(debitEval.debitCardExclusionEnforced).toBe(true);
+      expect(debitEval.regulatoryComplianceNote).toContain('strictly prohibit surcharges on all debit card');
+
+      // 2. Cash and ACH incur 0% fee
+      const cashEval = evaluateCardFeeOffset({
+        serviceSubtotal: 100.0,
+        tenderType: 'cash',
+        jurisdictionState: 'US-NY',
+      });
+      expect(cashEval.isSurchargeApplicable).toBe(false);
+      expect(cashEval.finalTotalToCharge).toBe(100.0);
+
+      // 3. Statutory state ban: Connecticut (US-CT) prohibits surcharging
+      const ctEval = evaluateCardFeeOffset({
+        serviceSubtotal: 100.0,
+        tenderType: 'credit_card',
+        jurisdictionState: 'US-CT',
+        configuredSurchargePercentage: 3.0,
+      });
+      expect(ctEval.isSurchargeApplicable).toBe(false);
+      expect(ctEval.regulatoryComplianceNote).toContain('Conn. Gen. Stat. § 42-133ff');
+
+      // 4. Permitted state (US-NY): Surcharge applied and capped at 3% max
+      const nyEval = evaluateCardFeeOffset({
+        serviceSubtotal: 150.0,
+        tenderType: 'credit_card',
+        jurisdictionState: 'US-NY',
+        configuredSurchargePercentage: 2.8,
+      });
+      expect(nyEval.isSurchargeApplicable).toBe(true);
+      expect(nyEval.surchargePercentage).toBe(2.8);
+      expect(nyEval.surchargeAmount).toBe(4.2);
+      expect(nyEval.finalTotalToCharge).toBe(154.2);
+      expect(nyEval.lineItemDescription).toContain('Credit Card Processing Offset (2.80%)');
+    });
+  });
+
+  describe('Posie Core Logic - F188 (Native Discovery Booking Integrations)', () => {
+    const catalog: NativeCatalogFeedItem[] = [
+      {
+        serviceId: 'srv_facial_glow',
+        name: 'Hydra-Dew Glass Glow Facial',
+        durationMinutes: 60,
+        currentPriceUsd: 120.0,
+        isActive: true,
+        bookableOnline: true,
+      },
+      {
+        serviceId: 'srv_arch_sculpt',
+        name: 'Precision Brow Arch Sculpt',
+        durationMinutes: 30,
+        currentPriceUsd: 55.0,
+        isActive: true,
+        bookableOnline: true,
+      },
+      {
+        serviceId: 'srv_retired_pkg',
+        name: 'Legacy Winter Special',
+        durationMinutes: 45,
+        currentPriceUsd: 80.0,
+        isActive: false,
+        bookableOnline: false,
+      },
+    ];
+
+    it('publishes active bookable feeds, prevents price drift, and executes atomic booking without conflicts', () => {
+      // 1. Catalog feed format: filters out inactive/unbookable items
+      const feed = formatPartnerCatalogFeed('salon_soho', catalog);
+      expect(feed.activeServicesCount).toBe(2);
+      expect(feed.feedItems.map((f) => f.serviceId)).toEqual(['srv_facial_glow', 'srv_arch_sculpt']);
+
+      // 2. Reject booking with price mismatch
+      const bookingReq: NativePartnerBookingRequest = {
+        partnerChannel: 'reserve_with_google',
+        partnerBookingReference: 'rwg_ref_9921',
+        salonId: 'salon_soho',
+        serviceId: 'srv_facial_glow',
+        serviceName: 'Hydra-Dew Glass Glow Facial',
+        scheduledStartTime: '2026-11-25T14:00:00Z',
+        scheduledEndTime: '2026-11-25T15:00:00Z',
+        clientInfo: {
+          fullName: 'Sloane Peterson',
+          email: 'sloane@example.com',
+          phone: '+1-555-8833',
+        },
+        quotedPriceUsd: 100.0, // Mismatch: live price is $120.00
+      };
+
+      expect(() => processNativePartnerBooking(bookingReq, catalog, [])).toThrow('Price mismatch: Partner quoted $100');
+
+      // 3. Reject schedule conflict
+      const existing = [{ scheduledStartTime: '2026-11-25T14:30:00Z', scheduledEndTime: '2026-11-25T15:30:00Z' }];
+      expect(() =>
+        processNativePartnerBooking({ ...bookingReq, quotedPriceUsd: 120.0 }, catalog, existing)
+      ).toThrow('Schedule conflict');
+
+      // 4. Successful atomic booking
+      const confirmed = processNativePartnerBooking({ ...bookingReq, quotedPriceUsd: 120.0 }, catalog, []);
+      expect(confirmed.status).toBe('confirmed_atomic');
+      expect(confirmed.confirmedPriceUsd).toBe(120.0);
+      expect(confirmed.calendarLocked).toBe(true);
+      expect(confirmed.attributionTag).toBe('channel_reserve_with_google');
+    });
+  });
+
+  describe('Posie Core Logic - F189 (Flexible Entry Plans & Acquisition Fees)', () => {
+    it('calculates plan usage with zero hidden client convenience fees and recommends timely tier upgrades', () => {
+      // 1. Starter Free tier with 25 appointments (within 30 cap) -> $0 base, $0 overage
+      const usageWithinCap: SalonPlanUsage = {
+        salonId: 'salon_solo_stylist',
+        currentTier: 'starter_free',
+        billingCycleMonth: '2026-11',
+        appointmentsBookedCount: 25,
+        marketplaceNetNewClientsCount: 0,
+      };
+
+      const billWithin = calculateFlexiblePlanBilling(usageWithinCap);
+      expect(billWithin.baseSubscriptionFeeUsd).toBe(0);
+      expect(billWithin.overageAppointmentsCount).toBe(0);
+      expect(billWithin.totalMonthlyBillingUsd).toBe(0);
+      expect(billWithin.checkoutClientSurchargesUsd).toBe(0);
+      expect(billWithin.isUpgradeRecommended).toBe(false);
+
+      // 2. Starter Free tier exceeding cap (50 appointments -> 20 overage @ $1.50 = $30 overage) + $400 net-new marketplace (15% = $60)
+      const usageOverCap: SalonPlanUsage = {
+        ...usageWithinCap,
+        appointmentsBookedCount: 50,
+        marketplaceNetNewClientsCount: 4,
+      };
+
+      const billOver = calculateFlexiblePlanBilling(usageOverCap, 400.0);
+      expect(billOver.overageAppointmentsCount).toBe(20);
+      expect(billOver.overageFeesUsd).toBe(30.0);
+      expect(billOver.marketplaceAcquisitionFeesUsd).toBe(60.0);
+      expect(billOver.totalMonthlyBillingUsd).toBe(90.0);
+      expect(billOver.isUpgradeRecommended).toBe(true);
+
+      // 3. Invariant: Consumer checkout has zero hidden markups
+      const checkoutCheck = verifyConsumerCheckoutFeeIntegrity(120.0, 120.0);
+      expect(checkoutCheck.isCompliant).toBe(true);
+      expect(checkoutCheck.unexpectedMarkupDetected).toBe(0);
+
+      const feeViolationCheck = verifyConsumerCheckoutFeeIntegrity(120.0, 123.5); // $3.50 hidden markup
+      expect(feeViolationCheck.isCompliant).toBe(false);
+      expect(feeViolationCheck.unexpectedMarkupDetected).toBe(3.5);
+    });
+  });
+
+  describe('Posie Core Logic - F190 (Self-Service Subscription Exit)', () => {
+    const exitRequest: SubscriptionExitRequest = {
+      salonId: 'salon_leaving_studio',
+      salonName: 'Leaving Studio',
+      action: 'cancel_subscription',
+      cancellationReason: 'Consolidating locations',
+      confirmedByOwnerEmail: 'owner@leavingstudio.com',
+    };
+
+    it('executes 1-click self-service cancellation, guarantees 90-day read-only archive, and produces export manifest', () => {
+      const exitSummary = processSelfServiceSubscriptionExit(exitRequest);
+
+      // 1. Cancellation action registered
+      expect(exitSummary.effectiveAction).toBe('cancelled');
+      expect(exitSummary.immediateChanges.newBookingIntakeStopped).toBe(true);
+      expect(exitSummary.immediateChanges.marketingSmsDisabled).toBe(true);
+
+      // 2. 90-day read-only historical guarantee
+      expect(exitSummary.historicalAccessGuarantee.readOnlyAccessGranted).toBe(true);
+      expect(exitSummary.historicalAccessGuarantee.readOnlyPeriodDays).toBe(90);
+      expect(new Date(exitSummary.historicalAccessGuarantee.readOnlyExpiresAt).getTime()).toBeGreaterThan(Date.now());
+
+      // 3. Scheduled permanent purge
+      expect(new Date(exitSummary.scheduledPurgeDate).getTime()).toBeGreaterThan(
+        new Date(exitSummary.historicalAccessGuarantee.readOnlyExpiresAt).getTime()
+      );
+
+      // 4. Export archive manifest
+      expect(exitSummary.exportArchiveManifest).toHaveLength(4);
+      expect(exitSummary.exportArchiveManifest.map((m) => m.resourceType)).toEqual([
+        'clients',
+        'appointments',
+        'financial_transactions',
+        'treatment_notes',
+      ]);
+      expect(exitSummary.retentionPolicyStatement).toContain('Full client data, appointment history');
+    });
+  });
+
 
 
 

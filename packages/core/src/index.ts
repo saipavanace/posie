@@ -183,4 +183,9 @@ export * from './peer_benchmarks';
 export * from './visual_consultation_preview';
 export * from './clinical_image_governance';
 export * from './payment_hardware_governance';
+export * from './client_pay_over_time';
+export * from './card_fee_offset';
+export * from './native_discovery_integrations';
+export * from './flexible_entry_plans';
+export * from './subscription_lifecycle_exit';
 

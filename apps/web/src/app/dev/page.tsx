@@ -586,6 +586,26 @@ export default function PosieStudioPage() {
   const [hardwareStrategyMode, setHardwareStrategyMode] = useState<'certified_partner' | 'custom_rfp_proposal'>('certified_partner');
   const [hardwareTamperTriggered, setHardwareTamperTriggered] = useState<boolean>(false);
 
+  // F186 Client Pay Over Time State
+  const [bnplSelectedPlan, setBnplSelectedPlan] = useState<'pay_in_4' | 'pay_full'>('pay_in_4');
+  const [bnplRefundSimulated, setBnplRefundSimulated] = useState<boolean>(false);
+
+  // F187 Optional Card Fee Offset State
+  const [surchargeTenderSelected, setSurchargeTenderSelected] = useState<'credit_card' | 'debit_card' | 'cash'>('credit_card');
+  const [surchargeStateSelected, setSurchargeStateSelected] = useState<'US-NY' | 'US-CT'>('US-NY');
+
+  // F188 Native Discovery Booking Integrations State
+  const [nativeChannelBookingSimulated, setNativeChannelBookingSimulated] = useState<boolean>(true);
+  const [nativePriceConflictSimulated, setNativePriceConflictSimulated] = useState<boolean>(false);
+
+  // F189 Flexible Entry Plans & Acquisition Fees State
+  const [flexiblePlanTier, setFlexiblePlanTier] = useState<'starter_free' | 'pro_atelier'>('starter_free');
+  const [flexibleMonthlyApptsCount, setFlexibleMonthlyApptsCount] = useState<number>(25);
+
+  // F190 Self Service Subscription Exit State
+  const [subscriptionCancellationStep, setSubscriptionCancellationStep] = useState<'active' | 'cancelled_read_only'>('active');
+  const [exportManifestDownloaded, setExportManifestDownloaded] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -606,7 +626,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F185)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F190)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -10637,6 +10657,381 @@ export default function PosieStudioPage() {
               onClick={() => setHardwareTamperTriggered(!hardwareTamperTriggered)}
             >
               {hardwareTamperTriggered ? 'Reset Physical Tamper Alert' : 'Simulate Terminal Physical Tamper (Trigger PCI Lock)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F186: Client Pay Over Time */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Wallet size={18} color="var(--color-primary)" />
+                Client Pay Over Time &amp; Installment Financing (F186)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Consumer Buy-Now-Pay-Later (Klarna / Affirm / Afterpay) with 100% upfront salon payout protection, zero merchant default risk, and proportional refund adjustments.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={bnplRefundSimulated ? 'rose' : bnplSelectedPlan === 'pay_in_4' ? 'sage' : 'muted'}>
+                {bnplRefundSimulated
+                  ? 'Refund Adjusted: $30.00 Recredited'
+                  : bnplSelectedPlan === 'pay_in_4'
+                  ? 'Klarna Pay-in-4 Active (0% APR)'
+                  : 'Standard Full Payment'}
+              </Badge>
+              <Badge variant="muted">WB F186 / Rule F186</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Client Installment Schedule:</div>
+              <strong>{bnplSelectedPlan === 'pay_in_4' ? '4 Bi-Weekly Payments of $30.00 ($120.00 Total • 0% APR)' : '$120.00 Paid in Full at Checkout'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Salon Payout Protection:</div>
+              <strong style={{ color: '#2B5329' }}>100% Upfront Payout ($112.62 Deposited • 5.9% + $0.30 Fee)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Default Risk Assumption:</div>
+              <strong>FINANCING PARTNER EXCLUSIVE (Zero Salon Chargeback Exposure)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Refund Status:</div>
+              <strong style={{ color: bnplRefundSimulated ? '#A65B32' : '#2B5329' }}>
+                {bnplRefundSimulated ? 'Partial Refund $30.00: 4th installment canceled for guest' : 'Clean: No disputes or refunds filed'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            💳 <strong>WB F186 Invariant:</strong> Consumer BNPL is strictly segregated from merchant working capital and daily payouts; salons receive 100% upfront settlement upon booking; default risk is assumed entirely by the regulated financing partner.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={bnplSelectedPlan === 'pay_in_4' ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextPlan = bnplSelectedPlan === 'pay_in_4' ? 'pay_full' : 'pay_in_4';
+                setBnplSelectedPlan(nextPlan);
+                if (nextPlan === 'pay_full') setBnplRefundSimulated(false);
+              }}
+            >
+              {bnplSelectedPlan === 'pay_in_4' ? 'Switch to Full Payment at Checkout' : 'Enable Klarna Pay-in-4 Financing ($30 / 2 wks)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bnplSelectedPlan !== 'pay_in_4'}
+              onClick={() => setBnplRefundSimulated(!bnplRefundSimulated)}
+            >
+              {bnplRefundSimulated ? 'Clear Refund Simulation' : 'Process $30.00 Partial Refund (Reduce Installment)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F187: Optional Card Fee Offset */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Percent size={18} color="var(--color-primary)" />
+                Compliant Card Fee Offset &amp; Statutory Surcharging (F187)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Lawful card processing offsets with mandatory debit card exemptions (Durbin Amendment), state statutory ban adherence (CT/MA/ME/OK), and upfront pre-authorization disclosures.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={surchargeStateSelected === 'US-CT' ? 'rose' : surchargeTenderSelected === 'credit_card' ? 'sage' : 'muted'}>
+                {surchargeStateSelected === 'US-CT'
+                  ? 'Surcharge Prohibited (Conn. Gen. Stat. § 42-133ff)'
+                  : surchargeTenderSelected === 'debit_card'
+                  ? 'Debit Card Exemption: 0% Surcharge'
+                  : surchargeTenderSelected === 'cash'
+                  ? 'Cash Discount: 0% Surcharge'
+                  : 'Credit Card Offset: +2.80% ($3.36)'}
+              </Badge>
+              <Badge variant="muted">WB F187 / Rule F187</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Payment Tender Selected:</div>
+              <strong>{surchargeTenderSelected === 'credit_card' ? 'Credit Card (Visa / Mastercard)' : surchargeTenderSelected === 'debit_card' ? 'Debit Card (Bank Checking)' : 'Cash / Direct ACH'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Jurisdiction &amp; State Law:</div>
+              <strong>{surchargeStateSelected === 'US-NY' ? 'New York (NY Gen. Bus. Law § 518 Permitted • Cap: 3.0%)' : 'Connecticut (Conn. Gen. Stat. § 42-133ff Prohibited)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Line Item Surcharge:</div>
+              <strong style={{ color: surchargeStateSelected === 'US-CT' || surchargeTenderSelected !== 'credit_card' ? '#2B5329' : '#A65B32' }}>
+                {surchargeStateSelected === 'US-CT'
+                  ? '$0.00 (Prohibited by Connecticut State Law)'
+                  : surchargeTenderSelected === 'credit_card'
+                  ? '+$3.36 Credit Card Offset (Final Total: $123.36)'
+                  : '$0.00 Surcharge (Exempted Tender)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Statutory Protection:</div>
+              <strong>MANDATORY EXCLUSION: Federal Durbin Amendment blocks all debit surcharges</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            ⚖️ <strong>WB F187 Invariant:</strong> Surcharging is strictly prohibited on debit and prepaid cards under federal law and card brand rules; enforces state bans (CT, MA, ME, OK); requires itemized disclosure prior to client payment authorization.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const nextTender = surchargeTenderSelected === 'credit_card' ? 'debit_card' : surchargeTenderSelected === 'debit_card' ? 'cash' : 'credit_card';
+                setSurchargeTenderSelected(nextTender);
+              }}
+            >
+              Tender: {surchargeTenderSelected === 'credit_card' ? 'Switch to Debit Card (Test Exemption)' : surchargeTenderSelected === 'debit_card' ? 'Switch to Cash (0% Surcharge)' : 'Switch to Credit Card'}
+            </Button>
+            <Button
+              size="sm"
+              variant={surchargeStateSelected === 'US-NY' ? 'outline' : 'primary'}
+              onClick={() => setSurchargeStateSelected(surchargeStateSelected === 'US-NY' ? 'US-CT' : 'US-NY')}
+            >
+              Jurisdiction: {surchargeStateSelected === 'US-NY' ? 'Switch to Connecticut (Simulate Statutory Ban)' : 'Switch to New York (Compliant Surcharge)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F188: Native Discovery Booking Integrations */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Globe size={18} color="var(--color-primary)" />
+                Native Discovery Booking Integrations (Reserve with Google) (F188)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Direct external scheduling integration via Reserve with Google and Instagram Book action, synchronizing real-time catalog pricing and atomic calendar slots.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={nativePriceConflictSimulated ? 'rose' : nativeChannelBookingSimulated ? 'sage' : 'muted'}>
+                {nativePriceConflictSimulated
+                  ? 'BLOCKED: External Price Mismatch'
+                  : nativeChannelBookingSimulated
+                  ? 'Live Sync Active (Reserve with Google)'
+                  : 'Channel Sync Paused'}
+              </Badge>
+              <Badge variant="muted">WB F188 / Rule F188</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Connected Channel:</div>
+              <strong>Reserve with Google (Maps &amp; Search Feed)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Catalog Live Feed:</div>
+              <strong>2 Bookable Services ($120 Facial, $55 Brow Sculpt)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Atomic Calendar Lock:</div>
+              <strong style={{ color: nativePriceConflictSimulated ? '#A65B32' : '#2B5329' }}>
+                {nativePriceConflictSimulated
+                  ? 'HALTED: Quoted price ($100) diverged from live catalog ($120)'
+                  : 'ATOMIC LOCK: Exactly 1 appointment committed (Zero conflict)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Source Attribution Tag:</div>
+              <strong>channel_reserve_with_google (Provenance verified)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🌐 <strong>WB F188 Invariant:</strong> Connects directly to Reserve with Google and social Book actions; synchronizes live catalog pricing and blocks stale feed drift; creates atomic calendar appointments preventing double-bookings.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={nativeChannelBookingSimulated ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextSync = !nativeChannelBookingSimulated;
+                setNativeChannelBookingSimulated(nextSync);
+                if (!nextSync) setNativePriceConflictSimulated(false);
+              }}
+            >
+              {nativeChannelBookingSimulated ? 'Pause Reserve with Google Sync' : 'Enable Reserve with Google Feed Sync'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!nativeChannelBookingSimulated}
+              onClick={() => setNativePriceConflictSimulated(!nativePriceConflictSimulated)}
+            >
+              {nativePriceConflictSimulated ? 'Restore Matching Price ($120.00)' : 'Simulate Partner Price Drift ($100 vs $120)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F189: Flexible Entry Plans & Acquisition Fees */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Coins size={18} color="var(--color-primary)" />
+                Flexible Entry Plans &amp; Transparent Acquisition (F189)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Sustainable low-volume entry tier ($0/mo up to 30 appointments for solo stylists), transparent appointment volume overage, and zero hidden consumer checkout fees.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={flexibleMonthlyApptsCount > 30 ? 'rose' : 'sage'}>
+                {flexiblePlanTier === 'starter_free'
+                  ? flexibleMonthlyApptsCount > 30
+                    ? `Starter Cap Exceeded (${flexibleMonthlyApptsCount}/30 Appts)`
+                    : `Starter Free Active (${flexibleMonthlyApptsCount}/30 Appts)`
+                  : 'Atelier Pro Tier ($49/mo)'}
+              </Badge>
+              <Badge variant="muted">WB F189 / Rule F189</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Subscription Tier:</div>
+              <strong>{flexiblePlanTier === 'starter_free' ? 'Sole Practitioner Starter ($0/mo • 30 Appts Included)' : 'Atelier Professional ($49/mo • 250 Appts Included)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Monthly Volume &amp; Overage:</div>
+              <strong style={{ color: flexibleMonthlyApptsCount > 30 && flexiblePlanTier === 'starter_free' ? '#A65B32' : '#2B5329' }}>
+                {flexibleMonthlyApptsCount} Appointments ({flexiblePlanTier === 'starter_free' && flexibleMonthlyApptsCount > 30 ? `+$${(flexibleMonthlyApptsCount - 30) * 1.50} overage fee` : '$0.00 overage'})
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Marketplace Acquisition Cut:</div>
+              <strong>15.00% on net-new marketplace clients ($0 on direct clients)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Consumer Checkout Fee Policy:</div>
+              <strong style={{ color: '#2B5329' }}>ZERO SURPRISE FEES: No booking markup or client fee</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🪙 <strong>WB F189 Invariant:</strong> Offers a sustainable free entry plan with clear volume caps; strictly prohibits sneaking client convenience fees or automatic paid add-ons at consumer checkout; transparently recommends plan upgrades when volume scales.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setFlexiblePlanTier(flexiblePlanTier === 'starter_free' ? 'pro_atelier' : 'starter_free')}
+            >
+              Tier: {flexiblePlanTier === 'starter_free' ? 'Upgrade to Atelier Pro ($49/mo)' : 'Switch to Starter Free ($0/mo)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setFlexibleMonthlyApptsCount(flexibleMonthlyApptsCount === 25 ? 50 : 25)}
+            >
+              Usage: {flexibleMonthlyApptsCount === 25 ? 'Simulate 50 Appts (Trigger Overage & Upgrade Notice)' : 'Simulate 25 Appts (Within Free Cap)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F190: Self-Service Subscription Exit */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Archive size={18} color="var(--color-primary)" />
+                Self-Service Subscription Exit &amp; Historical Access (F190)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                1-click self-service cancellation and downgrade without retention barriers, 90 days guaranteed read-only historical archive, and comprehensive export manifests.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={subscriptionCancellationStep === 'cancelled_read_only' ? 'rose' : 'sage'}>
+                {subscriptionCancellationStep === 'cancelled_read_only'
+                  ? 'Read-Only Archive (Expires in 90 Days)'
+                  : 'Subscription Active (Full Access)'}
+              </Badge>
+              <Badge variant="muted">WB F190 / Rule F190</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Subscription Status:</div>
+              <strong>{subscriptionCancellationStep === 'cancelled_read_only' ? 'Cancelled (1-Click Exit • Zero Retention Obstacles)' : 'Active (Auto-renews monthly)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Operational Permissions:</div>
+              <strong style={{ color: subscriptionCancellationStep === 'cancelled_read_only' ? '#A65B32' : '#2B5329' }}>
+                {subscriptionCancellationStep === 'cancelled_read_only'
+                  ? 'New bookings stopped • SMS notifications paused'
+                  : 'Full operational intake &amp; calendar write access'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Historical Read-Only Access:</div>
+              <strong>{subscriptionCancellationStep === 'cancelled_read_only' ? 'GUARANTEED: 90 days read-only access to all charts &amp; records' : 'Continuous full access'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Export Manifest &amp; Purge:</div>
+              <strong>
+                {exportManifestDownloaded
+                  ? 'DOWNLOADED: Full CSV/ZIP (Clients, Bookings, Ledger, Notes)'
+                  : 'Export available • Permanent purge in 120 days'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🗄️ <strong>WB F190 Invariant:</strong> Eliminates cancellation lock-in with 1-click self-service exit; guarantees 90 days of read-only access to historical client, appointment, and tax records; provides complete export archive downloads prior to scheduled permanent purge.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={subscriptionCancellationStep === 'cancelled_read_only' ? 'outline' : 'primary'}
+              onClick={() => {
+                const nextStep = subscriptionCancellationStep === 'cancelled_read_only' ? 'active' : 'cancelled_read_only';
+                setSubscriptionCancellationStep(nextStep);
+                if (nextStep === 'active') setExportManifestDownloaded(false);
+              }}
+            >
+              {subscriptionCancellationStep === 'cancelled_read_only' ? 'Reactivate Subscription' : '1-Click Self-Service Subscription Cancellation'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={subscriptionCancellationStep !== 'cancelled_read_only'}
+              onClick={() => setExportManifestDownloaded(!exportManifestDownloaded)}
+            >
+              {exportManifestDownloaded ? 'Reset Download State' : 'Download Complete Export Manifest (CSV/ZIP Archives)'}
             </Button>
           </div>
         </Card>
