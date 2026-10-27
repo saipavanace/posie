@@ -164,6 +164,16 @@ import {
   issuePackageSeriesEntitlement,
   consumePackageSession,
   refundRemainingPackageSessions,
+  enrollClientInMembership,
+  previewMembershipCancellation,
+  executeMembershipCancellation,
+  pauseMembershipSubscription,
+  handleRecurringPaymentFailure,
+  allocateTipAcrossProviders,
+  processTipRefundChoice,
+  accrueLoyaltyPoints,
+  reverseLoyaltyPointsForReturn,
+  redeemLoyaltyPoints,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -4088,6 +4098,240 @@ describe('Posie Core Logic - F092 (Package & Series Entitlements - Documents D13
     }).toThrow('Package series is not active');
   });
 });
+
+describe('Posie Core Logic - F093 (Membership Lifecycle - Document D16)', () => {
+  const tenantId = 'tenant_posie_tribeca';
+  const clientId = 'cli_emma';
+
+  const glowPassTerms = {
+    termsId: 'terms_glow_99',
+    planName: 'Monthly Atelier Glow Pass',
+    monthlyFeeCents: 9900, // $99.00 / month
+    includedMonthlyCredits: 1,
+    retailDiscountPercent: 15,
+    cancellationNoticeDays: 0,
+    rolloverCreditsAllowed: true,
+    bankedCreditValidityMonths: 6,
+  };
+
+  it('enrolls client, previews cancellation impact transparently, and supports pausing and dunning', () => {
+    // 1. Enroll client
+    const subscription = enrollClientInMembership({
+      tenantId,
+      clientId,
+      clientName: 'Emma Stone',
+      clientEmail: 'emma@example.com',
+      planId: 'plan_glow_99',
+      terms: glowPassTerms,
+      currentTime: '2026-11-01T10:00:00.000Z',
+    });
+
+    expect(subscription.status).toBe('active');
+    expect(subscription.bankedCreditsCount).toBe(1);
+
+    // 2. Cancellation Preview Invariant: Must preview future charges avoided and banked credits retention
+    const preview = previewMembershipCancellation({
+      subscription,
+      currentTime: '2026-11-15T12:00:00.000Z',
+    });
+
+    expect(preview.bankedCreditsCount).toBe(1);
+    expect(preview.futureChargesAvoidedCents).toBe(9900);
+    expect(preview.summaryNotice).toContain('You have 1 banked treatment credit(s)');
+    expect(preview.summaryNotice).toContain('No further monthly charges of $99.00');
+
+    // 3. Pause membership for 60 days
+    const paused = pauseMembershipSubscription({
+      subscription,
+      pauseDays: 60,
+      currentTime: '2026-11-15T12:00:00.000Z',
+    });
+
+    expect(paused.status).toBe('paused');
+    expect(paused.bankedCreditsCount).toBe(1); // Credits intact
+    expect(paused.pausedUntilDate).toBeDefined();
+
+    // 4. Payment failure enters grace period dunning
+    const dunning = handleRecurringPaymentFailure({
+      subscription,
+      failureReason: 'card_expired',
+    });
+
+    expect(dunning.status).toBe('grace_period_dunning');
+    expect(dunning.failedPaymentCount).toBe(1);
+    expect(dunning.cardUpdateToken).toBeDefined();
+
+    // 5. Execute cancellation
+    const cancelled = executeMembershipCancellation({
+      subscription,
+      currentTime: '2026-11-20T10:00:00.000Z',
+    });
+
+    expect(cancelled.status).toBe('cancelled');
+    expect(cancelled.cancelledAt).toBeDefined();
+  });
+});
+
+describe('Posie Core Logic - F094 (Tipping Across Checkout Types & Provider Allocation)', () => {
+  const tenantId = 'tenant_posie_soho';
+  const ticketId = 'tkt_balayage_9912';
+
+  it('allocates tips across specialists/assistants and supports distinct tip refund choices', () => {
+    // 1. $40 tip split: 75% to Master Colorist Maya Lin, 25% to Shampoo Assistant Jen
+    const allocation = allocateTipAcrossProviders({
+      tenantId,
+      ticketId,
+      totalTipCents: 4000, // $40.00
+      isZeroBalanceRedemptionVisit: true, // Client redeemed voucher but tipped on card
+      recipients: [
+        {
+          staffId: 'staff_maya',
+          staffName: 'Maya Lin',
+          role: 'Master Colorist',
+          percentage: 75,
+        },
+        {
+          staffId: 'staff_jen',
+          staffName: 'Jen Apprentice',
+          role: 'Shampoo Assistant',
+          percentage: 25,
+        },
+      ],
+    });
+
+    expect(allocation.recipients.length).toBe(2);
+    expect(allocation.recipients[0].allocatedAmountCents).toBe(3000); // $30.00
+    expect(allocation.recipients[1].allocatedAmountCents).toBe(1000); // $10.00
+    expect(allocation.isZeroBalanceRedemptionVisit).toBe(true);
+
+    // 2. Invariant Choice A: Retain tip for staff when service is refunded
+    const choiceRetain = processTipRefundChoice({
+      allocation,
+      choice: 'retain_tip_for_staff',
+    });
+    expect(choiceRetain.clientRefundAmountCents).toBe(0);
+    expect(choiceRetain.staffClawbackAmountCents).toBe(0);
+    expect(choiceRetain.explanation).toContain('remains intact and paid to staff');
+
+    // 3. Invariant Choice B: Clawback tip from staff
+    const choiceClawback = processTipRefundChoice({
+      allocation,
+      choice: 'refund_tip_and_clawback_from_staff',
+    });
+    expect(choiceClawback.clientRefundAmountCents).toBe(4000);
+    expect(choiceClawback.staffClawbackAmountCents).toBe(4000);
+    expect(choiceClawback.explanation).toContain('reversed from staff payout ledger');
+
+    // 4. Invariant Choice C: Studio absorbs tip as goodwill courtesy
+    const choiceGoodwill = processTipRefundChoice({
+      allocation,
+      choice: 'salon_absorbed_as_goodwill',
+    });
+    expect(choiceGoodwill.clientRefundAmountCents).toBe(4000);
+    expect(choiceGoodwill.staffClawbackAmountCents).toBe(0);
+    expect(choiceGoodwill.salonExpenseCents).toBe(4000);
+    expect(choiceGoodwill.explanation).toContain('salon absorbs the expense');
+  });
+});
+
+describe('Posie Core Logic - F095 (Loyalty Balance Ledger & Rewards)', () => {
+  const tenantId = 'tenant_posie_chelsea';
+  const clientId = 'cli_ariana';
+
+  const initialAccount = {
+    accountId: 'loy_acc_ariana',
+    tenantId,
+    clientId,
+    clientName: 'Ariana Grande',
+    tier: 'bronze' as const,
+    lifetimePointsEarned: 0,
+    currentPointsBalance: 0,
+    activeRuleVersion: 1,
+    movements: [],
+    createdAt: '2026-11-01T10:00:00.000Z',
+    updatedAt: '2026-11-01T10:00:00.000Z',
+  };
+
+  const ruleV1 = {
+    version: 1,
+    pointsPerDollarSpent: 1, // 1 point per $1
+    redemptionRatePointsPerDollar: 10, // 10 points = $1
+    giftCardPurchasesEligible: false,
+    effectiveDate: '2026-01-01',
+  };
+
+  it('accrues points, promotes tiers, executes clawbacks on returns, and prevents retroactive point erasure', () => {
+    // 1. Client spends $300 on services (Ticket #101)
+    const accrual1 = accrueLoyaltyPoints({
+      account: initialAccount,
+      ticketId: 'tkt_101',
+      eligibleSpendCents: 30000, // $300.00
+      rule: ruleV1,
+      currentTime: '2026-11-05T12:00:00.000Z',
+    });
+
+    expect(accrual1.pointsEarned).toBe(300);
+    expect(accrual1.updatedAccount.currentPointsBalance).toBe(300);
+    expect(accrual1.updatedAccount.tier).toBe('silver'); // Promoted to silver (≥250 pts)
+
+    // 2. Client spends another $250 (Ticket #102) -> promoted to rose_gold_vip (≥500 pts)
+    const accrual2 = accrueLoyaltyPoints({
+      account: accrual1.updatedAccount,
+      ticketId: 'tkt_102',
+      eligibleSpendCents: 25000, // $250.00
+      rule: ruleV1,
+      currentTime: '2026-11-10T12:00:00.000Z',
+    });
+
+    expect(accrual2.pointsEarned).toBe(250);
+    expect(accrual2.updatedAccount.currentPointsBalance).toBe(550);
+    expect(accrual2.updatedAccount.tier).toBe('rose_gold_vip');
+
+    // 3. Return clawback: Client returns $50 retail item -> 50 points deducted cleanly
+    const postReturn = reverseLoyaltyPointsForReturn({
+      account: accrual2.updatedAccount,
+      ticketId: 'tkt_102',
+      pointsToReverse: 50,
+      reason: 'Returned hair mask',
+      currentTime: '2026-11-12T14:00:00.000Z',
+    });
+
+    expect(postReturn.currentPointsBalance).toBe(500);
+
+    // 4. Client redeems 200 points for $20 discount
+    const redemption = redeemLoyaltyPoints({
+      account: postReturn,
+      pointsToRedeem: 200,
+      rule: ruleV1,
+      ticketId: 'tkt_103',
+      currentTime: '2026-11-15T10:00:00.000Z',
+    });
+
+    expect(redemption.discountAmountCents).toBe(2000); // $20.00 discount
+    expect(redemption.updatedAccount.currentPointsBalance).toBe(300);
+
+    // INVARIANT: Changing rule to Rule v2 (e.g. 0.5 points per $1) preserves existing points
+    const ruleV2 = {
+      version: 2,
+      pointsPerDollarSpent: 0.5,
+      redemptionRatePointsPerDollar: 10,
+      giftCardPurchasesEligible: false,
+      effectiveDate: '2026-12-01',
+    };
+
+    const accrualUnderV2 = accrueLoyaltyPoints({
+      account: redemption.updatedAccount,
+      ticketId: 'tkt_104',
+      eligibleSpendCents: 10000, // $100 spent -> 50 points under v2
+      rule: ruleV2,
+      currentTime: '2026-12-02T10:00:00.000Z',
+    });
+
+    expect(accrualUnderV2.pointsEarned).toBe(50);
+    expect(accrualUnderV2.updatedAccount.currentPointsBalance).toBe(350); // 300 historical + 50 new
+  });
+});
+
 
 
 

@@ -232,6 +232,19 @@ export default function PosieStudioPage() {
   // F092 Package Series State
   const [packageRefundState, setPackageRefundState] = useState<'active_2_used' | 'partially_refunded'>('active_2_used');
 
+  // F093 Membership Lifecycle State
+  const [membershipStatus, setMembershipStatus] = useState<'active' | 'paused' | 'cancelled_preview' | 'cancelled'>('active');
+  const [bankedCredits, setBankedCredits] = useState<number>(3);
+
+  // F094 Tip Allocation State
+  const [tipSplitActive, setTipSplitActive] = useState<boolean>(true);
+  const [tipRefundChoice, setTipRefundChoice] = useState<'none' | 'retain_staff' | 'clawback_staff' | 'salon_absorbed'>('none');
+
+  // F095 Loyalty Ledger State
+  const [loyaltyPoints, setLoyaltyPoints] = useState<number>(450);
+  const [loyaltyTier, setLoyaltyTier] = useState<'Silver Radiance' | 'Gold VIP'>('Silver Radiance');
+  const [loyaltyClawbackTriggered, setLoyaltyClawbackTriggered] = useState<boolean>(false);
+
 
 
 
@@ -3156,6 +3169,304 @@ export default function PosieStudioPage() {
               ✓ <strong>Partial Package Refund Reconciled:</strong> $300.00 refunded for the 3 unused sessions. Invariant enforced: Remaining units revoked to 0, pass marked closed, and the 2 previously consumed sessions remain permanently recognized with zero negative balance.
             </div>
           )}
+        </Card>
+      </section>
+
+      {/* F093: Membership Lifecycle Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <HeartPulse size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Membership Lifecycle & Transparent Cancellation Preview (F093 / Document D16)
+              </h3>
+            </div>
+            <Badge variant="sage">Document D16 Terms • Banked Credit Retention • Grace Period Dunning</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Subscribers never forfeit earned credits in surprise cancellation traps. Clear 60-day pause protections and transparent pre-cancellation previews show precisely which credits remain redeemable before terminating.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Zendaya — Radiance VIP Club ($75.00 / month)
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  Subscription ID: SUB-9941 • Renews Monthly on the 15th
+                </div>
+              </div>
+              <Badge variant={membershipStatus === 'active' ? 'sage' : membershipStatus === 'paused' ? 'muted' : 'rose'}>
+                {membershipStatus === 'active' ? 'Active Subscription' : membershipStatus === 'paused' ? 'Paused (Resumes Jan 15)' : 'Cancellation Pending'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.82rem', marginTop: '10px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Banked Facial Credits</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>{bankedCredits} Sessions</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>$225.00 accrued retail value</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Retail Discount Perk</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>15% Off In-Store</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Applies to all boutique products</div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px' }}>
+                <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Next Scheduled Charge</span>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>{membershipStatus === 'paused' ? 'Paused ($0)' : '$75.00 (Nov 15)'}</strong>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Auto-retry dunning with 7-day grace</div>
+              </div>
+            </div>
+          </div>
+
+          {membershipStatus === 'cancelled_preview' && (
+            <div style={{ border: '1px solid #E5C3B8', background: '#FFF9F7', padding: '14px', borderRadius: '8px', marginBottom: '14px' }}>
+              <strong style={{ fontSize: '0.88rem', color: '#8F4A3E', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <AlertTriangle size={16} /> Transparent Cancellation Preview (Document D16 Standard)
+              </strong>
+              <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.82rem', color: '#555', lineHeight: '1.5' }}>
+                <li><strong>Banked Credits Protected:</strong> Your {bankedCredits} unused credits ($225.00 value) remain 100% redeemable for 90 days after cancellation.</li>
+                <li><strong>Charges Avoided:</strong> You will avoid $150.00 in scheduled billing over the next 60 days.</li>
+                <li><strong>Zero Surprise Penalties:</strong> No cancellation fee or lock-in fee will ever be applied to your card.</li>
+              </ul>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {membershipStatus === 'active' && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => setMembershipStatus('paused')}>
+                  Pause Membership (60 Days)
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setMembershipStatus('cancelled_preview')}>
+                  Preview Cancellation Impact
+                </Button>
+              </>
+            )}
+            {membershipStatus === 'paused' && (
+              <Button size="sm" variant="outline" onClick={() => setMembershipStatus('active')}>
+                Resume Active Billing ($75/mo)
+              </Button>
+            )}
+            {membershipStatus === 'cancelled_preview' && (
+              <>
+                <Button size="sm" variant="primary" onClick={() => setMembershipStatus('cancelled')}>
+                  Confirm Cancellation (Retain 3 Credits)
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setMembershipStatus('active')}>
+                  Keep My Membership
+                </Button>
+              </>
+            )}
+            {membershipStatus === 'cancelled' && (
+              <Button size="sm" variant="outline" onClick={() => setMembershipStatus('active')}>
+                Re-enroll in Radiance VIP Club
+              </Button>
+            )}
+          </div>
+
+          {membershipStatus === 'cancelled' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Cancellation Finalized:</strong> Future billing stopped immediately. Invariant enforced: Client retains {bankedCredits} banked credits with an explicit 90-day redemption grace period per Document D16 terms.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F094: Tipping Across Checkout Types & Provider Allocation Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Coins size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Multi-Provider Tip Allocation & Safe Refund Choices (F094)
+              </h3>
+            </div>
+            <Badge variant="sage">Zero-Balance Voucher Tipping • Specialist/Assistant Split • 3-Way Refund Policy</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Supports tipping on zero-balance package vouchers, custom percentage splits between lead specialists and assistants, and explicit staff protection during service refund decisions.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                  Split Service Visit: Balayage + Toner & Silk Blowout ($240.00 Base)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Total Gratuity Added: $40.00 (Customer Paid via Card)
+                </div>
+              </div>
+              <Badge variant="muted">Split Tender Tip Pool</Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <strong style={{ color: 'var(--color-primary)' }}>Maya — Lead Colorist (75% Split)</strong>
+                <div style={{ color: 'var(--color-text-muted)', marginTop: '2px' }}>Service: Balayage Highlights ($180.00)</div>
+                <div style={{ marginTop: '8px', fontSize: '1rem', fontWeight: 'bold', color: '#2B5329' }}>
+                  Tip Share: $30.00
+                </div>
+              </div>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <strong style={{ color: 'var(--color-primary)' }}>Jen — Color Assistant (25% Split)</strong>
+                <div style={{ color: 'var(--color-text-muted)', marginTop: '2px' }}>Service: Toner & Blowout ($60.00)</div>
+                <div style={{ marginTop: '8px', fontSize: '1rem', fontWeight: 'bold', color: '#2B5329' }}>
+                  Tip Share: $10.00
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ border: '1px solid #E5E0D8', padding: '14px', borderRadius: '8px', background: '#FFFDF9', marginBottom: '14px' }}>
+            <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+              Service Redo/Refund Workflow: How Should the $40.00 Gratuity Be Handled?
+            </strong>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <Button
+                size="sm"
+                variant={tipRefundChoice === 'retain_staff' ? 'primary' : 'outline'}
+                onClick={() => setTipRefundChoice('retain_staff')}
+              >
+                1. Retain Tip for Staff (Refund $240 Service Only)
+              </Button>
+              <Button
+                size="sm"
+                variant={tipRefundChoice === 'clawback_staff' ? 'primary' : 'outline'}
+                onClick={() => setTipRefundChoice('clawback_staff')}
+              >
+                2. Clawback from Payroll (Refund $280 Total to Client)
+              </Button>
+              <Button
+                size="sm"
+                variant={tipRefundChoice === 'salon_absorbed' ? 'primary' : 'outline'}
+                onClick={() => setTipRefundChoice('salon_absorbed')}
+              >
+                3. Salon Absorbs as Goodwill (Staff Keeps $40, Salon Refunds $280)
+              </Button>
+            </div>
+
+            {tipRefundChoice === 'retain_staff' && (
+              <div style={{ marginTop: '10px', fontSize: '0.82rem', color: '#3A523A', background: '#F4F7F4', padding: '8px 12px', borderRadius: '6px' }}>
+                ✓ <strong>Staff Protected:</strong> Client receives $240.00 service refund. Maya ($30) and Jen ($10) keep their earned tips for their dedicated time.
+              </div>
+            )}
+            {tipRefundChoice === 'clawback_staff' && (
+              <div style={{ marginTop: '10px', fontSize: '0.82rem', color: '#8F4A3E', background: '#FFF9F7', padding: '8px 12px', borderRadius: '6px' }}>
+                ⚠ <strong>Payroll Adjustment:</strong> Client receives $280.00 total refund. $30.00 clawback debited from Maya and $10.00 clawback debited from Jen's next payroll batch.
+              </div>
+            )}
+            {tipRefundChoice === 'salon_absorbed' && (
+              <div style={{ marginTop: '10px', fontSize: '0.82rem', color: '#445D78', background: '#F0F4F8', padding: '8px 12px', borderRadius: '6px' }}>
+                ★ <strong>Salon Goodwill Resolution:</strong> Client receives $280.00 refund. Salon absorbs the $40.00 cost under operational customer retention; Maya and Jen retain their full tips.
+              </div>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F095: Loyalty Balance Ledger Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Loyalty Balance Ledger & Rewards (F095)
+              </h3>
+            </div>
+            <Badge variant="sage">Append-Only Ledger • Tier Elevation • Anti-Retroactive Guarantee</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Track client rewards across services and retail purchases. Point accrual rules are strictly version-controlled so retroactive rule edits never silently diminish previously earned points.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                  Zendaya — Posie Radiance Rewards
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Current Tier: <strong>{loyaltyTier}</strong> (Earn Rate: 1 pt per $1.00 spent)
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', display: 'block' }}>Available Balance</span>
+                <strong style={{ fontSize: '1.4rem', color: 'var(--color-primary)' }}>{loyaltyPoints} pts</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#EAE6DF', height: '8px', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
+              <div
+                style={{
+                  width: `${Math.min(100, (loyaltyPoints / 500) * 100)}%`,
+                  background: loyaltyPoints >= 500 ? '#738A73' : '#C4A482',
+                  height: '100%',
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+              <span>Silver Radiance (0 - 499 pts)</span>
+              <span>{loyaltyPoints >= 500 ? 'Gold VIP Unlocked (500+ pts) ★' : `${500 - loyaltyPoints} pts to Gold VIP`}</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const next = loyaltyPoints + 140;
+                setLoyaltyPoints(next);
+                if (next >= 500) setLoyaltyTier('Gold VIP');
+              }}
+            >
+              Checkout Visit ($100 Facial + $40 Serum = +140 pts)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={loyaltyPoints < 200}
+              onClick={() => {
+                setLoyaltyPoints(Math.max(0, loyaltyPoints - 200));
+              }}
+            >
+              Redeem 200 pts ($15 Off Ticket)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={loyaltyClawbackTriggered}
+              onClick={() => {
+                setLoyaltyPoints(Math.max(0, loyaltyPoints - 40));
+                setLoyaltyClawbackTriggered(true);
+              }}
+            >
+              Return Serum Product (-40 pts Clawback)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setLoyaltyPoints(450);
+                setLoyaltyTier('Silver Radiance');
+                setLoyaltyClawbackTriggered(false);
+              }}
+            >
+              Reset Points Ledger
+            </Button>
+          </div>
+
+          <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+            ✓ <strong>Immutable Rule Guard:</strong> Rule changes (e.g. promotional 2x multipliers or standard rule adjustments) are tagged with unique rule versions. Previously banked points remain 100% immune from silent retroactive recalculation.
+          </div>
         </Card>
       </section>
 

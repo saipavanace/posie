@@ -546,6 +546,25 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Multi-session prepaid series tracker (e.g. 5x HydraFacial package) managing session consumption, rollover dates, and partial cancellations.
 * **Key Invariant (Basis: B; WB F39, Documents D13/D16):** **Partial refund revocation integrity.** Refunding an active package series refunds only the unconsumed sessions while permanently revoking remaining entitlement units to 0. Already consumed sessions remain permanently locked in the historical ledger, completely preventing negative session balances or reused visits.
 
+---
+
+## F093 — Membership Lifecycle & Transparent Cancellation Preview (Document D16)
+* **What it is:** Recurring client membership program (monthly credits, discounted services, retail perks) with respectful, jargon-free subscription control.
+* **Key Invariant (Basis: B; WB F40, Document D16):** **Anti-surprise cancellation preview & credit retention.** Subscribers are never trapped or blindsided by immediate forfeiture of hard-earned banked credits. Cancellation workflows present a transparent preview detailing exactly how many banked credits remain redeemable (with a mandatory 90-day post-cancellation redemption window), how much future billing is avoided, and zero surprise penalty fees. Includes flexible 60-day billing pause protections and smart dunning grace periods with card-update links before service suspension.
+
+---
+
+## F094 — Tipping Across Checkout Types & Provider Allocation
+* **What it is:** Flexible gratuity distribution engine supporting split appointments, multiple specialists and assistants, zero-dollar package tickets, and post-service refund policies.
+* **Key Invariant (Basis: B; WB F41):** **Zero-balance tipping & 3-way refund protection.** Clients redeeming 100% prepaid vouchers or gift passes can add card tips without awkward workarounds. When multiple providers service a visit (e.g. Lead Colorist and Assistant), tips allocate proportionally according to defined percentage or dollar splits. When a client requests a service refund/redo, Posie presents an explicit, auditable choice: retain the tip with staff (protecting their labor), clawback the tip from payroll, or absorb the tip under the salon's operational goodwill retention budget.
+
+---
+
+## F095 — Loyalty Balance Ledger & Rewards
+* **What it is:** Double-entry points and tier elevation ledger for beauty and wellness clients, tracking accruals across retail and services, threshold promotions, and return clawbacks.
+* **Key Invariant (Basis: B; WB F42):** **Rule versioning & historical point protection.** Loyalty point accrual rules are strictly version-controlled with effective date stamps. If a salon updates point accrual rules (e.g. changing from 1 pt/$1 to 0.5 pt/$1), the system strictly applies new rules to future purchases, permanently preserving previously earned point balances from silent retroactive dilution. Returns and refunds cleanly reverse only the points accrued on the returned item.
+
+
 
 
 

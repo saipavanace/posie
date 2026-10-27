@@ -90,4 +90,7 @@ export * from './dispute_workspace';
 export * from './payout_tracker';
 export * from './gift_card_ledger';
 export * from './package_series';
+export * from './membership_lifecycle';
+export * from './tip_allocation';
+export * from './loyalty_ledger';
 
