@@ -284,6 +284,15 @@ import {
   grantAssistedSupportSession,
   revokeAssistedSupportSession,
   maskResourceForSupport,
+  generatePayrollExport,
+  calculateCheckoutTaxes,
+  generateTaxReceipt,
+  compileIntegrationCenterOverview,
+  DEFAULT_INTEGRATION_TEMPLATES,
+  requestConsequentialChangeApproval,
+  approveConsequentialChange,
+  rejectConsequentialChange,
+  evaluateSupportedPaymentMethods,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -6747,6 +6756,217 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(revoked.revocationReason).toContain('Security audit complete');
     });
   });
+
+  describe('Posie Core Logic - F131 (Payroll Ready Exports)', () => {
+    it('compiles provider-ready exports with period locks and exception auditing', () => {
+      const staffInputs = [
+        {
+          practitionerId: 'prac_1',
+          practitionerName: 'Sienna Woods',
+          externalPayrollEmployeeId: 'EMP-001',
+          regularHoursWorked: 32,
+          hourlyRateUSD: 25.0, // $800
+          serviceCommissionUSD: 450.0,
+          retailCommissionUSD: 60.0,
+          tipsUSD: 180.0,
+          forwardAdjustmentsUSD: -50.0, // Clawback from previous refund
+        },
+        {
+          practitionerId: 'prac_2',
+          practitionerName: 'Chloe Bennett',
+          externalPayrollEmployeeId: '', // Missing ID exception
+          regularHoursWorked: 40,
+          hourlyRateUSD: 20.0,
+          serviceCommissionUSD: 300.0,
+          retailCommissionUSD: 0,
+          tipsUSD: 120.0,
+          forwardAdjustmentsUSD: 0,
+          hasMissingTaxId: true,
+        },
+      ];
+
+      const manifest = generatePayrollExport(
+        'pay_period_2026_10_A',
+        '2026-10-01',
+        '2026-10-15',
+        'gusto',
+        staffInputs,
+        true,
+        'mgr_sophie'
+      );
+
+      // Invariants: Period locks and exception reporting
+      expect(manifest.isPeriodLocked).toBe(true);
+      expect(manifest.lockedByUserId).toBe('mgr_sophie');
+      expect(manifest.totalHourlyWagesUSD).toBe(800 + 800); // $1600
+      expect(manifest.totalCommissionsUSD).toBe(510 + 300); // $810
+      expect(manifest.totalTipsUSD).toBe(300);
+      expect(manifest.totalForwardAdjustmentsUSD).toBe(-50);
+      expect(manifest.totalGrossPayrollUSD).toBe(1440 + 1220); // $2660
+
+      // Exceptions: Missing employee ID and missing tax ID
+      expect(manifest.exceptionCount).toBe(2);
+      expect(manifest.allExceptions[0]).toContain('Missing external payroll employee ID for Chloe Bennett');
+      expect(manifest.allExceptions[1]).toContain('Missing Tax ID / SSN on file for Chloe Bennett');
+
+      // CSV output verification
+      expect(manifest.csvContent).toContain('Employee_ID,Employee_Name,Regular_Hours');
+      expect(manifest.csvContent).toContain('EMP-001,"Sienna Woods",32.00,800.00');
+    });
+  });
+
+  describe('Posie Core Logic - F132 (Tax and Receipt Configuration)', () => {
+    it('enforces effective-dated tax rules and separates liability account 2200 from revenue', () => {
+      const rule = {
+        ruleId: 'tax_ca_beverly_hills_2026',
+        name: 'Beverly Hills Combined Sales Tax (Effective Oct 2026)',
+        effectiveFromDate: '2026-10-01',
+        servicesTaxable: false, // Services tax-exempt in CA
+        retailTaxable: true, // Retail products taxable
+        components: [
+          { jurisdictionName: 'California State', ratePercentage: 6.0 },
+          { jurisdictionName: 'Los Angeles County', ratePercentage: 0.25 },
+          { jurisdictionName: 'Beverly Hills City', ratePercentage: 3.25 },
+        ],
+        totalRatePercentage: 9.5, // 9.5% total
+        studioTaxRegistrationId: 'CA-SELLER-998124',
+      };
+
+      const lines = [
+        { id: 'l1', name: 'Hydra-Dew Glass Facial', category: 'service' as const, amountUSD: 150.0 },
+        { id: 'l2', name: 'Glow Hyaluronic Serum', category: 'retail_product' as const, amountUSD: 50.0 },
+        { id: 'l3', name: 'Practitioner Gratuity', category: 'tip' as const, amountUSD: 30.0 },
+      ];
+
+      const calculation = calculateCheckoutTaxes(lines, rule);
+
+      // Invariants: Only retail is taxed, tips and services exempt
+      expect(calculation.taxableSubtotalUSD).toBe(50.0);
+      expect(calculation.exemptSubtotalUSD).toBe(180.0);
+      expect(calculation.totalTaxLiabilityUSD).toBe(4.75); // 9.5% of $50
+      expect(calculation.grandTotalUSD).toBe(234.75);
+
+      // Accounting ledger code separation
+      expect(calculation.liabilityAccountCode).toBe('2200'); // Sales Tax Payable
+      expect(calculation.revenueAccountCode).toBe('4000'); // Gross Operating Revenue
+
+      // Formatted receipt output
+      const receipt = generateTaxReceipt('REC-99104', '2026-10-27', lines, rule);
+      expect(receipt.formattedReceiptText).toContain('RECEIPT #REC-99104');
+      expect(receipt.formattedReceiptText).toContain('Tax ID: CA-SELLER-998124');
+      expect(receipt.formattedReceiptText).toContain('Sales Tax (9.5%): $4.75');
+      expect(receipt.formattedReceiptText).toContain('GRAND TOTAL:      $234.75');
+    });
+  });
+
+  describe('Posie Core Logic - F133 (Integration Connection Center)', () => {
+    it('evaluates connection health and warns what external data is delayed during disconnections', () => {
+      const states = [
+        {
+          serviceId: 'quickbooks_online' as const,
+          displayName: 'QuickBooks Online',
+          category: 'accounting' as const,
+          status: 'token_expired' as const,
+          authorizedScopes: ['accounting'],
+          pendingRetryQueueCount: 3,
+          reconnectEndpoint: '/api/integrations/qbo/oauth/connect',
+        },
+        {
+          serviceId: 'stripe_terminal' as const,
+          displayName: 'Stripe Terminal (WisePOS E)',
+          category: 'payments' as const,
+          status: 'connected' as const,
+          authorizedScopes: ['terminal.hardware.read'],
+          pendingRetryQueueCount: 0,
+          reconnectEndpoint: '/api/integrations/stripe/pair',
+        },
+      ];
+
+      const overview = compileIntegrationCenterOverview('studio_beverly', states);
+
+      expect(overview.totalIntegrationsCount).toBe(2);
+      expect(overview.healthyCount).toBe(1);
+      expect(overview.degradedOrOfflineCount).toBe(1);
+
+      // Invariant: Disconnected QBO warns what data is lagging
+      const qbo = overview.integrations.find((i) => i.serviceId === 'quickbooks_online');
+      expect(qbo?.delayedDataImpactDescription).toContain('Daily sales journal entries and sales tax liability accounts are lagging');
+      expect(overview.actionRequiredSummary[0]).toContain('QuickBooks Online disconnected: Click to refresh Intuit OAuth token');
+    });
+  });
+
+  describe('Posie Core Logic - F134 (Approvals for Consequential Changes)', () => {
+    it('creates blast-radius previews and requires documented rationale for approval', () => {
+      // 1. Request consequential bulk SMS blast
+      const req = requestConsequentialChangeApproval(
+        'bulk_sms_broadcast',
+        'VIP Holiday Flash Promotion',
+        'Broadcast 20% gift card bonus to all active clients',
+        'staff_1',
+        'Emma Watson',
+        450, // 450 recipients
+        22.5 // $22.50 estimated messaging fee
+      );
+
+      expect(req.status).toBe('pending_approval');
+      expect(req.riskSeverity).toBe('high');
+      expect(req.affectedRecordsCount).toBe(450);
+      expect(req.totalFinancialImpactUSD).toBe(22.5);
+
+      // 2. Reject approval without adequate rationale
+      expect(() => approveConsequentialChange(req, 'owner_1', 'Dr. Evelyn Reed', 'no')).toThrow('minimum 5 characters');
+
+      // 3. Documented approval succeeds
+      const approved = approveConsequentialChange(
+        req,
+        'owner_1',
+        'Dr. Evelyn Reed',
+        'Approved within Q4 marketing carrier budget and complies with quiet hours.'
+      );
+
+      expect(approved.status).toBe('approved');
+      expect(approved.approvalDecision?.decision).toBe('approved');
+      expect(approved.approvalDecision?.decidedByUserId).toBe('owner_1');
+      expect(approved.approvalDecision?.rationale).toContain('Approved within Q4 marketing carrier budget');
+    });
+  });
+
+  describe('Posie Core Logic - F135 (Supported Wallet and Online Payment Methods)', () => {
+    it('filters payment methods based on client device capability and discloses transparent fees', () => {
+      // 1. iOS Safari device context: Apple Pay should be available
+      const iosContext = {
+        countryCode: 'US',
+        isApplePayHardwareSupported: true,
+        isGooglePayHardwareSupported: false,
+        browserName: 'safari' as const,
+        deviceType: 'ios' as const,
+      };
+
+      const iosEval = evaluateSupportedPaymentMethods(iosContext, 120.0);
+      expect(iosEval.recommendedMethod).toBe('apple_pay');
+      expect(iosEval.availableMethods.some((m) => m.id === 'apple_pay')).toBe(true);
+      expect(iosEval.pciComplianceStatement).toContain('PCI DSS SAQ A Certified');
+
+      // 2. Android Chrome device context: Google Pay available, Apple Pay filtered out
+      const androidContext = {
+        countryCode: 'US',
+        isApplePayHardwareSupported: false,
+        isGooglePayHardwareSupported: true,
+        browserName: 'chrome' as const,
+        deviceType: 'android' as const,
+      };
+
+      const androidEval = evaluateSupportedPaymentMethods(androidContext, 120.0);
+      expect(androidEval.recommendedMethod).toBe('google_pay');
+      expect(androidEval.availableMethods.some((m) => m.id === 'google_pay')).toBe(true);
+      expect(androidEval.availableMethods.some((m) => m.id === 'apple_pay')).toBe(false);
+
+      // Invariant: Disclosed processing fees
+      const bnplFee = androidEval.disclosedFeeSummary.find((s) => s.methodName.includes('Klarna'));
+      expect(bnplFee?.rateText).toBe('5.9% + 30¢');
+    });
+  });
+
 
 
 

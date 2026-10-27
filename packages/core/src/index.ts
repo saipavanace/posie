@@ -128,4 +128,9 @@ export * from './anomaly_explanations';
 export * from './guardian_payer_roles';
 export * from './care_summaries';
 export * from './assisted_support';
+export * from './payroll_exports';
+export * from './tax_configuration';
+export * from './integration_connection';
+export * from './consequential_approvals';
+export * from './wallet_payment_methods';
 

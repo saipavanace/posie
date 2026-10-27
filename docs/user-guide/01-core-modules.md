@@ -774,6 +774,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Time-bounded, permission-scoped support delegation console allowing Posie support engineers to inspect specific configuration issues while strictly masked from sensitive data.
 * **Key Invariant (Basis: Operational (I); WB F60, Rules SEC, OPS, F130):** **Scope Restriction & Secret Shielding.** Support cannot see payment secrets or private records outside the granted scope. Payment card details (PAN/CVC), gateway secret keys, client clinical SOAP charts, and staff personal compensation are strictly masked. All sessions have an owner 1-click instant kill switch and a maximum 2-hour hard cap.
 
+---
+
+## F131 — Payroll Ready Exports (WB F55)
+* **What it is:** Provider-ready compensation export compiling approved timecards, service commissions, tip splits, product commissions, and forward clawbacks into standardized payroll files (Gusto, ADP, Rippling).
+* **Key Invariant (Basis: Checkout / Payroll Foundation; WB F55, Rules F131, F097):** **Pay Rules & Period Locks.** "Every amount ties to a service, time record or approved correction." Once a pay period is approved and closed, underlying line items and time punch records are locked against backdated modifications. Retroactive changes generate an auditable forward adjustment in the next open pay period. An exception ledger flags missing employee IDs, unmapped tax IDs, and negative balances before payroll transmission.
+
+---
+
+## F132 — Tax and Receipt Configuration
+* **What it is:** Location-based, effective-dated sales tax engine handling multi-jurisdiction tax rates (state, county, city) and category-specific taxability (services vs retail products).
+* **Key Invariant (Basis: Checkout Foundation; Launch candidate (L); Rules F132, F099):** **Effective-Dated Tax Rules & Revenue Separation.** "Tax changes are effective-dated and separately reported from business revenue." Tax liability collected is credited strictly to Liability Account 2200 (Sales Tax Payable) and is never co-mingled with gross business revenue. Historical closed receipts and invoices retain their exact effective-dated tax rates.
+
+---
+
+## F133 — Integration Connection Center (WB F67)
+* **What it is:** Central integration cockpit exposing connection health, authorized OAuth scopes, synchronization freshness, and retry queues for external services (QuickBooks Online, Stripe Terminal, Twilio SMS, Google Calendar, Zapier).
+* **Key Invariant (Basis: Growth (G); WB F67, Rules F133, F123):** **Delayed Data Impact Disclosure.** "A disconnected integration shows what data may be delayed." When an integration is disconnected or its token expires, the system explicitly warns what external dashboards (e.g. QuickBooks journal entries or Twilio transactional SMS) are currently lagging, eliminating silent integration failures.
+
+---
+
+## F134 — Approvals for Consequential Changes (Rules SEC, LEG)
+* **What it is:** Blast-radius preview engine and multi-party approval gate for high-impact actions: bulk SMS broadcasts, large financial refunds (>$150), full studio data exports, and catalog price changes.
+* **Key Invariant (Basis: Growth (G); Trustworthy Automation, Rules SEC, LEG, F134):** **Blast-Radius Transparency & Audit Approval.** "Approvers see the exact affected records and any cost before accepting." Posie computes an immutable dry-run preview displaying the total affected clients, financial dollar exposure, and risk severity, requiring authorized manager sign-off with recorded rationale before execution.
+
+---
+
+## F135 — Supported Wallet and Online Payment Methods (WB F30)
+* **What it is:** Modern digital wallet configuration supporting Apple Pay, Google Pay, Link by Stripe, and interest-free BNPL (Klarna/Afterpay) across web booking and in-person POS.
+* **Key Invariant (Basis: Growth (G); WB F30, Payment Foundation):** **Transparent Fee & Device Capability Disclosure.** "Supported methods and fees are disclosed per country and device." The checkout engine detects hardware/browser capabilities (activating Apple Pay on Safari/iOS and Google Pay on Chrome/Android) and itemizes processing fees transparently. All credentials flow through hosted tokenization fields, maintaining strict PCI DSS SAQ A compliance.
+
+
 
 
 

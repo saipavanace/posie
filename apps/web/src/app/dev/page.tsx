@@ -382,6 +382,21 @@ export default function PosieStudioPage() {
   // F130 Assisted Support Sessions State
   const [supportSessionActive, setSupportSessionActive] = useState<boolean>(true);
 
+  // F131 Payroll Ready Exports State
+  const [payrollPeriodLocked, setPayrollPeriodLocked] = useState<boolean>(true);
+
+  // F132 Tax Configuration State
+  const [taxRuleServicesExempt, setTaxRuleServicesExempt] = useState<boolean>(true);
+
+  // F133 Integration Connection Center State
+  const [integrationQboDegraded, setIntegrationQboDegraded] = useState<boolean>(false);
+
+  // F134 Consequential Approvals State
+  const [consequentialChangeApproved, setConsequentialChangeApproved] = useState<boolean>(false);
+
+  // F135 Supported Wallet Payment Methods State
+  const [activeClientPlatform, setActiveClientPlatform] = useState<'ios_safari' | 'android_chrome'>('ios_safari');
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -402,7 +417,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F130)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F135)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -6551,6 +6566,361 @@ export default function PosieStudioPage() {
               onClick={() => setSupportSessionActive(!supportSessionActive)}
             >
               {supportSessionActive ? 'Execute Owner Kill Switch (Revoke Session)' : 'Grant Temporary Support Session (60m)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F131: Payroll Ready Exports */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Briefcase size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Payroll Ready Exports (F131)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={payrollPeriodLocked ? 'sage' : 'muted'}>
+                {payrollPeriodLocked ? 'Status: Period Locked (Audit Enforced)' : 'Status: Open / Unlocked (Draft Run)'}
+              </Badge>
+              <Badge variant="muted">WB F55 Gusto / ADP</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Compiles verified hours, service commissions, tip splits, and forward clawbacks into standardized payroll files.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Pay Period: 2026-10-01 to 2026-10-15 (Beverly Hills Atelier)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                Total Gross Payroll: $2,660.00
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Hourly Base Wages:</div>
+                <strong>$1,600.00 (72 hrs)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Total Commissions:</div>
+                <strong>$810.00 (Service + Retail)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Client Gratuity Tips:</div>
+                <strong>$300.00 (100% Payout)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Forward Adjustments:</div>
+                <strong style={{ color: '#8F4A3E' }}>-$50.00 (Clawback)</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '10px', fontSize: '0.78rem', marginBottom: '10px' }}>
+              <div>• <strong>Sienna Woods (EMP-001):</strong> 32 hrs ($800) + $510 comm + $180 tips - $50 adj = <strong>$1,440.00 Gross</strong></div>
+              <div style={{ marginTop: '4px' }}>• <strong>Chloe Bennett (UNMAPPED):</strong> 40 hrs ($800) + $300 comm + $120 tips = <strong>$1,220.00 Gross</strong> <span style={{ color: '#8F4A3E' }}>(⚠ Exception: Missing Tax ID)</span></div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              💼 <strong>WB F55 Invariant:</strong> Every amount ties to a service, time record or approved correction. Approved periods are locked against backdated tampering; subsequent adjustments flow to the next open period.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={payrollPeriodLocked ? 'outline' : 'primary'}
+              onClick={() => setPayrollPeriodLocked(!payrollPeriodLocked)}
+            >
+              {payrollPeriodLocked ? 'Unlock Period (Allow Time Edits)' : 'Lock Period & Export Gusto/ADP CSV (Rule F131)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F132: Tax and Receipt Configuration */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Receipt size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Tax &amp; Receipt Configuration (F132)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={taxRuleServicesExempt ? 'sage' : 'muted'}>
+                {taxRuleServicesExempt ? 'CA Rule: Services Exempt, Retail 9.5%' : 'Rule: Services & Retail Taxable'}
+              </Badge>
+              <Badge variant="muted">Account 2200 Liability</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Location-based effective-dated sales tax with category taxability rules and strict revenue/liability separation.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Ticket: Facial ($150) + Serum ($50) + Tip ($30)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                Grand Total: {taxRuleServicesExempt ? '$234.75' : '$249.00'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Taxable Subtotal:</div>
+                <strong>{taxRuleServicesExempt ? '$50.00 (Retail)' : '$200.00'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Exempt Subtotal:</div>
+                <strong>{taxRuleServicesExempt ? '$180.00 (Service/Tip)' : '$30.00 (Tip)'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Sales Tax (9.5%):</div>
+                <strong style={{ color: '#2B5329' }}>{taxRuleServicesExempt ? '$4.75' : '$19.00'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Ledger Account:</div>
+                <strong>Acct 2200 (Liability)</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🧾 <strong>Rule F132 Invariant:</strong> Tax liability collected is held strictly in Liability Account 2200 and never co-mingled with business operating revenue. Tax rules are effective-dated to preserve historical receipt integrity.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTaxRuleServicesExempt(!taxRuleServicesExempt)}
+            >
+              Toggle Service Tax Exemption ({taxRuleServicesExempt ? 'Simulate All Items Taxable' : 'Set Beauty Services Exempt (CA Default)'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F133: Integration Connection Center */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Share2 size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Integration Connection Center (F133)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={integrationQboDegraded ? 'rose' : 'sage'}>
+                {integrationQboDegraded ? 'Alert: QuickBooks Disconnected (Data Lagging)' : 'All Integrations Healthy (5/5)'}
+              </Badge>
+              <Badge variant="muted">WB F67 Health</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Central cockpit tracking external integration connection states and warning what data is delayed during disconnections.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>QuickBooks Online:</div>
+                <strong style={{ color: integrationQboDegraded ? '#8F4A3E' : '#2B5329' }}>
+                  {integrationQboDegraded ? '⚠ Token Expired' : '● Connected'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Stripe WisePOS E:</div>
+                <strong style={{ color: '#2B5329' }}>● Connected</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Twilio A2P SMS:</div>
+                <strong style={{ color: '#2B5329' }}>● Operational</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Google Calendar:</div>
+                <strong style={{ color: '#2B5329' }}>● Active Sync</strong>
+              </div>
+            </div>
+
+            {integrationQboDegraded && (
+              <div style={{ background: '#FFF5F3', border: '1px solid #E5C3B8', borderRadius: '6px', padding: '10px 14px', marginBottom: '10px', fontSize: '0.8rem', color: '#8F4A3E' }}>
+                <strong>Delayed Data Impact:</strong> Daily sales journal entries and sales tax liability accounts are lagging in QuickBooks. Historical reports in Posie remain unaffected.
+              </div>
+            )}
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔌 <strong>WB F67 Invariant:</strong> A disconnected integration shows what data may be delayed. The system explicitly discloses affected external dashboards rather than failing silently.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={integrationQboDegraded ? 'primary' : 'outline'}
+              onClick={() => setIntegrationQboDegraded(!integrationQboDegraded)}
+            >
+              {integrationQboDegraded ? 'Refresh QuickBooks OAuth Token' : 'Simulate QBO Token Expiration'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F134: Approvals for Consequential Changes */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Approvals for Consequential Changes (F134)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={consequentialChangeApproved ? 'sage' : 'rose'}>
+                {consequentialChangeApproved ? 'Approved by Dr. Evelyn Reed' : 'Pending Multi-Party Approval'}
+              </Badge>
+              <Badge variant="muted">SEC / LEG Governance</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Blast-radius preview engine and approval gates for bulk SMS broadcasts, large refunds, and data exports.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Proposed Change: VIP Holiday Flash SMS Broadcast
+              </strong>
+              <Badge variant="rose">High Risk Blast-Radius</Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Affected Recipients:</div>
+                <strong style={{ color: '#8F4A3E' }}>450 Active Clients</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Estimated Carrier Fee:</div>
+                <strong>$22.50 USD</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Quiet Hours Check:</div>
+                <strong style={{ color: '#2B5329' }}>✓ Compliant (2:00 PM)</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '10px', fontSize: '0.8rem', marginBottom: '10px' }}>
+              {consequentialChangeApproved
+                ? 'Approval Rationale: "Approved within Q4 marketing carrier budget and complies with quiet hours." (Signed by Dr. Evelyn Reed)'
+                : 'Pending Sign-Off: Action blocked until an authorized manager reviews blast radius and signs documented rationale.'}
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🛡 <strong>Rule F134 Invariant:</strong> Approvers see the exact affected records and any cost before accepting. Consequential studio modifications require immutable recorded rationale.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={consequentialChangeApproved ? 'outline' : 'primary'}
+              onClick={() => setConsequentialChangeApproved(!consequentialChangeApproved)}
+            >
+              {consequentialChangeApproved ? 'Revoke Approval' : 'Review & Approve Consequential Change (Dr. Reed)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F135: Supported Wallet and Online Payment Methods */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Wallet size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Supported Wallet &amp; Online Payment Methods (F135)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">
+                {activeClientPlatform === 'ios_safari' ? 'Recommended: Apple Pay' : 'Recommended: Google Pay'}
+              </Badge>
+              <Badge variant="muted">PCI DSS SAQ A / WB F30</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Digital wallet integration (Apple Pay, Google Pay, Link, BNPL) with device detection and transparent fees.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Client Platform Simulation: {activeClientPlatform === 'ios_safari' ? 'Apple iPhone (Safari 18)' : 'Google Pixel (Android / Chrome)'}
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: '#2B5329', fontWeight: 600 }}>
+                PCI DSS SAQ A (Zero Raw Card Exposure)
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Apple Pay:</div>
+                <strong style={{ color: activeClientPlatform === 'ios_safari' ? '#2B5329' : '#888' }}>
+                  {activeClientPlatform === 'ios_safari' ? '✓ Available (2.9% + 30¢)' : '❌ Not on Android'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Google Pay:</div>
+                <strong style={{ color: '#2B5329' }}>
+                  ✓ Available (2.9% + 30¢)
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Link by Stripe:</div>
+                <strong style={{ color: '#2B5329' }}>✓ 1-Click Saved Card</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Klarna / Afterpay:</div>
+                <strong style={{ color: '#2B5329' }}>✓ Pay in 4 (5.9% + 30¢)</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              💳 <strong>WB F30 Invariant:</strong> Supported methods and fees are disclosed per country and device. Credentials flow through hosted fields without touching Posie servers (PCI SAQ A).
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={activeClientPlatform === 'ios_safari' ? 'primary' : 'outline'}
+              onClick={() => setActiveClientPlatform('ios_safari')}
+            >
+              Simulate iOS Safari (Apple Pay Primary)
+            </Button>
+            <Button
+              size="sm"
+              variant={activeClientPlatform === 'android_chrome' ? 'primary' : 'outline'}
+              onClick={() => setActiveClientPlatform('android_chrome')}
+            >
+              Simulate Android Chrome (Google Pay Primary)
             </Button>
           </div>
         </Card>
