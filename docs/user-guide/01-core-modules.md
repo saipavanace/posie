@@ -714,6 +714,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Full responsive parity auditing and touch-optimized workflow engine ensuring solo practitioners can run their entire business from any mobile device.
 * **Key Invariant (Basis: Launch candidate (L); WB F60 C13, Rule DR08, WCAG 2.1 AA):** **Solo practitioner 100% workday parity & mobile ergonomic standards.** Solo estheticians and hairstylists are never blocked or forced onto a desktop computer to complete core workday tasks (calendar booking, SOAP note charting, client clinical photo uploads, and card checkout). Audits touch ergonomics (minimum 44x44px touch targets), mobile bottom-sheet drawers instead of desktop modals, and WCAG AA contrast ratios, guaranteeing 100% functional parity across all screen viewports.
 
+---
+
+## F121 — Unified Search and Commands (WB F60)
+* **What it is:** Global role-safe omni-search and command palette (`Cmd+K`) across clients, appointments, clinical charts, studio settings, and admin quick actions.
+* **Key Invariant (Basis: Launch candidate (L); WB F60, Rules F121, F020, F057):** **Role-Safe Results & Snippet Privacy.** Search never reveals a restricted note or clinical diagnosis through its snippet to an unauthorized role. Receptionists and staff see clinical findings as `[Restricted Clinical / Financial Record Redacted]`, and independent booth renters are firewalled from viewing another practitioner's clients or documents.
+
+---
+
+## F122 — Emergency Day View & Outage Recovery (WB C6)
+* **What it is:** Encrypted, locally cached read-only day view of today's appointments, client contact numbers, and clinical safety alerts for offline operation during cloud or internet outages.
+* **Key Invariant (Basis: Launch candidate (L); WB C6, Rules F058, F122, DR04):** **No False Offline Confirmation.** "No offline payment or appointment change is implied to be confirmed." Any operation attempted during an outage is recorded as `offline_unconfirmed_queued` with an explicit disclaimer that cloud reconnection and reconciliation are required before the action is confirmed. Features cache age indicators and device controls.
+
+---
+
+## F123 — Public API and Webhooks (WB F67)
+* **What it is:** Developer platform providing permission-scoped REST APIs, HMAC-SHA256 cryptographically signed webhooks, exponential backoff retries, and rate limiting.
+* **Key Invariant (Basis: Growth (G); WB F67, Rules F123, DR04, DR10):** **Idempotency & Safe Partner Delivery.** Every webhook dispatch carries a unique idempotency key (`evt_...`), API version tag, and HMAC-SHA256 signature header, allowing partners to handle duplicate or out-of-order deliveries safely without duplicate side effects. Tokens are strictly permission-scoped.
+
+---
+
+## F124 — Product Use Per Service & Fractional Backbar (Mangomint, Rules R06, R07)
+* **What it is:** Fractional backbar inventory tracking, formula version history, digital scale measurements, and residual mixing bowl waste accounting.
+* **Key Invariant (Basis: Growth (G); Rules R06, R07, F124):** **Consistent Unit Conversions & Unmeasured Estimate Transparency.** Converts consistently across metric (ml, g) and US customary (fl oz, oz) units. Any usage not weighed on a verified scale is explicitly stamped `estimated_formula_default` rather than falsely claiming physical measurement. Residual bowl waste is tracked distinctly from consumed volume to protect true service contribution margins.
+
+---
+
+## F125 — Lots Expiry and Stock Forecasts (WB F46, F47, F150)
+* **What it is:** Batch/lot tracking, manufacturer expiration management, Period After Opening (PAO) open-container degradation monitoring, and appointment-driven stock consumption forecasting.
+* **Key Invariant (Basis: Growth (G); WB F46, F47, F150, Rules F125, F042):** **Definite Shortage Truth & Lot Expiry Safety.** Alerts strictly distinguish definite scheduled shortages (confirmed appointments requiring SKU X where current unexpired stock < committed units) from speculative estimates with unknown usage rates. Products exceeding PAO or manufacturer expiration dates are automatically quarantined from clinical selection.
+
+
 
 
 

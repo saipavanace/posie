@@ -350,6 +350,23 @@ export default function PosieStudioPage() {
   // F120 Workday Device Parity State
   const [activeViewportMode, setActiveViewportMode] = useState<'phone' | 'tablet' | 'desktop'>('phone');
 
+  // F121 Unified Search State
+  const [searchUserRole, setSearchUserRole] = useState<'owner' | 'receptionist'>('owner');
+  const [searchQueryText, setSearchQueryText] = useState<string>('peel');
+
+  // F122 Emergency Day View State
+  const [emergencyOutageActive, setEmergencyOutageActive] = useState<boolean>(false);
+  const [emergencyActionQueued, setEmergencyActionQueued] = useState<boolean>(false);
+
+  // F123 Public API & Webhooks State
+  const [webhookTestDispatched, setWebhookTestDispatched] = useState<boolean>(false);
+
+  // F124 Fractional Backbar State
+  const [backbarMeasuredMode, setBackbarMeasuredMode] = useState<boolean>(true);
+
+  // F125 Lot Expiry & Stock Forecast State
+  const [lotPaoSimulated, setLotPaoSimulated] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -370,7 +387,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F120)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F125)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -5855,6 +5872,344 @@ export default function PosieStudioPage() {
               onClick={() => setActiveViewportMode('desktop')}
             >
               Desktop Viewport (1440px)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F121: Unified Search & Role-Safe Commands */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Search size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Unified Search &amp; Role-Safe Commands (F121)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={searchUserRole === 'owner' ? 'sage' : 'rose'}>
+                {searchUserRole === 'owner' ? 'Owner Mode: Full Clinical Finding' : 'Staff Mode: Snippet Redacted (Rule F121)'}
+              </Badge>
+              <Badge variant="muted">WB F60 Omni-Search</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Global search across clients, appointments, and charts. Enforces strict privacy so search never leaks restricted notes through snippets.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Active Search Query: &quot;{searchQueryText}&quot; (User Role: {searchUserRole.toUpperCase()})
+              </strong>
+              <Badge variant={searchUserRole === 'owner' ? 'sage' : 'muted'}>
+                {searchUserRole === 'owner' ? 'Unrestricted Practitioner Access' : 'Redacted Staff View'}
+              </Badge>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>
+                  SOAP Note: Chemical Peel (Maya Lin)
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: '#888' }}>Dr. Evelyn Reed • 2026-10-14</span>
+              </div>
+              <div style={{ fontSize: '0.82rem', color: searchUserRole === 'owner' ? '#333' : '#8F4A3E', fontStyle: searchUserRole === 'owner' ? 'normal' : 'italic' }}>
+                {searchUserRole === 'owner'
+                  ? 'Clinical finding: Stage 2 erythema and sensitive dermis. Prescribed soothing serum.'
+                  : '[Restricted Clinical / Financial Record Redacted]'}
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔍 <strong>Rule F121 Invariant:</strong> Search never reveals a restricted note through its snippet. Front desk receptionists and staff see redacted placeholders, while independent booth renters are firewalled from viewing another practitioner&apos;s charts.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={searchUserRole === 'owner' ? 'primary' : 'outline'}
+              onClick={() => setSearchUserRole(searchUserRole === 'owner' ? 'receptionist' : 'owner')}
+            >
+              Toggle Search Role ({searchUserRole === 'owner' ? 'Switch to Receptionist (Redacted)' : 'Switch to Owner (Full Access)'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F122: Emergency Day View & Outage Recovery */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Emergency Day View &amp; Outage Recovery (F122)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={emergencyOutageActive ? 'rose' : 'sage'}>
+                {emergencyOutageActive ? 'Outage Active: Emergency Read-Only Mode' : 'Online: Day View Synced'}
+              </Badge>
+              <Badge variant="muted">WB C6 Outage Protocol</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Encrypted local storage cache for today&apos;s appointments and clinical allergy alerts during internet outages.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Network State:</div>
+                <strong style={{ color: emergencyOutageActive ? '#8F4A3E' : '#2B5329' }}>
+                  {emergencyOutageActive ? '● Cloud Offline' : '● Online Synced'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Local Cache Age:</div>
+                <strong>Cached 14m ago</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Digest Integrity:</div>
+                <strong style={{ color: '#2B5329' }}>sha256_e814a0f2</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Safety Alerts:</div>
+                <strong style={{ color: '#8F4A3E' }}>2 Allergies Cached</strong>
+              </div>
+            </div>
+
+            {emergencyActionQueued && (
+              <div style={{ background: '#FFF5F3', border: '1px solid #E5C3B8', borderRadius: '6px', padding: '10px 14px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <strong style={{ fontSize: '0.85rem', color: '#8F4A3E' }}>
+                    Queued Action: Cash Received ($120.00 for Chloe Bennett)
+                  </strong>
+                  <Badge variant="rose">offline_unconfirmed_queued</Badge>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                  WB C6 Invariant: This action was recorded offline. It is not confirmed until the studio reconnects and cloud sync verifies the ledger.
+                </div>
+              </div>
+            )}
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔒 <strong>WB C6 Invariant:</strong> No offline payment or appointment change is implied to be confirmed. Practitioners access read-only safety data during outages, while offline transactions are strictly queued for reconciliation.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={emergencyOutageActive ? 'outline' : 'primary'}
+              onClick={() => setEmergencyOutageActive(!emergencyOutageActive)}
+            >
+              {emergencyOutageActive ? 'Restore Cloud Connection' : 'Simulate Internet Outage'}
+            </Button>
+            <Button
+              size="sm"
+              variant={emergencyActionQueued ? 'outline' : 'primary'}
+              onClick={() => setEmergencyActionQueued(!emergencyActionQueued)}
+            >
+              {emergencyActionQueued ? 'Clear Queued Action' : 'Queue Offline Action (Rule WB C6)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F123: Public API & Webhooks */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Globe size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Public API &amp; Webhooks (F123)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={webhookTestDispatched ? 'sage' : 'muted'}>
+                {webhookTestDispatched ? 'Webhook Dispatched (Idempotent)' : 'API Engine Ready (v2026-10-01)'}
+              </Badge>
+              <Badge variant="muted">WB F67 Integrations</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Permission-scoped developer tokens, HMAC-SHA256 signature verification, and exponential backoff webhook delivery.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Token Scopes:</div>
+                <strong style={{ color: '#2B5329' }}>appointments:read, clients:read</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Signature Protocol:</div>
+                <strong>HMAC-SHA256 (v1)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Backoff Schedule:</div>
+                <strong>10s, 60s, 5m, 30m</strong>
+              </div>
+            </div>
+
+            {webhookTestDispatched && (
+              <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '10px', marginBottom: '10px', fontFamily: 'monospace', fontSize: '0.76rem', color: '#333' }}>
+                <div>&gt; POST https://partner-app.example.com/webhooks</div>
+                <div>&gt; X-Posie-Signature: t=173000,v1=9a3f2b1c</div>
+                <div>&gt; Idempotency-Key: posie_idemp_evt_7841_99</div>
+                <div>&gt; Payload: &#123; &quot;eventType&quot;: &quot;appointment.booked&quot;, &quot;appointmentId&quot;: &quot;appt_99&quot; &#125;</div>
+              </div>
+            )}
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ⚡ <strong>WB F67 Invariant:</strong> Duplicate or out-of-order deliveries can be handled safely by integration partners. Every webhook carries a unique idempotency key, API version tag, and HMAC signature.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={webhookTestDispatched ? 'outline' : 'primary'}
+              onClick={() => setWebhookTestDispatched(!webhookTestDispatched)}
+            >
+              {webhookTestDispatched ? 'Reset Webhook Test' : 'Dispatch Idempotent Webhook Event (WB F67)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F124: Product Use Per Service & Fractional Backbar */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calculator size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Product Use Per Service &amp; Fractional Backbar (F124)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={backbarMeasuredMode ? 'sage' : 'rose'}>
+                {backbarMeasuredMode ? 'Dispense Mode: Measured on Scale (15ml)' : 'Dispense Mode: Estimated Formula Default (15ml)'}
+              </Badge>
+              <Badge variant="muted">Rules R06 / R07</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Tracks fractional backbar units, formula revisions, and bowl waste with explicit labeling for unmeasured estimates.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Formula Mix: Custom Glycolic Radiance Mix v2
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                Total Backbar Cost: $3.36 (Consumed: $3.00, Waste: $0.36)
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Glycolic 30% Solution:</div>
+                <strong>15 ml ($1.80) + 3 ml waste</strong>
+                <div style={{ fontSize: '0.7rem', color: backbarMeasuredMode ? '#2B5329' : '#8F4A3E' }}>
+                  {backbarMeasuredMode ? 'Scale Measured' : 'Estimated Default'}
+                </div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Botanical Soothing Drops:</div>
+                <strong>4 pumps (6 ml, $1.20)</strong>
+                <div style={{ fontSize: '0.7rem', color: '#888' }}>Standard 1.5ml/pump</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Waste Tracking:</div>
+                <strong>3 ml Bowl Excess ($0.36)</strong>
+                <div style={{ fontSize: '0.7rem', color: '#2B5329' }}>Direct Margin Impact</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ⚖ <strong>Rule R06/R07 Invariant:</strong> Units convert consistently across metric (ml, g) and US customary (fl oz, oz). Any dispense not verified on a physical scale is explicitly stamped estimated_formula_default rather than falsely claiming measured precision.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBackbarMeasuredMode(!backbarMeasuredMode)}
+            >
+              Toggle Measurement Mode ({backbarMeasuredMode ? 'Switch to Estimated Formula Default' : 'Switch to Digital Scale Measured'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F125: Lots Expiry and Stock Forecasts */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Package size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Lots Expiry &amp; Stock Forecasts (F125)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={lotPaoSimulated ? 'rose' : 'sage'}>
+                {lotPaoSimulated ? 'Definite Shortage Alert: -3 Vials' : 'Stock Forecast: Adequate for 7 Days'}
+              </Badge>
+              <Badge variant="muted">WB F46 / F150</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Tracks batch/lot numbers, Period After Opening (PAO) degradation, and forecasts definite appointment stock shortages.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Lot LOT-2026-A (Fresh):</div>
+                <strong style={{ color: '#2B5329' }}>5 Vials (Exp: Dec 2027)</strong>
+                <div style={{ fontSize: '0.7rem', color: '#2B5329' }}>Healthy &amp; Unexpired</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Lot LOT-2025-X (PAO Violated):</div>
+                <strong style={{ color: '#8F4A3E' }}>4 Vials (Opened &gt;6mo ago)</strong>
+                <div style={{ fontSize: '0.7rem', color: '#8F4A3E' }}>Quarantined from Clinical Use</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Committed Bookings (7 Days):</div>
+                <strong style={{ color: lotPaoSimulated ? '#8F4A3E' : '#2B5329' }}>
+                  {lotPaoSimulated ? '8 Vials Committed (-3 Shortage)' : '4 Vials Committed (Adequate)'}
+                </strong>
+                <div style={{ fontSize: '0.7rem', color: '#888' }}>Appointment Commitments</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📦 <strong>WB F46 Invariant:</strong> Stock alerts strictly distinguish definite shortages (confirmed bookings with strict SKU requirements exceeding available unexpired stock) from speculative estimates with unknown usage rates.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={lotPaoSimulated ? 'outline' : 'primary'}
+              onClick={() => setLotPaoSimulated(!lotPaoSimulated)}
+            >
+              {lotPaoSimulated ? 'Reset Stock Simulation' : 'Simulate Strict Booking Demand & Definite Shortage'}
             </Button>
           </div>
         </Card>

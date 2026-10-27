@@ -263,6 +263,17 @@ import {
   verifyExitArchiveIntegrity,
   CORE_WORKDAY_PARITY_SPECS,
   auditWorkdayDeviceParity,
+  executeUnifiedSearch,
+  buildEmergencyDayViewCache,
+  evaluateEmergencyDayView,
+  queueOfflineAction,
+  validateApiTokenScope,
+  createWebhookEventPayload,
+  calculateNextRetryDelaySeconds,
+  convertToBaseUnit,
+  computeBackbarUsageSummary,
+  evaluateLotHealth,
+  forecastStockDemand,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -6203,6 +6214,275 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(CORE_WORKDAY_PARITY_SPECS.checkout_pos_payment.mobileUIPattern).toBe('bottom_sticky_bar');
     });
   });
+
+  describe('Posie Core Logic - F121 (Unified Search and Commands)', () => {
+    const testItems = [
+      {
+        id: 'c1',
+        category: 'client' as const,
+        title: 'Maya Lin',
+        subtitle: '(415) 555-0199 • VIP Client',
+        snippet: 'Prefers quiet sessions with jasmine aromatherapy.',
+        actionRoute: '/clients/c1',
+        actionType: 'navigate' as const,
+        keywords: ['maya', 'lin', 'vip'],
+      },
+      {
+        id: 'doc1',
+        category: 'document' as const,
+        title: 'SOAP Note: Chemical Peel',
+        subtitle: 'Visit on 2026-10-14 with Dr. Evelyn Reed',
+        snippet: 'TCA 15% applied for 4 minutes with frost observation.',
+        restrictedSnippet: 'Clinical finding: Stage 2 erythema and sensitive dermis. Prescribed soothing serum.',
+        practitionerId: 'prac_reed',
+        actionRoute: '/charts/doc1',
+        actionType: 'modal' as const,
+      },
+      {
+        id: 'cmd1',
+        category: 'command' as const,
+        title: 'Export Studio Exit Archive',
+        subtitle: '1-click $0 complete data backup (Rule DR06)',
+        requiredRoles: ['owner'] as ('owner' | 'manager' | 'practitioner' | 'booth_renter' | 'receptionist')[],
+        actionRoute: '/admin/settings/export',
+        actionType: 'command' as const,
+      },
+    ];
+
+    it('searches records and protects restricted clinical snippets from unauthorized roles', () => {
+      // 1. Receptionist search - sensitive note snippet must be redacted
+      const receptionistRes = executeUnifiedSearch(testItems, {
+        query: 'peel',
+        userRole: 'receptionist',
+        userId: 'staff_1',
+      });
+
+      expect(receptionistRes.totalMatches).toBe(1);
+      const docMatch = receptionistRes.resultsByCategory.document[0];
+      expect(docMatch.isSnippetRedacted).toBe(true);
+      expect(docMatch.displaySnippet).toContain('[Restricted Clinical / Financial Record Redacted]');
+
+      // 2. Owner search - owner sees full clinical finding
+      const ownerRes = executeUnifiedSearch(testItems, {
+        query: 'peel',
+        userRole: 'owner',
+        userId: 'owner_1',
+      });
+      const ownerDocMatch = ownerRes.resultsByCategory.document[0];
+      expect(ownerDocMatch.isSnippetRedacted).toBe(false);
+      expect(ownerDocMatch.displaySnippet).toContain('Stage 2 erythema');
+
+      // 3. Command authorization - receptionist cannot find owner-only exit archive command
+      const receptionistCmdRes = executeUnifiedSearch(testItems, {
+        query: 'exit',
+        userRole: 'receptionist',
+        userId: 'staff_1',
+      });
+      expect(receptionistCmdRes.totalMatches).toBe(0);
+
+      // 4. Booth renter isolation - cannot see another practitioner's document
+      const renterRes = executeUnifiedSearch(testItems, {
+        query: 'peel',
+        userRole: 'practitioner',
+        userId: 'prac_other',
+        isBoothRenter: true,
+      });
+      expect(renterRes.totalMatches).toBe(0);
+    });
+  });
+
+  describe('Posie Core Logic - F122 (Emergency Day View & Outage Recovery)', () => {
+    it('caches day view with cryptographic digest and marks offline actions as unconfirmed', () => {
+      const appointments = [
+        {
+          id: 'appt_1',
+          clientName: 'Chloe Bennett',
+          clientPhone: '(212) 555-0144',
+          practitionerName: 'Sienna Woods',
+          practitionerId: 'prac_1',
+          serviceName: 'Hydra-Dew Facial',
+          startTime: '10:00 AM',
+          endTime: '11:00 AM',
+          status: 'confirmed' as const,
+          safetyAlerts: ['Allergic to Tea Tree Oil', 'Retin-A use 3 days ago'],
+          roomOrStation: 'Room 2',
+        },
+      ];
+
+      const cache = buildEmergencyDayViewCache('studio_beverly', 'device_tablet_1', '2026-10-27', appointments);
+
+      expect(cache.isEncrypted).toBe(true);
+      expect(cache.cacheDigest).toMatch(/^sha256_/);
+      expect(cache.appointments.length).toBe(1);
+
+      // Evaluate active offline status
+      const status = evaluateEmergencyDayView(cache, true, []);
+      expect(status.isOffline).toBe(true);
+      expect(status.safetyAlertCount).toBe(2);
+      expect(status.statusMessage).toContain('Emergency Read-Only Mode');
+
+      // Invariant: No false confirmation during outages
+      const queuedAction = queueOfflineAction('cash_received', 'appt_1', { amountUSD: 120 });
+      expect(queuedAction.syncStatus).toBe('offline_unconfirmed_queued');
+      expect(queuedAction.disclaimer).toContain('WB C6 Invariant');
+      expect(queuedAction.disclaimer).toContain('It is not confirmed until the studio reconnects');
+    });
+  });
+
+  describe('Posie Core Logic - F123 (Public API and Webhooks)', () => {
+    it('validates permission scopes and dispatches idempotent signed webhook payloads', () => {
+      const token = {
+        id: 'tok_123',
+        name: 'Zapier Lead Connector',
+        tokenPrefix: 'posie_live_zapier',
+        tokenHash: 'hash_abc',
+        scopes: ['appointments:read', 'clients:read'] as ('appointments:read' | 'clients:read')[],
+        studioId: 'studio_1',
+        createdAtUtc: '2026-10-01T00:00:00Z',
+        rateLimitPerMinute: 60,
+      };
+
+      // Scope validation
+      const readAllowed = validateApiTokenScope(token, 'appointments:read');
+      expect(readAllowed.isAuthorized).toBe(true);
+
+      const writeDenied = validateApiTokenScope(token, 'clients:write' as any);
+      expect(writeDenied.isAuthorized).toBe(false);
+      expect(writeDenied.reason).toContain('lacks required scope');
+
+      // Webhook payload creation with signature and idempotency key
+      const payload = createWebhookEventPayload(
+        'appointment.booked',
+        'studio_1',
+        { appointmentId: 'appt_99', clientName: 'Gemma Chan' },
+        'whsec_secret_key_777'
+      );
+
+      expect(payload.idempotencyKey).toMatch(/^posie_idemp_evt_/);
+      expect(payload.signatureHeader).toMatch(/^t=\d+,v1=[a-f0-9]+/);
+      expect(payload.apiVersion).toBe('2026-10-01');
+
+      // Exponential backoff
+      expect(calculateNextRetryDelaySeconds(0)).toBe(10);
+      expect(calculateNextRetryDelaySeconds(1)).toBe(60);
+      expect(calculateNextRetryDelaySeconds(2)).toBe(300);
+      expect(calculateNextRetryDelaySeconds(3)).toBe(1800);
+      expect(calculateNextRetryDelaySeconds(4)).toBeNull(); // Abandon after 4 retries
+    });
+  });
+
+  describe('Posie Core Logic - F124 (Product Use Per Service & Fractional Backbar)', () => {
+    it('converts units consistently and explicitly labels unmeasured usage as estimated', () => {
+      // Test unit conversions
+      expect(convertToBaseUnit(1, 'fl_oz').normalizedValue).toBeCloseTo(29.57, 1);
+      expect(convertToBaseUnit(2, 'pumps').normalizedValue).toBe(3); // 2 * 1.5ml
+      expect(convertToBaseUnit(1, 'oz').normalizedValue).toBeCloseTo(28.35, 1);
+
+      const formula = {
+        id: 'formula_42',
+        appointmentId: 'appt_100',
+        serviceId: 'srv_peel',
+        practitionerId: 'prac_1',
+        formulaVersion: 2,
+        formulaName: 'Custom Glycolic Radiance Mix v2',
+        createdAtUtc: '2026-10-27T10:00:00Z',
+        ingredients: [
+          {
+            productId: 'prod_peel',
+            productName: 'Glycolic 30% Solution',
+            quantity: 15, // 15 ml
+            unit: 'ml' as const,
+            costPerBaseUnitCents: 12, // 12 cents/ml ($1.80)
+            measurementSource: 'measured_scale' as const,
+            wasteQuantity: 3, // 3 ml wasted ($0.36)
+          },
+          {
+            productId: 'prod_serum',
+            productName: 'Botanical Soothing Drops',
+            quantity: 4, // 4 pumps (6 ml)
+            unit: 'pumps' as const,
+            costPerBaseUnitCents: 20, // 20 cents/ml ($1.20)
+            measurementSource: 'estimated_formula_default' as const,
+          },
+        ],
+      };
+
+      const summary = computeBackbarUsageSummary(formula);
+
+      expect(summary.totalConsumedCostCents).toBe(180 + 120); // $3.00
+      expect(summary.totalWasteCostCents).toBe(36); // $0.36
+      expect(summary.grossBackbarCostCents).toBe(336); // $3.36
+
+      // Invariant: explicitly marks estimates
+      expect(summary.hasUnmeasuredEstimates).toBe(true);
+      expect(summary.unmeasuredIngredientCount).toBe(1);
+      expect(summary.itemizedBreakdown[0].isEstimated).toBe(false);
+      expect(summary.itemizedBreakdown[1].isEstimated).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F125 (Lots Expiry and Stock Forecasts)', () => {
+    it('quarantines expired and PAO-violated lots and distinguishes definite shortages from estimates', () => {
+      const lots = [
+        {
+          lotId: 'lot_fresh',
+          sku: 'SKU_PEEL_01',
+          productName: 'Pure Glycolic Acid 30%',
+          lotNumber: 'LOT-2026-A',
+          currentUnits: 5,
+          unitOfMeasure: 'vials',
+          expirationDate: '2027-12-31',
+          isQuarantined: false,
+        },
+        {
+          lotId: 'lot_pao_expired',
+          sku: 'SKU_PEEL_01',
+          productName: 'Pure Glycolic Acid 30%',
+          lotNumber: 'LOT-2025-X',
+          currentUnits: 4,
+          unitOfMeasure: 'vials',
+          expirationDate: '2027-01-01',
+          openedDate: '2026-01-01',
+          paoMonths: 6, // Expired July 2026
+          isQuarantined: false,
+        },
+      ];
+
+      // PAO evaluation
+      const freshHealth = evaluateLotHealth(lots[0], '2026-10-27');
+      expect(freshHealth.isUsable).toBe(true);
+      expect(freshHealth.alertLevel).toBe('healthy');
+
+      const paoHealth = evaluateLotHealth(lots[1], '2026-10-27');
+      expect(paoHealth.isPaoExpired).toBe(true);
+      expect(paoHealth.isUsable).toBe(false);
+      expect(paoHealth.alertLevel).toBe('pao_violated');
+
+      // Forecast demand with strict requirement exceeding available unexpired stock
+      const upcoming = [
+        {
+          appointmentId: 'appt_1',
+          scheduledDate: '2026-10-28',
+          serviceId: 'srv_peel',
+          serviceName: 'Level 2 Chemical Peel',
+          sku: 'SKU_PEEL_01',
+          unitsNeeded: 8, // Needs 8 vials, only 5 unexpired exist
+          isStrictCommitment: true,
+        },
+      ];
+
+      const forecast = forecastStockDemand('SKU_PEEL_01', 'Pure Glycolic Acid 30%', lots, upcoming, '2026-10-27');
+
+      // Invariant: Definite shortage detected
+      expect(forecast.currentAvailableUnexpiredUnits).toBe(5);
+      expect(forecast.committedUnitsNext7Days).toBe(8);
+      expect(forecast.projectedShortageUnits).toBe(3);
+      expect(forecast.shortageType).toBe('definite_shortage');
+      expect(forecast.requiresImmediateReorder).toBe(true);
+      expect(forecast.alertMessage).toContain('Definite Shortage Alert');
+    });
+  });
+
 
 
 

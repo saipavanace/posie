@@ -118,4 +118,9 @@ export * from './funnel_analytics';
 export * from './operational_reliability';
 export * from './exit_archive';
 export * from './device_parity';
+export * from './unified_search';
+export * from './emergency_day_view';
+export * from './public_api_webhooks';
+export * from './fractional_backbar_use';
+export * from './lot_expiry_forecast';
 
