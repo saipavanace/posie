@@ -474,5 +474,24 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Group session and masterclass capacity manager coordinating studio room availability, instructor assignments, attendance rosters, and waitlists.
 * **Key Invariant (Basis: B; WB F18):** **Single-sale final seat guarantee.** Atomic seat reservation guarantees the final class seat cannot be double-sold during concurrent checkout. When a confirmed attendee cancels, the system automatically promotes the earliest waitlisted guest to confirmed status with immediate notification.
 
+---
+
+## F081 — Timed Waitlist Offers
+* **What it is:** Preference-matching waitlist dispatch engine that notifies waiting clients when an appointment slot becomes available.
+* **Key Invariant (Basis: B; WB F9 U5):** **Expiring exclusive claim windows.** Dispatches an exclusive 15-minute claim token to the top candidate matching day-of-week and time-of-day preferences. If the candidate claims the slot, further offers are immediately stopped; if the window expires without claim, the slot safely advances to the next candidate without race conditions.
+
+---
+
+## F082 — Cancellation Recovery Queue
+* **What it is:** Real-time cancellation recovery coordinator ranking earlier-move requests, standby VIP clients, and waitlist entries to refill last-minute calendar drops.
+* **Key Invariant (Basis: I; cancellation recovery):** **Strict recovery accounting.** Distinguishes genuine incremental revenue (new clients from waitlist or on-call standby) from simple reschedule volume (moving existing clients from next week). Reschedule volume is strictly tracked as shifted appointments, never inflated as net-new sales recovery.
+
+---
+
+## F083 — Two-Way External Calendar Sync (Google & Outlook)
+* **What it is:** Real-time calendar synchronization integrating personal Google Calendar, Outlook 365, and Apple iCal events with salon practitioner schedules.
+* **Key Invariant (Basis: B; WB F17):** **Sync loop suppression & paid appointment defense.** Events exported by Posie are tagged with origin IDs and ignored during inbound webhook sync to prevent infinite ping-pong echo loops. Confirmed, paid salon appointments are strictly defended against silent external calendar deletions, requiring formal cancellation workflows within Posie.
+
+
 
 

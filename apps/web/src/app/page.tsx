@@ -195,6 +195,16 @@ export default function PosieStudioPage() {
   const [workshopSeatsConfirmed, setWorkshopSeatsConfirmed] = useState<string[]>(['Emily W.']);
   const [workshopWaitlist, setWorkshopWaitlist] = useState<string[]>([]);
 
+  // F081 Waitlist Offers State
+  const [waitlistOfferState, setWaitlistOfferState] = useState<'idle' | 'offered_claire' | 'expired_advanced_diana' | 'claimed_diana'>('idle');
+
+  // F082 Cancellation Recovery State
+  const [cancellationRecoveryChoice, setCancellationRecoveryChoice] = useState<'none' | 'earlier_move' | 'standby_vip'>('none');
+
+  // F083 Calendar Sync State
+  const [calendarSyncAction, setCalendarSyncAction] = useState<'idle' | 'loop_prevented' | 'silent_delete_blocked'>('idle');
+
+
 
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
@@ -2201,6 +2211,248 @@ export default function PosieStudioPage() {
           </div>
         </Card>
       </section>
+
+      {/* F081: Timed Waitlist Offers Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Timed Waitlist Offers (F081)
+              </h3>
+            </div>
+            <Badge variant="sage">Preference Matching • 15m Exclusive Claim</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Match newly opened slots to waitlisted guests based on service, provider, day, and time preference. Dispatches an exclusive 15-minute claim offer. If expired, the slot safely advances to the next guest without race conditions.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                Opened Slot: Thursday Nov 20 at 2:00 PM (Custom Bespoke Facial with Maya Lin)
+              </strong>
+              <Badge variant="muted">Waitlist Priority Order</Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ fontSize: '0.86rem' }}>1. Claire Redfield (Priority #1)</strong>
+                  <Badge variant={waitlistOfferState === 'offered_claire' ? 'rose' : 'muted'}>
+                    {waitlistOfferState === 'offered_claire' ? 'Offer Active (14:12 TTL)' : waitlistOfferState === 'expired_advanced_diana' || waitlistOfferState === 'claimed_diana' ? 'Expired' : 'Queued'}
+                  </Badge>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                  Requested: Thursdays / Afternoons • On waitlist since Nov 1
+                </div>
+              </div>
+
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ fontSize: '0.86rem' }}>2. Diana Prince (Priority #2)</strong>
+                  <Badge variant={waitlistOfferState === 'expired_advanced_diana' ? 'rose' : waitlistOfferState === 'claimed_diana' ? 'sage' : 'muted'}>
+                    {waitlistOfferState === 'claimed_diana' ? 'Claimed & Confirmed!' : waitlistOfferState === 'expired_advanced_diana' ? 'Offer Active (15:00 TTL)' : 'Next in Queue'}
+                  </Badge>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                  Requested: Thursdays / Afternoons • On waitlist since Nov 2
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {waitlistOfferState === 'idle' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setWaitlistOfferState('offered_claire')}
+              >
+                Send 15m Timed Offer to Claire (1st in line)
+              </Button>
+            )}
+
+            {waitlistOfferState === 'offered_claire' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setWaitlistOfferState('expired_advanced_diana')}
+              >
+                Simulate 15m Expiry & Auto-Advance to Diana
+              </Button>
+            )}
+
+            {waitlistOfferState === 'expired_advanced_diana' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setWaitlistOfferState('claimed_diana')}
+              >
+                Diana Claims Slot (Atomic Hold Token Confirmed)
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setWaitlistOfferState('idle')}
+            >
+              Reset Waitlist Offer Demo
+            </Button>
+          </div>
+
+          {waitlistOfferState === 'claimed_diana' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Atomic Claim Success:</strong> Diana Prince claimed the Thursday 2:00 PM slot with token <code>clm_92b8...</code>. Waitlist offer dispatch closed; zero risk of double-booking.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F082: Cancellation Recovery Queue Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <RotateCcw size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Cancellation Recovery Queue (F082)
+              </h3>
+            </div>
+            <Badge variant="sage">Revenue Integrity • Standby Fill</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Rapidly fill unexpected openings with compatible waitlist requests, earlier-move requests, and voluntary standby VIPs. Invariant: Recovery revenue strictly distinguishes genuine incremental revenue from moved existing appointments.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: '#B36B5C' }}>
+                  Cancelled Appointment: Signature Balayage ($220.00)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Today at 2:00 PM (120 mins) • Specialist: Maya Lin
+                </div>
+              </div>
+              <Badge variant="rose">2 Hours to Recover</Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Option A: Earlier-Move Request</span>
+                <div style={{ fontWeight: 600, fontSize: '0.86rem' }}>Jessica Alba (VIP)</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Currently booked next Friday Nov 28. Wants to move up sooner.
+                </div>
+                <Button
+                  size="sm"
+                  variant={cancellationRecoveryChoice === 'earlier_move' ? 'primary' : 'outline'}
+                  style={{ marginTop: '8px' }}
+                  onClick={() => setCancellationRecoveryChoice('earlier_move')}
+                >
+                  Fill via Earlier-Move
+                </Button>
+              </div>
+
+              <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '12px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Option B: Standby VIP Client</span>
+                <div style={{ fontWeight: 600, fontSize: '0.86rem' }}>Gigi Hadid (VIP Standby)</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  On-call standby client. Has NO future appointment booked.
+                </div>
+                <Button
+                  size="sm"
+                  variant={cancellationRecoveryChoice === 'standby_vip' ? 'primary' : 'outline'}
+                  style={{ marginTop: '8px' }}
+                  onClick={() => setCancellationRecoveryChoice('standby_vip')}
+                >
+                  Fill via Standby VIP
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {cancellationRecoveryChoice === 'earlier_move' && (
+            <div style={{ background: '#FFF9F2', border: '1px solid #E2A76F', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8A531C' }}>
+              🔄 <strong>Reschedule Volume ($220.00):</strong> Slot saved, but Jessica's booking was moved from next Friday. Strict accounting categorizes this as shifted appointment volume, NOT net-new incremental revenue.
+            </div>
+          )}
+
+          {cancellationRecoveryChoice === 'standby_vip' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              💰 <strong>True Incremental Recovery ($220.00):</strong> Gigi had no prior booking. This fill successfully protected studio revenue and created 100% net-new revenue!
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F083: Two-Way Calendar Sync Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calendar size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Two-Way Google & Outlook Calendar Sync (F083)
+              </h3>
+            </div>
+            <Badge variant="sage">Ping-Pong Loop Defense • Deletion Guard</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Synchronize personal Google or Outlook schedules with Posie. Blocks client bookings during personal busy times while strictly defending paid salon appointments from silent external deletions.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <strong style={{ fontSize: '0.88rem' }}>Connected Account: maya.stylist@gmail.com (Google Calendar)</strong>
+              <Badge variant="sage">Active Two-Way Sync</Badge>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Target: Chloe Bennett ($140 Paid Balayage Appointment at 2:00 PM)
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCalendarSyncAction('loop_prevented')}
+            >
+              Test Sync Loop Defense (Ingest Posie Reflection)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCalendarSyncAction('silent_delete_blocked')}
+            >
+              Attempt Deleting Paid Appointment in Google Calendar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCalendarSyncAction('idle')}
+            >
+              Reset
+            </Button>
+          </div>
+
+          {calendarSyncAction === 'loop_prevented' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              🛡️ <strong>Sync Ping-Pong Loop Suppressed:</strong> Incoming Google event was identified as a Posie-originated reflection (prefix <code>posie_sync_...</code>). Ignored automatically to prevent duplicate echo loops.
+            </div>
+          )}
+
+          {calendarSyncAction === 'silent_delete_blocked' && (
+            <div style={{ marginTop: '12px', background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              🚫 <strong>Silent Deletion Blocked:</strong> An external calendar deletion request was received for Chloe Bennett's 2:00 PM booking. Deletion was rejected because this appointment is financial/paid. Cancellations must be performed within Posie to enforce cancellation policy terms and refund logic.
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

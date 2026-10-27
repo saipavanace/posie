@@ -132,6 +132,15 @@ import {
   registerAttendeeForClass,
   cancelAttendeeAndPromoteWaitlist,
   checkInClassAttendee,
+  findMatchingWaitlistCandidates,
+  dispatchTimedWaitlistOffer,
+  claimWaitlistOffer,
+  advanceExpiredOffer,
+  rankCancellationRecoveryCandidates,
+  fillCancellationOpening,
+  auditCancellationRecoveryRevenue,
+  ingestExternalCalendarEvents,
+  handleExternalDeletionRequest,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -3165,6 +3174,284 @@ describe('Posie Core Logic - F080 (Classes & Workshops)', () => {
     expect(attendeeRecord.checkedInAt).toBeDefined();
   });
 });
+
+describe('Posie Core Logic - F081 (Timed Waitlist Offers)', () => {
+  const tenantId = 'tenant_posie_tribeca';
+  const serviceId = 'srv_custom_facial';
+  const practitionerId = 'prac_maya_master';
+
+  it('matches preferences, dispatches timed offer with exclusive claim window, and advances on expiry', () => {
+    // 1. Two candidates on waitlist: Candidate A (senior), Candidate B
+    const candidateA = {
+      entryId: 'entry_a_101',
+      tenantId,
+      clientId: 'cli_claire',
+      clientName: 'Claire Redfield',
+      clientPhone: '+1-212-555-1111',
+      clientEmail: 'claire@example.com',
+      serviceId,
+      serviceName: 'Custom Bespoke Facial',
+      practitionerId,
+      preferredDaysOfWeek: ['thursday', 'friday'],
+      preferredTimeOfDay: ['afternoon' as const],
+      status: 'active' as const,
+      createdAt: '2026-11-01T10:00:00.000Z',
+    };
+
+    const candidateB = {
+      entryId: 'entry_b_102',
+      tenantId,
+      clientId: 'cli_diana',
+      clientName: 'Diana Prince',
+      clientPhone: '+1-212-555-2222',
+      clientEmail: 'diana@example.com',
+      serviceId,
+      serviceName: 'Custom Bespoke Facial',
+      practitionerId,
+      preferredDaysOfWeek: ['thursday', 'friday'],
+      preferredTimeOfDay: ['afternoon' as const],
+      status: 'active' as const,
+      createdAt: '2026-11-02T10:00:00.000Z',
+    };
+
+    // Slot opens on Thursday Nov 20 at 14:00 (Afternoon)
+    const slotStartTime = '2026-11-20T14:00:00.000Z';
+    const matches = findMatchingWaitlistCandidates({
+      tenantId,
+      serviceId,
+      practitionerId,
+      slotStartTime,
+      waitlist: [candidateB, candidateA],
+    });
+
+    // Oldest candidate A is first
+    expect(matches.length).toBe(2);
+    expect(matches[0].entryId).toBe(candidateA.entryId);
+
+    // 2. Dispatch 15-minute expiring offer to candidate A
+    const { offer: offerA, updatedWaitlistEntry: entryAOffered } = dispatchTimedWaitlistOffer({
+      tenantId,
+      candidate: candidateA,
+      serviceName: 'Custom Bespoke Facial',
+      practitionerId,
+      practitionerName: 'Maya Lin',
+      slotStartTime,
+      durationMinutes: 60,
+      claimWindowMinutes: 15,
+      currentTime: '2026-11-19T09:00:00.000Z',
+    });
+
+    expect(offerA.status).toBe('pending_claim');
+    expect(offerA.claimToken).toBeDefined();
+    expect(entryAOffered.status).toBe('offered');
+
+    // 3. If Candidate A claims with valid token within deadline -> Confirmed!
+    const claimSuccess = claimWaitlistOffer({
+      offer: offerA,
+      claimToken: offerA.claimToken,
+      currentTime: '2026-11-19T09:05:00.000Z', // 5m later (within 15m window)
+    });
+
+    expect(claimSuccess.success).toBe(true);
+    if (!claimSuccess.success) return;
+    expect(claimSuccess.claimedOffer.status).toBe('claimed');
+
+    // 4. Test Expiry & Advance to Candidate B
+    const expiredClaim = claimWaitlistOffer({
+      offer: offerA,
+      claimToken: offerA.claimToken,
+      currentTime: '2026-11-19T09:20:00.000Z', // 20m later (expired!)
+    });
+    expect(expiredClaim.success).toBe(false);
+
+    // Advance expired offer to candidate B
+    const advanceResult = advanceExpiredOffer({
+      expiredOffer: offerA,
+      remainingCandidates: [candidateB],
+      serviceName: 'Custom Bespoke Facial',
+      practitionerName: 'Maya Lin',
+      durationMinutes: 60,
+      claimWindowMinutes: 15,
+      currentTime: '2026-11-19T09:20:00.000Z',
+    });
+
+    expect(advanceResult.expiredOffer.status).toBe('passed_to_next');
+    expect(advanceResult.nextOffer).toBeDefined();
+    expect(advanceResult.nextOffer?.clientName).toBe('Diana Prince');
+  });
+});
+
+describe('Posie Core Logic - F082 (Cancellation Recovery Queue)', () => {
+  const tenantId = 'tenant_posie_soho';
+
+  const cancellationOpening = {
+    openingId: 'opn_canc_9901',
+    tenantId,
+    practitionerId: 'prac_maya',
+    practitionerName: 'Maya Lin',
+    serviceId: 'srv_signature_balayage',
+    serviceName: 'Signature Balayage & Gloss',
+    cancelledAppointmentPriceCents: 22000, // $220.00
+    slotStartTime: '2026-11-21T14:00:00.000Z',
+    slotEndTime: '2026-11-21T16:00:00.000Z',
+    durationMinutes: 120,
+    status: 'open' as const,
+    revenueClassification: 'none' as const,
+    createdAt: '2026-11-21T10:00:00.000Z',
+  };
+
+  it('ranks recovery candidates and strictly isolates genuine incremental revenue from shifted reschedules', () => {
+    // Candidate 1: Earlier-move client booked next week
+    const earlierMoveClient = {
+      candidateId: 'cand_move_1',
+      source: 'earlier_move_request' as const,
+      clientId: 'cli_jessica',
+      clientName: 'Jessica Alba',
+      clientPhone: '+1-310-555-4321',
+      serviceId: 'srv_signature_balayage',
+      serviceName: 'Signature Balayage & Gloss',
+      servicePriceCents: 22000,
+      isVip: true,
+      existingFutureAppointmentId: 'apt_future_next_week_7712',
+      requestTimestamp: '2026-11-20T10:00:00.000Z',
+      priorityScore: 0,
+    };
+
+    // Candidate 2: New Standby VIP Client (no existing future appointment)
+    const standbyVipClient = {
+      candidateId: 'cand_standby_2',
+      source: 'standby_vip_client' as const,
+      clientId: 'cli_gigi',
+      clientName: 'Gigi Hadid',
+      clientPhone: '+1-212-555-8833',
+      serviceId: 'srv_signature_balayage',
+      serviceName: 'Signature Balayage & Gloss',
+      servicePriceCents: 22000,
+      isVip: true,
+      requestTimestamp: '2026-11-20T12:00:00.000Z',
+      priorityScore: 0,
+    };
+
+    const ranked = rankCancellationRecoveryCandidates({
+      opening: cancellationOpening,
+      candidates: [earlierMoveClient, standbyVipClient],
+      prioritizeVips: true,
+    });
+
+    expect(ranked.length).toBe(2);
+
+    // 1. Fill with earlier-move client -> classified as simple_reschedule
+    const rescheduleFill = fillCancellationOpening({
+      opening: cancellationOpening,
+      chosenCandidate: earlierMoveClient,
+    });
+
+    expect(rescheduleFill.isIncrementalRecovery).toBe(false);
+    expect(rescheduleFill.updatedOpening.revenueClassification).toBe('simple_reschedule');
+    expect(rescheduleFill.revenueNotice).toContain('shifted from future appointment');
+
+    // 2. Fill with standby client -> classified as genuine incremental_recovery
+    const incrementalFill = fillCancellationOpening({
+      opening: cancellationOpening,
+      chosenCandidate: standbyVipClient,
+    });
+
+    expect(incrementalFill.isIncrementalRecovery).toBe(true);
+    expect(incrementalFill.updatedOpening.revenueClassification).toBe('incremental_recovery');
+    expect(incrementalFill.revenueNotice).toContain('Genuine incremental recovery of $220.00');
+
+    // 3. Audit Revenue Invariant: Never count simple reschedules as net new revenue
+    const audit = auditCancellationRecoveryRevenue({
+      period: 'November 2026',
+      openings: [rescheduleFill.updatedOpening, incrementalFill.updatedOpening],
+    });
+
+    expect(audit.totalSlotsRecoveredCount).toBe(2);
+    expect(audit.trulyRecoveredIncrementalRevenueCents).toBe(22000); // Only Standby $220
+    expect(audit.shiftedRescheduleVolumeCents).toBe(22000); // Earlier-move $220 is separate
+    expect(audit.explanation).toContain('Strict Recovery Accounting');
+  });
+});
+
+describe('Posie Core Logic - F083 (Two-Way Calendar Sync)', () => {
+  const tenantId = 'tenant_posie_chelsea';
+  const practitionerId = 'prac_maya_lin';
+
+  const connection = {
+    connectionId: 'conn_gcal_maya_01',
+    tenantId,
+    practitionerId,
+    provider: 'google_calendar' as const,
+    externalCalendarId: 'maya.stylist@gmail.com',
+    syncDirection: 'two_way' as const,
+    importBusyBlocksOnly: true,
+    posieSyncTokenPrefix: 'posie_sync_',
+    isActive: true,
+    lastSyncedAt: '2026-11-21T08:00:00.000Z',
+  };
+
+  it('prevents sync ping-pong loops and defends paid appointments from silent external deletion', () => {
+    // Existing confirmed appointment in Posie
+    const confirmedPaidAppointment = {
+      appointmentId: 'apt_posie_paid_3344',
+      practitionerId,
+      clientName: 'Chloe Bennett',
+      startTime: '2026-11-21T14:00:00.000Z',
+      endTime: '2026-11-21T15:30:00.000Z',
+      isPaidOrDepositSecured: true,
+      status: 'confirmed' as const,
+    };
+
+    // Incoming events from Google:
+    // Event 1: Posie-originated event reflection (should be ignored to prevent sync loop!)
+    // Event 2: Personal dentist appointment colliding with the confirmed appointment
+    const incomingEvents = [
+      {
+        externalId: 'posie_sync_apt_posie_paid_3344',
+        title: 'Posie: Chloe Bennett - Custom Balayage',
+        startTime: '2026-11-21T14:00:00.000Z',
+        endTime: '2026-11-21T15:30:00.000Z',
+        isBusyBlock: true,
+        originSource: 'posie_origin' as const,
+        posieAppointmentId: 'apt_posie_paid_3344',
+      },
+      {
+        externalId: 'gcal_event_personal_dentist',
+        title: 'Dentist Checkup & Cleaning',
+        startTime: '2026-11-21T14:30:00.000Z',
+        endTime: '2026-11-21T15:15:00.000Z',
+        isBusyBlock: true,
+        originSource: 'external_personal' as const,
+      },
+    ];
+
+    const syncResult = ingestExternalCalendarEvents({
+      connection,
+      incomingEvents,
+      existingPosieAppointments: [confirmedPaidAppointment],
+    });
+
+    // INVARIANT 1: Sync Loop Echo Ignored
+    expect(syncResult.loopEchoesIgnoredCount).toBe(1);
+    expect(syncResult.busyBlocksIngestedCount).toBe(1);
+
+    // Conflict identified for personal dentist
+    expect(syncResult.conflictsIdentified.length).toBe(1);
+    expect(syncResult.protectedPaidAppointmentsSavedCount).toBe(1);
+    expect(syncResult.status).toBe('synced_with_conflicts');
+
+    // INVARIANT 2: External Delete Blocked on Paid Appointment
+    const deletionAttempt = handleExternalDeletionRequest({
+      externalEventId: 'gcal_del_req_99',
+      targetAppointment: confirmedPaidAppointment,
+    });
+
+    expect(deletionAttempt.deletionAllowed).toBe(false);
+    expect(deletionAttempt.reason).toContain('Deletion Blocked: Appointment apt_posie_paid_3344');
+    expect(deletionAttempt.reason).toContain('secured financial payment');
+  });
+});
+
 
 
 

@@ -78,4 +78,7 @@ export * from './service_intervals';
 export * from './multi_practitioner';
 export * from './group_booking';
 export * from './classes_workshops';
+export * from './waitlist_offers';
+export * from './cancellation_recovery';
+export * from './calendar_sync';
 
