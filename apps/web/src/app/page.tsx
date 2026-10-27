@@ -204,6 +204,16 @@ export default function PosieStudioPage() {
   // F083 Calendar Sync State
   const [calendarSyncAction, setCalendarSyncAction] = useState<'idle' | 'loop_prevented' | 'silent_delete_blocked'>('idle');
 
+  // F084 Deposits State
+  const [depositCancelScenario, setDepositCancelScenario] = useState<'none' | 'timely' | 'late'>('none');
+
+  // F085 Unified Checkout State
+  const [splitTenderStage, setSplitTenderStage] = useState<'initial' | 'gift_applied' | 'fully_paid'>('initial');
+
+  // F086 Terminal Payment State
+  const [terminalSessionState, setTerminalSessionState] = useState<'idle' | 'interrupted' | 'recovered_success' | 'recovered_safe_retry'>('idle');
+
+
 
 
 
@@ -2452,6 +2462,252 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F084: Deposits and Preauthorizations Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Coins size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Deposits & Preauthorizations (F084 / Document D05)
+              </h3>
+            </div>
+            <Badge variant="sage">Policy Snapshot • 7-Day Auth Expiry Defense</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Collect booking deposits and credit card preauthorizations with transparent cancellation rules. Document D05 permanently attaches the agreed policy version to the reservation.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                  Hailey's Custom Bespoke Facial ($200.00 Total)
+                </strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  $50.00 Captured Deposit Paid • $150.00 Balance Due at Visit
+                </div>
+              </div>
+              <Badge variant="sage">Policy D05: 24h Cutoff</Badge>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+              Cancellations with ≥24 hours notice receive a 100% refund. Cancellations within 24 hours forfeit deposit.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={depositCancelScenario === 'timely' ? 'primary' : 'outline'}
+              onClick={() => setDepositCancelScenario('timely')}
+            >
+              Simulate 48h Notice Cancellation (Full Refund)
+            </Button>
+            <Button
+              size="sm"
+              variant={depositCancelScenario === 'late' ? 'primary' : 'outline'}
+              onClick={() => setDepositCancelScenario('late')}
+            >
+              Simulate 4h Notice Cancellation (Deposit Forfeited)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDepositCancelScenario('none')}
+            >
+              Reset
+            </Button>
+          </div>
+
+          {depositCancelScenario === 'timely' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Timely Cancellation Honored:</strong> 48 hours notice provided (policy requirement: 24h). Full $50.00 deposit automatically refunded to client's card.
+            </div>
+          )}
+
+          {depositCancelScenario === 'late' && (
+            <div style={{ marginTop: '12px', background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              ⚠️ <strong>Late Notice Forfeit:</strong> Only 4 hours notice provided before appointment. Full $50.00 deposit retained as late cancellation compensation per Document D05 terms.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F085: Unified Checkout & Split Tender Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Receipt size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Unified Checkout & Split Tender (F085 / D14, D15)
+              </h3>
+            </div>
+            <Badge variant="sage">Services + Retail + Split Tenders + Zero-Balance Tip</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Combine services, taxable retail products, and staff tips in one itemized ticket. Split payment seamlessly across gift cards, cash, and client-phone hosted checkout links.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                Selena Gomez — Ticket #TKT-8902
+              </strong>
+              <Badge variant={splitTenderStage === 'fully_paid' ? 'sage' : 'muted'}>
+                {splitTenderStage === 'fully_paid' ? 'Fully Paid' : splitTenderStage === 'gift_applied' ? 'Partially Paid' : 'Open Ticket'}
+              </Badge>
+            </div>
+
+            <div style={{ fontSize: '0.82rem', lineHeight: '1.6' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Hydra-Dew Glass Glow Facial</span>
+                <strong>$120.00</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Hyaluronic Botanical Mist (Retail Product)</span>
+                <strong>$40.00</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
+                <span>Sales Tax (8.875% on retail)</span>
+                <span>$3.55</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6A7D6A' }}>
+                <span>Gratuity for Maya Lin</span>
+                <span>+$25.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #DDD', marginTop: '6px', paddingTop: '6px', fontWeight: 700 }}>
+                <span>Gross Total Due</span>
+                <span>$188.55</span>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid #E8E5E0', padding: '10px', borderRadius: '6px', marginTop: '10px', fontSize: '0.8rem' }}>
+              <div><strong>Paid to Date:</strong> ${splitTenderStage === 'fully_paid' ? '188.55' : splitTenderStage === 'gift_applied' ? '50.00' : '0.00'}</div>
+              <div><strong>Remaining Balance:</strong> ${splitTenderStage === 'fully_paid' ? '0.00' : splitTenderStage === 'gift_applied' ? '138.55' : '188.55'}</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {splitTenderStage === 'initial' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setSplitTenderStage('gift_applied')}
+              >
+                Apply $50.00 Birthday Gift Card
+              </Button>
+            )}
+
+            {splitTenderStage === 'gift_applied' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setSplitTenderStage('fully_paid')}
+              >
+                Client Pays Remaining $138.55 via Hosted Phone Link
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSplitTenderStage('initial')}
+            >
+              Reset Checkout Demo
+            </Button>
+          </div>
+
+          {splitTenderStage === 'fully_paid' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Ticket Settled (Document D15 Receipt):</strong> Tender 1: $50.00 Gift Card (ID #gift_bday_50) • Tender 2: $138.55 Credit Card (Hosted client self-checkout). Staff never touched the customer's credit card.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F086: Tap to Pay and Certified Terminals Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CreditCard size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Tap to Pay & Certified Terminals (F086)
+              </h3>
+            </div>
+            <Badge variant="sage">Smart Terminals • Network Drop Recovery</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Integrate certified countertop smart terminals and Tap to Pay on iPhone. Invariant: If a network drop or reader timeout occurs mid-transaction, Posie resolves the actual gateway state before allowing a retry, preventing duplicate charges.
+          </p>
+
+          <div style={{ border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong style={{ fontSize: '0.88rem' }}>Front Desk WisePOS E Terminal</strong>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                  Serial: WP-9921-X • Battery: 92% • Firmware: v2.4.1
+                </div>
+              </div>
+              <Badge variant="sage">Online & Paired</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTerminalSessionState('interrupted')}
+            >
+              Simulate Wi-Fi Drop Mid-Tap
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={terminalSessionState !== 'interrupted'}
+              onClick={() => setTerminalSessionState('recovered_success')}
+            >
+              Gateway Confirms Charge Succeeded
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={terminalSessionState !== 'interrupted'}
+              onClick={() => setTerminalSessionState('recovered_safe_retry')}
+            >
+              Gateway Confirms Charge Failed
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTerminalSessionState('idle')}
+            >
+              Reset Terminal Demo
+            </Button>
+          </div>
+
+          {terminalSessionState === 'interrupted' && (
+            <div style={{ marginTop: '12px', background: '#FFF9F2', border: '1px solid #E2A76F', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8A531C' }}>
+              ⏳ <strong>Interrupted Processing Detected:</strong> Wi-Fi dropped while reader was communicating with card chip. Retrying payment is temporarily locked while querying gateway to prevent double-charging customer.
+            </div>
+          )}
+
+          {terminalSessionState === 'recovered_success' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              🛡️ <strong>Double-Charge Prevented:</strong> Gateway verified the $120.00 charge actually executed (Charge ID <code>ch_recovered_8899</code>). Receipt generated cleanly without re-swiping the customer's card!
+            </div>
+          )}
+
+          {terminalSessionState === 'recovered_safe_retry' && (
+            <div style={{ marginTop: '12px', background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Safe to Retry:</strong> Gateway verified zero charges were created. Terminal reader safely unlocked for cashier to re-tap card.
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

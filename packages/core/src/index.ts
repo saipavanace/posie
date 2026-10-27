@@ -81,4 +81,7 @@ export * from './classes_workshops';
 export * from './waitlist_offers';
 export * from './cancellation_recovery';
 export * from './calendar_sync';
+export * from './deposits_preauth';
+export * from './unified_checkout';
+export * from './terminal_payments';
 

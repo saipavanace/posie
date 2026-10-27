@@ -492,6 +492,25 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Real-time calendar synchronization integrating personal Google Calendar, Outlook 365, and Apple iCal events with salon practitioner schedules.
 * **Key Invariant (Basis: B; WB F17):** **Sync loop suppression & paid appointment defense.** Events exported by Posie are tagged with origin IDs and ignored during inbound webhook sync to prevent infinite ping-pong echo loops. Confirmed, paid salon appointments are strictly defended against silent external calendar deletions, requiring formal cancellation workflows within Posie.
 
+---
+
+## F084 — Deposits and Preauthorizations (Document D05)
+* **What it is:** Payment security engine collecting upfront booking deposits or credit card authorizations with transparent cancellation policies.
+* **Key Invariant (Document D05, DR05):** **7-day preauth expiration defense & immutable policy snapshots.** Card pre-authorizations automatically flag risk when appointments are booked >7 days in advance, recommending captured deposits. Document D05 permanently captures the agreed cancellation cutoff (e.g. 24h), executing 100% automatic refunds for timely notices and lawful deposit forfeitures for late cancellations or no-shows.
+
+---
+
+## F085 — Unified Checkout & Split Tender (Documents D14, D15)
+* **What it is:** Single-ticket checkout combining services, taxable retail products, add-ons, and specialist gratuities with split tender payment.
+* **Key Invariant (Basis: B; WB U22 C17):** **Separately traceable double-entry accounting.** Partial payments (gift cards, cash, credit card) remain individually reconciled. Includes zero-balance tipping support (allowing clients redeeming 100% package vouchers to cleanly tip their stylist) and hosted client-phone payment links where staff never touch the client's credit card.
+
+---
+
+## F086 — Tap to Pay and Certified Terminals
+* **What it is:** In-person contactless point-of-sale supporting certified countertop smart terminals (WisePOS E) and Tap to Pay on iPhone.
+* **Key Invariant (Basis: B; WB F31):** **Interrupted processing recovery.** When a network disconnect or reader timeout occurs mid-dip or tap, Posie locks the session and queries the gateway's authoritative transaction state before allowing a retry. If the charge executed, the receipt is finalized with zero duplicate debits; if uncharged, the reader safely resets.
+
+
 
 
 

@@ -141,6 +141,15 @@ import {
   auditCancellationRecoveryRevenue,
   ingestExternalCalendarEvents,
   handleExternalDeletionRequest,
+  evaluatePreauthExpirationRisk,
+  recordBookingDeposit,
+  processDepositCancellation,
+  buildUnifiedCheckoutTicket,
+  addTipToTicket,
+  applySplitTenderPayment,
+  initiateTerminalPayment,
+  recordInterruptedTerminalTransaction,
+  resolveInterruptedTerminalPayment,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -3451,6 +3460,215 @@ describe('Posie Core Logic - F083 (Two-Way Calendar Sync)', () => {
     expect(deletionAttempt.reason).toContain('secured financial payment');
   });
 });
+
+describe('Posie Core Logic - F084 (Deposits and Preauthorizations - Document D05)', () => {
+  const tenantId = 'tenant_posie_soho';
+  const appointmentId = 'apt_soho_9001';
+  const clientId = 'cli_hailey';
+
+  it('evaluates preauth expiration risk and enforces agreed Document D05 cancellation cutoff', () => {
+    // 1. Evaluate preauth expiration risk for appointment 21 days in future (> 7-day auth window)
+    const riskCheck = evaluatePreauthExpirationRisk({
+      appointmentStartTime: '2026-12-15T14:00:00.000Z',
+      currentTime: '2026-11-20T14:00:00.000Z', // 25 days away
+    });
+
+    expect(riskCheck.isRisky).toBe(true);
+    expect(riskCheck.recommendation).toContain('Card pre-authorizations automatically release');
+
+    // 2. Record a captured deposit of $50 on a $200 service with Document D05 policy
+    const deposit = recordBookingDeposit({
+      tenantId,
+      appointmentId,
+      clientId,
+      clientName: 'Hailey Bieber',
+      type: 'captured_deposit',
+      totalServicePriceCents: 20000,
+      depositAmountCents: 5000,
+      processorAuthId: 'ch_stripe_dep_50',
+      policyId: 'pol_standard_24h',
+      policyVersion: 2,
+      cancellationCutoffHours: 24,
+      currentTime: '2026-11-20T10:00:00.000Z',
+    });
+
+    expect(deposit.remainingBalanceCents).toBe(15000);
+    expect(deposit.status).toBe('active_captured');
+    expect(deposit.policyAcknowledgement.cancellationCutoffHours).toBe(24);
+
+    // 3. Timely cancellation: Cancelled 48h before appointment -> Full refund
+    const timelyCancellation = processDepositCancellation({
+      deposit,
+      appointmentStartTime: '2026-11-25T14:00:00.000Z',
+      cancellationTime: '2026-11-23T10:00:00.000Z', // ~52 hours before
+    });
+
+    expect(timelyCancellation.outcome).toBe('refunded');
+    expect(timelyCancellation.refundedAmountCents).toBe(5000);
+    expect(timelyCancellation.feeRetainedCents).toBe(0);
+    expect(timelyCancellation.updatedDeposit.status).toBe('refunded_timely_cancellation');
+
+    // 4. Late cancellation: Cancelled 4h before appointment -> Forfeit deposit
+    const lateCancellation = processDepositCancellation({
+      deposit,
+      appointmentStartTime: '2026-11-25T14:00:00.000Z',
+      cancellationTime: '2026-11-25T10:00:00.000Z', // 4 hours before
+    });
+
+    expect(lateCancellation.outcome).toBe('forfeited');
+    expect(lateCancellation.refundedAmountCents).toBe(0);
+    expect(lateCancellation.feeRetainedCents).toBe(5000);
+    expect(lateCancellation.updatedDeposit.status).toBe('forfeited_late_cancellation');
+  });
+});
+
+describe('Posie Core Logic - F085 (Unified Checkout & Split Tender)', () => {
+  const tenantId = 'tenant_posie_tribeca';
+
+  it('combines services, taxable retail, tips, and executes split tender payments cleanly', () => {
+    // 1. Build unified ticket: Hydra-Dew Facial ($120) + Retail Glow Serum ($40, taxable)
+    const ticket = buildUnifiedCheckoutTicket({
+      tenantId,
+      clientId: 'cli_selena',
+      clientName: 'Selena Gomez',
+      items: [
+        {
+          type: 'service',
+          name: 'Hydra-Dew Glass Glow Facial',
+          unitPriceCents: 12000,
+          isTaxable: false,
+          specialistStaffId: 'staff_maya',
+        },
+        {
+          type: 'retail_product',
+          name: 'Hyaluronic Botanical Mist',
+          unitPriceCents: 4000,
+          quantity: 1,
+          isTaxable: true,
+        },
+      ],
+      salesTaxRate: 0.08875, // 8.875% tax on $40.00 = $3.55 (355 cents)
+    });
+
+    expect(ticket.subtotalCents).toBe(16000);
+    expect(ticket.taxCents).toBe(355);
+    expect(ticket.grossTotalDueCents).toBe(16355); // $163.55
+    expect(ticket.status).toBe('open');
+
+    // 2. Client adds a $25.00 tip for Maya on the hosted link
+    const ticketWithTip = addTipToTicket(ticket, 2500);
+    expect(ticketWithTip.tipCents).toBe(2500);
+    expect(ticketWithTip.grossTotalDueCents).toBe(18855); // $188.55
+
+    // 3. Split Tender Step 1: Client redeems $50.00 Birthday Gift Card
+    const split1 = applySplitTenderPayment({
+      ticket: ticketWithTip,
+      method: 'gift_card',
+      amountCents: 5000,
+      referenceId: 'gift_bday_50',
+    });
+
+    expect(split1.isFullySettled).toBe(false);
+    expect(split1.updatedTicket.status).toBe('partially_paid');
+    expect(split1.updatedTicket.totalPaidCents).toBe(5000);
+    expect(split1.updatedTicket.remainingBalanceDueCents).toBe(13855); // $138.55 remaining
+
+    // 4. Split Tender Step 2: Client pays remaining $138.55 with Credit Card on hosted phone link
+    const split2 = applySplitTenderPayment({
+      ticket: split1.updatedTicket,
+      method: 'credit_card',
+      amountCents: 13855,
+      referenceId: 'ch_stripe_card_final',
+    });
+
+    expect(split2.isFullySettled).toBe(true);
+    expect(split2.updatedTicket.status).toBe('fully_paid');
+    expect(split2.updatedTicket.remainingBalanceDueCents).toBe(0);
+    expect(split2.updatedTicket.tenders.length).toBe(2);
+  });
+});
+
+describe('Posie Core Logic - F086 (Tap to Pay and Certified Terminals)', () => {
+  const tenantId = 'tenant_posie_flatiron';
+
+  const onlineTerminal = {
+    terminalId: 'term_wisepos_01',
+    tenantId,
+    name: 'Front Desk WisePOS E',
+    type: 'smart_pos_terminal' as const,
+    serialNumber: 'WP-9921-X',
+    connectionState: 'online' as const,
+    batteryPercentage: 92,
+    firmwareVersion: 'v2.4.1',
+    lastHeartbeatAt: '2026-11-20T12:00:00.000Z',
+  };
+
+  const offlineTerminal = {
+    ...onlineTerminal,
+    terminalId: 'term_iphone_tap_02',
+    name: 'Floor Tap to Pay iPhone',
+    type: 'tap_to_pay_iphone' as const,
+    connectionState: 'offline' as const,
+  };
+
+  it('rejects payments on offline terminals and resolves interrupted transactions before retry', () => {
+    // 1. Offline terminal rejection
+    const offlineAttempt = initiateTerminalPayment({
+      terminal: offlineTerminal,
+      ticketId: 'tkt_test_101',
+      amountCents: 12000,
+    });
+    expect(offlineAttempt.success).toBe(false);
+    if (offlineAttempt.success) return;
+    expect(offlineAttempt.reason).toContain('offline');
+
+    // 2. Initiate session on online terminal
+    const sessionResult = initiateTerminalPayment({
+      terminal: onlineTerminal,
+      ticketId: 'tkt_test_101',
+      amountCents: 12000,
+    });
+    expect(sessionResult.success).toBe(true);
+    if (!sessionResult.success) return;
+    expect(sessionResult.session.status).toBe('awaiting_tap');
+
+    // 3. Network drop mid-transaction -> session marked interrupted
+    const interruptedSession = recordInterruptedTerminalTransaction(
+      sessionResult.session,
+      'Wi-Fi signal lost while card was communicating with reader'
+    );
+    expect(interruptedSession.status).toBe('interrupted_network_drop');
+    expect(interruptedSession.requiresGatewayResolutionBeforeRetry).toBe(true);
+
+    // 4. INVARIANT TEST: Gateway resolution queries actual processor state
+    // Case A: Card charge succeeded on the backend -> finalize receipt, DO NOT re-charge card!
+    const resolutionSuccess = resolveInterruptedTerminalPayment({
+      session: interruptedSession,
+      gatewayAuthoritativeState: {
+        chargeExecutedOnCard: true,
+        processorChargeId: 'ch_recovered_gateway_8899',
+      },
+    });
+
+    expect(resolutionSuccess.actionRequired).toBe('finalize_receipt');
+    expect(resolutionSuccess.updatedSession.status).toBe('resolved_successful_charge');
+    expect(resolutionSuccess.updatedSession.processorChargeId).toBe('ch_recovered_gateway_8899');
+    expect(resolutionSuccess.explanation).toContain('Card was NOT re-charged');
+
+    // Case B: Card charge failed on the backend -> safe to retry
+    const resolutionFailed = resolveInterruptedTerminalPayment({
+      session: interruptedSession,
+      gatewayAuthoritativeState: {
+        chargeExecutedOnCard: false,
+      },
+    });
+
+    expect(resolutionFailed.actionRequired).toBe('safe_to_retry_card');
+    expect(resolutionFailed.updatedSession.status).toBe('resolved_failed_safe_to_retry');
+    expect(resolutionFailed.explanation).toContain('safely re-tapped');
+  });
+});
+
 
 
 
