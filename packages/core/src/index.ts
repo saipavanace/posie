@@ -54,3 +54,6 @@ export * from './governance';
 export * from './shifts';
 export * from './timeclock';
 export * from './expenses';
+export * from './data_export';
+export * from './daily_close';
+export * from './complaints';

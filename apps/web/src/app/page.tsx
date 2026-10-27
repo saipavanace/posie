@@ -48,6 +48,10 @@ import {
   DollarSign,
   Paperclip,
   AlertTriangle,
+  Database,
+  Coins,
+  MessageSquareWarning,
+  Check,
 } from 'lucide-react';
 
 // Brand Information
@@ -89,6 +93,18 @@ export default function PosieStudioPage() {
 
   // F056 Expense Duplicate State
   const [duplicateWarningShown, setDuplicateWarningShown] = useState(false);
+
+  // F057 Structured Data Export State
+  const [exportTriggered, setExportTriggered] = useState(false);
+
+  // F058 Daily Close Workspace State
+  const [actualCashInput, setActualCashInput] = useState<number>(320);
+  const [blockingTicketResolved, setBlockingTicketResolved] = useState(false);
+  const [explainedNote, setExplainedNote] = useState('Missing $18 verified as cash change miscount during noon rush.');
+  const [dailyCloseFinalized, setDailyCloseFinalized] = useState(false);
+
+  // F059 Complaint & Redo State
+  const [complaintStep, setComplaintStep] = useState<'intake' | 'redo_scheduled' | 'resolved'>('intake');
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -319,6 +335,234 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F057: Structured Data Export & Freedom to Leave Workspace */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Database size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Data Export & Freedom-to-Leave Archive (F057)
+              </h3>
+            </div>
+            <Badge variant="sage">Zero Lock-In Guarantee</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Your client relationships, treatment histories, and financial balances belong strictly to you. Export complete standard CSV and JSON bundles anytime with verified cryptographic checksums and open data dictionaries.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-primary)' }}>142</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Clients & Contacts</div>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-primary)' }}>389</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Completed Visits</div>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-primary)' }}>$1,450</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Gift Card Balances</div>
+            </div>
+            <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-primary)' }}>100%</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Signed Consents</div>
+            </div>
+          </div>
+
+          {exportTriggered ? (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '14px', borderRadius: '8px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#3A523A', fontWeight: 600, marginBottom: '6px' }}>
+                <CheckCircle2 size={16} /> Export Bundle Generated Successfully
+              </div>
+              <div style={{ color: 'var(--color-text)', marginBottom: '8px' }}>
+                Archive <code>posie-exit-pack.zip</code> (SHA256: <code>a7f84c19...</code>) includes <code>contacts.csv</code>, <code>services.csv</code>, <code>appointments.csv</code>, <code>balances.csv</code>, and complete field schema specifications.
+              </div>
+              <Badge variant="sage">Download Ready (No Expiration)</Badge>
+            </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setExportTriggered(true)}>
+              <Download size={14} style={{ marginRight: '6px' }} /> Generate Complete Business Exit Pack (ZIP)
+            </Button>
+          )}
+        </Card>
+      </section>
+
+      {/* F058: Daily Close & Till Reconciliation Workspace */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Coins size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Daily Close & Cash Drawer Reconciler (F058)
+              </h3>
+            </div>
+            <Badge variant={dailyCloseFinalized ? 'sage' : 'muted'}>
+              {dailyCloseFinalized ? 'Till Closed & Reconciled' : 'Close In Progress'}
+            </Badge>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Opening Float</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>$200.00</div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Cash Sales</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#3A523A' }}>+$150.00</div>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Paid-Out (Petty Cash Milk)</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#B36B5C' }}>-$12.00</div>
+            </div>
+            <div style={{ border: '1px solid var(--color-primary)', padding: '12px', borderRadius: '8px', background: '#F9FAF8' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-primary)' }}>Expected Cash in Till</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>$338.00</div>
+            </div>
+          </div>
+
+          {/* Exceptions Check */}
+          {!blockingTicketResolved ? (
+            <div style={{ background: '#FFF9F2', border: '1px solid #E2A76F', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#8A531C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertCircle size={15} /> 1 Blocking Exception: Chloe Bennett (Unpaid ticket $95.00)
+                </span>
+                <Button size="sm" variant="outline" onClick={() => setBlockingTicketResolved(true)}>
+                  Resolve & Settle Ticket
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#3A523A', marginBottom: '16px' }}>
+              ✓ All salon tickets and card tips settled. Ready for till count verification.
+            </div>
+          )}
+
+          {/* Actual Cash Count & Variance Note */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Counted Drawer Cash:</span>
+              <input
+                type="number"
+                value={actualCashInput}
+                onChange={(e) => setActualCashInput(Number(e.target.value))}
+                style={{ width: '90px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CCC', fontSize: '0.9rem' }}
+              />
+            </div>
+            <span style={{ fontSize: '0.85rem', color: actualCashInput === 338 ? '#3A523A' : '#B36B5C', fontWeight: 600 }}>
+              Variance: {actualCashInput - 338 === 0 ? '$0.00 (Balanced)' : `-$${(338 - actualCashInput).toFixed(2)} (Short)`}
+            </span>
+          </div>
+
+          {actualCashInput !== 338 && (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>
+                Required Explanation Note for Discrepancy (Minimum 5 characters):
+              </label>
+              <input
+                type="text"
+                value={explainedNote}
+                onChange={(e) => setExplainedNote(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D5CECE', fontSize: '0.85rem' }}
+              />
+            </div>
+          )}
+
+          {dailyCloseFinalized ? (
+            <div style={{ background: '#F4F7F4', padding: '12px', borderRadius: '8px', color: '#3A523A', fontSize: '0.85rem', fontWeight: 600 }}>
+              ✓ Daily Close Finalized by Elena Rostova. Register locked and card batch sent to processor.
+            </div>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!blockingTicketResolved || (actualCashInput !== 338 && explainedNote.length < 5)}
+              onClick={() => setDailyCloseFinalized(true)}
+            >
+              Sign Off & Lock Daily Close
+            </Button>
+          )}
+        </Card>
+      </section>
+
+      {/* F059: Client Complaint & Redo Resolution (Document D18) */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquareWarning size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Client Dispute Resolution & Redo Tracker (F059 / D18)
+              </h3>
+            </div>
+            <Badge variant={complaintStep === 'resolved' ? 'sage' : 'rose'}>
+              Status: {complaintStep === 'intake' ? 'Under Review' : complaintStep === 'redo_scheduled' ? 'Redo Scheduled' : 'Resolved'}
+            </Badge>
+          </div>
+
+          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', borderLeft: '4px solid var(--color-primary)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+              <span>Client: <strong>Sophia Turner</strong> (Visit: Full Platinum Balayage)</span>
+              <Badge variant="muted">Original Verbatim Report (Immutable)</Badge>
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: '0.88rem', fontStyle: 'italic', color: 'var(--color-text)' }}>
+              "Toner turned out noticeably brassier than reference photo consulted at chair."
+            </p>
+          </div>
+
+          <div style={{ fontSize: '0.85rem', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
+            <strong>Factual Chronology Log:</strong>
+            <ul style={{ margin: '6px 0 0', paddingLeft: '20px', lineHeight: 1.6 }}>
+              <li>10:15 AM: Concern received via phone; client photos uploaded.</li>
+              <li>11:30 AM: Lead colorist Elena Rostova reviewed consultation formulation notes.</li>
+              {complaintStep !== 'intake' && (
+                <li>1:00 PM: Complimentary 45-minute tone correction appointment booked for Friday 10:00 AM.</li>
+              )}
+              {complaintStep === 'resolved' && (
+                <li>Friday 10:45 AM: Redo completed. Violet-ash toner achieved exact desired shade; client happy.</li>
+              )}
+            </ul>
+          </div>
+
+          {complaintStep === 'intake' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setComplaintStep('redo_scheduled')}
+            >
+              Schedule Complimentary Redo (Attach Recovery Costs)
+            </Button>
+          )}
+
+          {complaintStep === 'redo_scheduled' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ background: '#F8F9F8', padding: '12px', borderRadius: '8px', fontSize: '0.84rem' }}>
+                <strong>Service Recovery Investment:</strong> Materials ($24.00) + Labor ($45.00) = <strong>$69.00</strong> (100% complimentary to client).
+              </div>
+              <div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setComplaintStep('resolved')}
+                >
+                  <Check size={14} style={{ marginRight: '6px' }} /> Owner Sign-Off & Close Case
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {complaintStep === 'resolved' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: '#3A523A' }}>
+              ✓ Case resolved and closed with owner sign-off. Factual chronology preserved without deleting the original concern.
+            </div>
+          )}
+        </Card>
+      </section>
+
 
       {/* Booking Box */}
       <section>

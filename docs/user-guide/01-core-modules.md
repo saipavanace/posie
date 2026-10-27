@@ -324,3 +324,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F056 — Expense & Receipt Capture with Duplicate Detection
 * **What it is:** Salon operating expense tracker supporting receipt image attachments, tax-ready expense categorization, and smart duplicate detection.
 * **Key Invariant (WB F54):** Flags duplicate expense candidates matching the same merchant, amount, and approximate date to prevent double-counting. Displays explicit tax disclaimers ensuring business owners understand recorded categories serve operational bookkeeping and require professional tax advice.
+
+
+---
+
+## F057 — Structured Data Export & Freedom to Leave
+* **What it is:** Complete business data export producing standardized, documented CSV and JSON bundles covering clients, services, booking histories, gift card liabilities, and signed intake/consent metadata.
+* **Key Invariant (WB C10, F057, F119):** **Zero vendor lock-in.** Every export archive includes an open schema dictionary, record counts, and cryptographic checksums verifying that visible records reconcile identically with raw exports. Owners can safely leave the platform or transition tools anytime without fee penalties or data withholding.
+
+---
+
+## F058 — Daily Close Workspace & Till Reconciliation
+* **What it is:** End-of-day register closing and cash drawer balancing workspace. Tracks cash opening float, cash sales, paid-ins, paid-out petty cash movements, card batches, and unallocated tips.
+* **Key Invariant (WB C12, C17):** Unresolved tickets block closure unless addressed, and till shortages or overages **strictly require an honest explanation note** (minimum 5 characters) before locking the daily ledger, eliminating untracked register slippage.
+
+---
+
+## F059 — Client Complaint Resolution & Redo Record (Document D18)
+* **What it is:** Structured dispute management and service recovery workflow for tracking client complaints, appointment re-dos, and goodwill resolutions.
+* **Key Invariant (D18):** Preserves an **immutable audit record** of the original client concern and factual chronological timeline. Consequential financial actions (refunds, store credits) strictly require named business owner sign-off, adverse reaction reports enforce qualified clinical lead triage, and complimentary re-dos track full business recovery costs (materials, labor, and goodwill).

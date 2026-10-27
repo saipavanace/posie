@@ -68,6 +68,13 @@ import {
   approveTimeClockEntry,
   recordBusinessExpense,
   checkDuplicateExpense,
+  generateStructuredDataExport,
+  initDailyClose,
+  finalizeDailyClose,
+  openComplaintCase,
+  appendChronologyEvent,
+  attachRedoRecovery,
+  resolveComplaintCase,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -1510,3 +1517,289 @@ describe('Posie Core Logic - F056 (Expense & Receipt Capture with Duplicate Dete
     expect(cleanCheck.hasPotentialDuplicate).toBe(false);
   });
 });
+
+describe('Posie Core Logic - F057 (Structured Data Export & Freedom to Leave)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  const rawRecords = {
+    contacts: [
+      {
+        clientId: '22222222-2222-2222-2222-222222222222',
+        fullName: 'Maya Lin',
+        email: 'maya@example.com',
+        phone: '+15125550199',
+        smsConsent: true,
+        marketingConsent: false,
+        lifetimeSpendCents: 45000,
+        createdAt: '2026-01-10T10:00:00Z',
+      },
+    ],
+    services: [
+      {
+        serviceId: '33333333-3333-3333-3333-333333333333',
+        name: 'Signature Biab Gel Manicure',
+        priceCents: 7500,
+        durationMinutes: 60,
+        category: 'Nails',
+      },
+    ],
+    appointments: [
+      {
+        appointmentId: '44444444-4444-4444-4444-444444444444',
+        clientId: '22222222-2222-2222-2222-222222222222',
+        specialistName: 'Elena Rostova',
+        serviceName: 'Signature Biab Gel Manicure',
+        scheduledAt: '2026-10-20T14:00:00Z',
+        status: 'completed',
+        totalChargedCents: 7500,
+      },
+    ],
+    balances: [
+      {
+        accountId: '55555555-5555-5555-5555-555555555555',
+        clientId: '22222222-2222-2222-2222-222222222222',
+        balanceType: 'gift_card' as const,
+        remainingCents: 5000,
+        expiresAt: null,
+      },
+    ],
+  };
+
+  it('generates complete export archive with manifest, data dictionaries, and integrity hashes', () => {
+    const result = generateStructuredDataExport({
+      businessId,
+      requestedByStaffId: staffId,
+      rawRecords,
+    });
+
+    expect(result.archive.status).toBe('completed');
+    expect(result.archive.summary.totalRecords).toBe(4);
+    expect(result.archive.summary.totalOutstandingBalanceCents).toBe(5000);
+    expect(result.archive.summary.totalClientsCount).toBe(1);
+    expect(result.archive.exitPackNotice).toContain('Posie Freedom-to-Leave Guarantee');
+
+    // Manifest verification
+    expect(result.archive.manifest.length).toBe(4);
+    const contactsManifest = result.archive.manifest.find(m => m.category === 'contacts')!;
+    expect(contactsManifest.rowCount).toBe(1);
+    expect(contactsManifest.fields.some(f => f.fieldName === 'smsConsent')).toBe(true);
+
+    // CSV format verification
+    expect(result.csvExports['contacts.csv']).toContain('"Maya Lin"');
+    expect(result.csvExports['services.csv']).toContain('"Signature Biab Gel Manicure"');
+
+    // JSON format verification
+    const parsedJson = JSON.parse(result.jsonExport);
+    expect(parsedJson.contacts[0].fullName).toBe('Maya Lin');
+  });
+});
+
+describe('Posie Core Logic - F058 (Daily Close Workspace & Till Reconciliation)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const locationId = '22222222-2222-2222-2222-222222222222';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('reconciles cash transactions and blocks close on unexplained cash variance or blocking exceptions', () => {
+    const movements = [
+      {
+        id: '66666666-6666-6666-6666-666666666666',
+        type: 'cash_sale' as const,
+        amountCents: 15000, // $150
+        description: 'Cash payment for styling appointment',
+        recordedAt: '2026-11-04T12:00:00Z',
+        recordedByStaffId: staffId,
+      },
+      {
+        id: '77777777-7777-7777-7777-777777777777',
+        type: 'paid_out' as const,
+        amountCents: 1200, // $12 petty cash for oat milk
+        description: 'Client refreshment oat milk restock',
+        recordedAt: '2026-11-04T14:30:00Z',
+        recordedByStaffId: staffId,
+      },
+    ];
+
+    const blockingException = {
+      id: '88888888-8888-8888-8888-888888888888',
+      type: 'open_ticket' as const,
+      clientName: 'Chloe Bennett',
+      amountCents: 9500,
+      specialistName: 'Elena Rostova',
+      notes: 'Client stepped out to park car before paying',
+      canBeDeferred: false,
+    };
+
+    const dailyClose = initDailyClose({
+      businessId,
+      locationId,
+      drawerId: 'DRAWER-01',
+      date: '2026-11-04',
+      openingFloatCents: 20000, // $200.00
+      cashMovements: movements,
+      unresolvedExceptions: [blockingException],
+      cardTotals: {
+        creditDebitCents: 125000, // $1,250.00
+        tipsCollectedCents: 24000, // $240.00
+        bnplCents: 0,
+      },
+    });
+
+    // Opening $200 + $150 sales - $12 paid out = $338.00 expected ($33,800 cents)
+    expect(dailyClose.expectedCashInDrawerCents).toBe(33800);
+
+    // Attempt close with blocking exception
+    const failAttempt1 = finalizeDailyClose({
+      dailyClose,
+      actualCountedCashCents: 33800,
+      managerStaffId: staffId,
+      managerName: 'Elena Rostova',
+    });
+    expect(failAttempt1.success).toBe(false);
+    expect(failAttempt1.errors[0]).toContain('blocking exception');
+
+    // Clear blocking exception
+    const readyClose = {
+      ...dailyClose,
+      unresolvedExceptions: [],
+    };
+
+    // Attempt close with unexplained cash shortage ($320 vs $338 = -$18 shortage)
+    const failAttempt2 = finalizeDailyClose({
+      dailyClose: readyClose,
+      actualCountedCashCents: 32000,
+      managerStaffId: staffId,
+      managerName: 'Elena Rostova',
+    });
+    expect(failAttempt2.success).toBe(false);
+    expect(failAttempt2.errors[0]).toContain('Till is short by $18.00');
+
+    // Successfully close with explained shortage note
+    const successResult = finalizeDailyClose({
+      dailyClose: readyClose,
+      actualCountedCashCents: 32000,
+      managerStaffId: staffId,
+      managerName: 'Elena Rostova',
+      varianceExplanation: 'Missing $18 verified as cash change miscount during noon rush; owner notified.',
+      closingNotes: 'All terminal batches settled cleanly with Stripe.',
+    });
+
+    expect(successResult.success).toBe(true);
+    expect(successResult.closedRecord?.status).toBe('closed');
+    expect(successResult.closedRecord?.varianceCents).toBe(-1800);
+    expect(successResult.closedRecord?.actualCountedCashCents).toBe(32000);
+    expect(successResult.closedRecord?.closedByStaffId).toBe(staffId);
+  });
+});
+
+describe('Posie Core Logic - F059 (Client Complaint Resolution & Redo Record - D18)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const appointmentId = '33333333-3333-3333-3333-333333333333';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('manages complaint lifecycle, enforces owner approval for refunds, and records complimentary redo costs', () => {
+    // 1. Open complaint for service tone/quality
+    const caseRecord = openComplaintCase({
+      businessId,
+      clientId,
+      clientName: 'Sophia Turner',
+      clientContact: 'sophia@example.com',
+      originalAppointmentId: appointmentId,
+      originalServiceName: 'Full Platinum Balayage & Gloss',
+      originalSpecialistName: 'Elena Rostova',
+      originalAmountChargedCents: 28000, // $280
+      category: 'service_quality',
+      originalClientConcern: 'Toner turned out noticeably brassier than reference photo consulted at chair.',
+      responsibleStaffId: staffId,
+      responsibleStaffName: 'Elena Rostova',
+    });
+
+    expect(caseRecord.status).toBe('new_received');
+    expect(caseRecord.originalClientConcern).toBe('Toner turned out noticeably brassier than reference photo consulted at chair.');
+    expect(caseRecord.chronology.length).toBe(1);
+
+    // 2. Append consultation outreach event
+    const updatedCase = appendChronologyEvent(caseRecord, {
+      authorStaffName: 'Elena Rostova',
+      authorRole: 'Senior Colorist',
+      actionSummary: 'Phone consultation with client',
+      notes: 'Reviewed shade photos together. Offered complimentary 45-minute tone correction appointment.',
+      isClientVisible: true,
+    });
+    expect(updatedCase.chronology.length).toBe(2);
+
+    // 3. Attach complimentary redo recovery
+    const withRedo = attachRedoRecovery(updatedCase, {
+      redoAppointmentId: '44444444-4444-4444-4444-444444444444',
+      redoSpecialistName: 'Elena Rostova',
+      scheduledRedoDate: '2026-11-06T10:00:00Z',
+      materialsCostCents: 2400, // $24 developer/toner
+      laborCostCents: 4500,     // $45 colorist time
+      goodwillCreditCents: 0,
+    });
+    expect(withRedo.status).toBe('redo_scheduled');
+    expect(withRedo.redoRecovery?.totalRecoveryCostCents).toBe(6900);
+    expect(withRedo.redoRecovery?.isComplimentaryToClient).toBe(true);
+
+    // 4. Invariant: Financial refund requires named owner sign-off
+    const failRefund = resolveComplaintCase(withRedo, {
+      remedyType: 'partial_refund',
+      resolutionSummary: 'Issued $50 refund to client card',
+      // Missing ownerApproverName
+    });
+    expect(failRefund.success).toBe(false);
+    expect(failRefund.errors[0]).toContain('requires named business owner sign-off');
+
+    // 5. Successful resolution of complimentary redo with case closure
+    const resolveResult = resolveComplaintCase(withRedo, {
+      remedyType: 'complimentary_redo',
+      resolutionSummary: 'Redo completed successfully. Violet-ash toner achieved desired tone; client thrilled.',
+      ownerApproverName: 'Chloe Founder',
+    });
+    expect(resolveResult.success).toBe(true);
+    expect(resolveResult.resolvedRecord?.status).toBe('resolved');
+    expect(resolveResult.resolvedRecord?.originalClientConcern).toBe(caseRecord.originalClientConcern); // Preserved intact
+    expect(resolveResult.resolvedRecord?.chronology.length).toBe(3);
+  });
+
+  it('enforces clinical lead review notes for adverse skin reactions', () => {
+    const clinicalCase = openComplaintCase({
+      businessId,
+      clientId,
+      clientName: 'Amara Patel',
+      clientContact: 'amara@example.com',
+      originalAppointmentId: appointmentId,
+      originalServiceName: 'TCA 15% Chemical Peel',
+      originalSpecialistName: 'Elena Rostova',
+      originalAmountChargedCents: 15000,
+      category: 'adverse_skin_reaction',
+      originalClientConcern: 'Mild localized blistering and peeling beyond expected erythema on jawline.',
+      responsibleStaffId: staffId,
+      responsibleStaffName: 'Elena Rostova',
+    });
+
+    expect(clinicalCase.requiresClinicalReview).toBe(true);
+    expect(clinicalCase.status).toBe('under_investigation');
+
+    // Resolving without clinical lead info fails
+    const failClinical = resolveComplaintCase(clinicalCase, {
+      remedyType: 'goodwill_retail_gift',
+      resolutionSummary: 'Sent soothing barrier balm',
+    });
+    expect(failClinical.success).toBe(false);
+    expect(failClinical.errors[0]).toContain('Adverse skin/treatment reaction cases require documented clinical review notes');
+
+    // Resolving with clinical notes succeeds
+    const successClinical = resolveComplaintCase(clinicalCase, {
+      remedyType: 'goodwill_retail_gift',
+      resolutionSummary: 'Clinical review confirmed contact sensitivity; client provided calming lipid balm.',
+      clinicalLeadName: 'Dr. Sarah Jenkins, MD',
+      clinicalReviewNotes: 'Reviewed photo and intake. Superficial epidermolysis; healing nicely with topical barrier balm.',
+    });
+    expect(successClinical.success).toBe(true);
+    expect(successClinical.resolvedRecord?.status).toBe('resolved');
+    expect(successClinical.resolvedRecord?.clinicalLeadName).toBe('Dr. Sarah Jenkins, MD');
+  });
+});
+
