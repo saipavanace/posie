@@ -466,6 +466,26 @@ export default function PosieStudioPage() {
   // F155 Purchasing Recommendations State
   const [poDraftApproved, setPoDraftApproved] = useState<boolean>(false);
 
+  // F156 Expert Template Marketplace State
+  const [templateMarketplaceAdopted, setTemplateMarketplaceAdopted] = useState<boolean>(false);
+  const [templateUpdateNotified, setTemplateUpdateNotified] = useState<boolean>(false);
+
+  // F157 Client-Controlled Care Passport State
+  const [carePassportGrantActive, setCarePassportGrantActive] = useState<boolean>(true);
+  const [carePassportRevoked, setCarePassportRevoked] = useState<boolean>(false);
+
+  // F158 Practitioner Relocation State
+  const [relocationContractType, setRelocationContractType] = useState<'1099_renter' | 'w2_employee'>('1099_renter');
+  const [relocationNoticeGenerated, setRelocationNoticeGenerated] = useState<boolean>(false);
+
+  // F159 Recovery Operations & Security Assurance State
+  const [restoreDrillSimulated, setRestoreDrillSimulated] = useState<boolean>(false);
+  const [tokensPrunedCount, setTokensPrunedCount] = useState<number>(3);
+
+  // F160 Enterprise Administration State
+  const [scimDeprovisionTriggered, setScimDeprovisionTriggered] = useState<boolean>(false);
+  const [ssoEnforced, setSsoEnforced] = useState<boolean>(true);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -486,7 +506,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F155)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F160)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -8447,6 +8467,330 @@ export default function PosieStudioPage() {
               onClick={() => setPoDraftApproved(!poDraftApproved)}
             >
               {poDraftApproved ? 'Revoke Purchase Order' : 'Authorize & Sign Purchase Order (PO-LUX-88192)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F156: Expert Template Marketplace */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="var(--color-primary)" />
+                Expert Template Marketplace &amp; Review Credentials (F156)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Vetted clinical, legal, and design templates with mandatory jurisdiction &amp; verified reviewer credentials.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={templateMarketplaceAdopted ? 'sage' : 'muted'}>
+                {templateMarketplaceAdopted ? (templateUpdateNotified ? 'Updated (v2.2.0)' : 'Adopted (v2.1.0)') : 'Catalog (Unadopted)'}
+              </Badge>
+              <Badge variant="muted">WB F156 / Rule F156</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Template Title:</div>
+              <strong>TCA Chemical Peel Informed Consent</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Jurisdiction &amp; Version:</div>
+              <strong>US-CA • {templateUpdateNotified ? 'v2.2.0 (Active)' : 'v2.1.0 (Update Avail)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Qualified Reviewer:</div>
+              <strong style={{ color: '#2B5329' }}>Dr. Sarah Vance, MD (CA #A149920)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Prohibited Badge Guard:</div>
+              <strong style={{ color: '#A65B32' }}>No Universal &quot;100% Compliant&quot;</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📜 <strong>WB F156 Invariant:</strong> Templates carry jurisdiction, author credentials, semantic versions, and qualified reviewer credentials; universal &quot;compliant&quot; badges are prohibited.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={templateMarketplaceAdopted ? 'outline' : 'primary'}
+              onClick={() => {
+                setTemplateMarketplaceAdopted(!templateMarketplaceAdopted);
+                if (templateMarketplaceAdopted) setTemplateUpdateNotified(false);
+              }}
+            >
+              {templateMarketplaceAdopted ? 'Remove Adopted Template' : 'Adopt Template (Retaining Local Addenda)'}
+            </Button>
+            {templateMarketplaceAdopted && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setTemplateUpdateNotified(!templateUpdateNotified)}
+              >
+                {templateUpdateNotified ? 'Revert to v2.1.0' : 'Apply Upstream Update (v2.2.0)'}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F157: Client-Controlled Care Passport */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={18} color="var(--color-primary)" />
+                Client-Controlled Care Passport &amp; Kill-Switch (F157)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Client-sovereign portable treatment histories, patch test clearances, and formula notes with instant revocation.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={carePassportGrantActive && !carePassportRevoked ? 'sage' : 'rose'}>
+                {carePassportGrantActive && !carePassportRevoked ? 'Grant Active (48h Token)' : 'Grant Revoked (Terminated)'}
+              </Badge>
+              <Badge variant="muted">WB F157 / Rule F157</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Client Passport ID:</div>
+              <strong>pass_cl_elena_881</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Authorized Recipient:</div>
+              <strong>Studio Lumière (Specialist: Mark D.)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Scoped Permissions:</div>
+              <strong>Formulas &amp; Patch Tests (Photos Redacted)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Sovereignty Kill-Switch:</div>
+              <strong style={{ color: carePassportRevoked ? '#A65B32' : '#2B5329' }}>
+                {carePassportRevoked ? 'Triggered (Immediate 0-Access)' : 'Armed & Ready'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🛡️ <strong>WB F157 Invariant:</strong> Client controls grant scope and expiry; businesses access records only under an active grant; revocation is immediate.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={carePassportRevoked ? 'primary' : 'outline'}
+              onClick={() => setCarePassportRevoked(!carePassportRevoked)}
+            >
+              {carePassportRevoked ? 'Re-Issue Care Passport Grant' : 'Trigger Client Kill-Switch (Revoke Access)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F158: Practitioner Relocation Workflow */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Truck size={18} color="var(--color-primary)" />
+                Practitioner Relocation &amp; Data Ownership Governance (F158)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Governed practitioner departures enforcing 1099 contractor export rights vs W-2 salon book protections.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={relocationContractType === '1099_renter' ? 'sage' : 'muted'}>
+                {relocationContractType === '1099_renter' ? '1099 Independent Renter' : 'W-2 Studio Employee'}
+              </Badge>
+              <Badge variant="muted">WB F158 / Rule F158</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Departing Practitioner:</div>
+              <strong>Julian Vance (Master Colorist)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Client Contact Export:</div>
+              <strong style={{ color: relocationContractType === '1099_renter' ? '#2B5329' : '#A65B32' }}>
+                {relocationContractType === '1099_renter' ? 'Authorized (1099 Right)' : 'Restricted (Salon Property)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Formula &amp; Note Export:</div>
+              <strong style={{ color: '#2B5329' }}>Permitted (Continuity of Care)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Departure Notice Mode:</div>
+              <strong>{relocationNoticeGenerated ? 'Rendered (Neutral & Lawful)' : 'Draft Mode'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            ⚖️ <strong>WB F158 Invariant:</strong> Contractual terms govern client contact export rights; W-2 client books remain business property without management waiver, while ensuring lawful continuity of care.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setRelocationContractType(relocationContractType === '1099_renter' ? 'w2_employee' : '1099_renter');
+                setRelocationNoticeGenerated(false);
+              }}
+            >
+              Toggle Classification ({relocationContractType === '1099_renter' ? 'Switch to W-2' : 'Switch to 1099'})
+            </Button>
+            <Button
+              size="sm"
+              variant={relocationNoticeGenerated ? 'outline' : 'primary'}
+              onClick={() => setRelocationNoticeGenerated(!relocationNoticeGenerated)}
+            >
+              {relocationNoticeGenerated ? 'Reset Departure Notice' : 'Generate Neutral Continuity Notice'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F159: Recovery Operations and Security Assurance */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} color="var(--color-primary)" />
+                Recovery Operations &amp; Security Assurance Drills (F159)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Automated backup restore drills proving RTO &le; 15m / RPO &le; 5m and periodic access token audits.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={restoreDrillSimulated ? 'sage' : 'muted'}>
+                {restoreDrillSimulated ? 'Drill Passed (RTO 4.2m / RPO 1.8m)' : 'Standby Snapshot Ready'}
+              </Badge>
+              <Badge variant="muted">WB F159 / Rule F159</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Encrypted Snapshot Digest:</div>
+              <strong style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>sha256:7f83b165...ae91</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Benchmark Target:</div>
+              <strong>RTO &le; 15 min • RPO &le; 5 min</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Drill Verification:</div>
+              <strong style={{ color: restoreDrillSimulated ? '#2B5329' : '#666' }}>
+                {restoreDrillSimulated ? '1,420 Appts / $18.4k Gift Cards Verified' : 'Drill Pending Run'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Security Token Review:</div>
+              <strong style={{ color: '#2B5329' }}>{tokensPrunedCount} Stale Tokens Pruned</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🔄 <strong>WB F159 Invariant:</strong> Automated restore drills verify recovery time objectives (RTO &le; 15m) and recovery point objectives (RPO &le; 5m); access tokens are continuously reviewed and expired credentials pruned.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={restoreDrillSimulated ? 'outline' : 'primary'}
+              onClick={() => setRestoreDrillSimulated(!restoreDrillSimulated)}
+            >
+              {restoreDrillSimulated ? 'Reset Restore Simulation' : 'Execute Automated Restore Drill (Prove RTO \u2264 15m)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTokensPrunedCount(tokensPrunedCount > 0 ? 0 : 3)}
+            >
+              {tokensPrunedCount > 0 ? 'Clear Pruned Token Log' : 'Simulate Token Review'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F160: Enterprise Administration */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Lock size={18} color="var(--color-primary)" />
+                Enterprise Administration &amp; SCIM Deprovisioning (F160)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                SAML 2.0 / OIDC SSO, location-scoped RBAC delegation, and automated SCIM user provisioning with instant session kill.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={scimDeprovisionTriggered ? 'rose' : 'sage'}>
+                {scimDeprovisionTriggered ? 'Deprovisioned (0 Active Sessions)' : 'SSO / SCIM Enforced'}
+              </Badge>
+              <Badge variant="muted">WB F160 / Rule F160</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Enterprise IdP:</div>
+              <strong>SAML 2.0 (Okta / Azure AD)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>User Target:</div>
+              <strong>marcus.f@atelierposie.com</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Location Scopes:</div>
+              <strong>SoHo Flagship, Beverly Hills</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Active Regional Sessions:</div>
+              <strong style={{ color: scimDeprovisionTriggered ? '#A65B32' : '#2B5329' }}>
+                {scimDeprovisionTriggered ? '0 (Killed Across All Branches)' : '3 Active Sessions'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🏢 <strong>WB F160 Invariant:</strong> Automated SCIM deprovisioning instantly invalidates enterprise credentials and terminates all active sessions across all locations; role delegations are location-scoped with verifiable audit exports.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={scimDeprovisionTriggered ? 'outline' : 'primary'}
+              onClick={() => setScimDeprovisionTriggered(!scimDeprovisionTriggered)}
+            >
+              {scimDeprovisionTriggered ? 'Re-provision Enterprise Identity' : 'Simulate SCIM Deprovision (Instant Session Kill)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSsoEnforced(!ssoEnforced)}
+            >
+              {ssoEnforced ? 'SSO Enforcement Active' : 'Allow Password Fallback'}
             </Button>
           </div>
         </Card>

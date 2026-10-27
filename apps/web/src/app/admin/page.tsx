@@ -87,7 +87,7 @@ export default function PosieStudioAdminPage() {
   const [adminCallIncoming, setAdminCallIncoming] = useState<boolean>(false);
   const [adminCallRecordingActive, setAdminCallRecordingActive] = useState<boolean>(true);
 
-  // F111-F155 Analytics & Studio Operations State
+  // F111-F160 Analytics & Studio Operations State
   const [adminAnalyticsRole, setAdminAnalyticsRole] = useState<'owner' | 'practitioner'>('owner');
   const [adminContributionMissingCost, setAdminContributionMissingCost] = useState<boolean>(false);
   const [adminConsentStopSimulated, setAdminConsentStopSimulated] = useState<boolean>(false);
@@ -170,7 +170,7 @@ export default function PosieStudioAdminPage() {
                 background: '#FFF5F3',
               }}
             >
-              🧪 Feature Lab (F001–F155)
+              🧪 Feature Lab (F001–F160)
             </a>
           </div>
         </div>
@@ -1996,7 +1996,7 @@ export default function PosieStudioAdminPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F155)
+          🧪 Feature Lab (F001–F160)
         </a>
       </div>
     </div>

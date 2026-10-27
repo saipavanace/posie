@@ -341,6 +341,22 @@ import {
   matchServicesToClientPreferences,
   generatePurchasingRecommendations,
   approvePurchaseOrderDraft,
+  publishMarketplaceTemplate,
+  adoptMarketplaceTemplate,
+  checkTemplateUpdate,
+  createCarePassportRecord,
+  issueCarePassportGrant,
+  revokeCarePassportGrant,
+  accessCarePassport,
+  initiateRelocationTransition,
+  authorizeRelocationExport,
+  generateLawfulDepartureNotice,
+  createEncryptedBackupSnapshot,
+  executeAutomatedRestoreDrill,
+  auditAndPruneAccessTokens,
+  configureEnterpriseSso,
+  processScimProvisioningEvent,
+  generateEnterpriseAuditExport,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -8191,6 +8207,264 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(approvedPo.auditRecord).toContain('authorized buyer staff_owner_elena');
     });
   });
+
+  describe('Posie Core Logic - F156 (Expert Template Marketplace)', () => {
+    it('validates review credentials for clinical/legal templates, tracks adoptions, and detects version updates', () => {
+      // 1. Invariant: Clinical template requires verified license & jurisdiction
+      expect(() => {
+        publishMarketplaceTemplate({
+          title: 'Advanced Chemical Peel Consent Protocol',
+          category: 'consent_agreement',
+          version: '1.0.0',
+          creator: { name: 'Dr. Aris Thorne', organization: 'DermLaw Guild', verifiedTitle: 'Board Certified Dermatologist' },
+          reviewCredentials: {
+            reviewType: 'clinician_reviewed',
+            reviewedByName: 'Dr. Aris Thorne, MD',
+            professionalLicenseOrBarNumber: '', // Missing license!
+            jurisdiction: 'US-CA',
+            reviewDate: '2026-10-01',
+            expirationDate: '2027-10-01',
+          },
+          contentSchema: { sections: ['risks', 'contraindications'] },
+          pricing: { priceCents: 2900, isFreeCommunityTemplate: false },
+          changelog: 'Initial release',
+        });
+      }).toThrow(/license or bar number is mandatory/i);
+
+      // 2. Publish valid expert template
+      const validTemplate = publishMarketplaceTemplate({
+        title: 'Advanced Chemical Peel Consent Protocol',
+        category: 'consent_agreement',
+        version: '1.0.0',
+        creator: { name: 'Dr. Aris Thorne', organization: 'DermLaw Guild', verifiedTitle: 'Board Certified Dermatologist' },
+        reviewCredentials: {
+          reviewType: 'clinician_reviewed',
+          reviewedByName: 'Dr. Aris Thorne, MD',
+          professionalLicenseOrBarNumber: 'MD-CA-449102',
+          jurisdiction: 'US-CA',
+          reviewDate: '2026-10-01',
+          expirationDate: '2027-10-01',
+        },
+        contentSchema: { sections: ['risks', 'contraindications', 'peel_strengths'] },
+        pricing: { priceCents: 2900, isFreeCommunityTemplate: false },
+        changelog: 'Initial compliant release',
+      });
+
+      expect(validTemplate.templateId).toBeDefined();
+
+      // 3. Adopt template into studio
+      const { installation, updatedTemplate } = adoptMarketplaceTemplate(validTemplate, 'studio_posie_sf');
+      expect(installation.installedVersion).toBe('1.0.0');
+      expect(updatedTemplate.adoptionCount).toBe(1);
+
+      // 4. Check for update when author releases v1.1.0
+      const updatedTemplateV11 = { ...updatedTemplate, version: '1.1.0', changelog: 'Added TCA 30% aftercare caveat' };
+      const updateCheck = checkTemplateUpdate(installation, updatedTemplateV11);
+      expect(updateCheck.hasUpdate).toBe(true);
+      expect(updateCheck.latestVersion).toBe('1.1.0');
+      expect(updateCheck.changelog).toContain('TCA 30%');
+    });
+  });
+
+  describe('Posie Core Logic - F157 (Client-Controlled Care Passport)', () => {
+    it('manages client-sovereign care entries, issues time-limited scoped grants, and supports instant client revocation', () => {
+      const mockEntries = [
+        {
+          entryId: 'ent_1',
+          scope: 'treatment_history' as const,
+          date: '2026-09-15',
+          performingStudioName: 'Posie Maison SF',
+          performingPractitioner: 'Elena Rostova',
+          summary: 'Bespoke Hydration Treatment',
+        },
+        {
+          entryId: 'ent_2',
+          scope: 'formula_notes' as const,
+          date: '2026-09-15',
+          performingStudioName: 'Posie Maison SF',
+          performingPractitioner: 'Elena Rostova',
+          summary: 'Hair gloss formulation',
+          clinicalDetails: { formula: 'Shades EQ 09P + 09V equal parts' },
+        },
+        {
+          entryId: 'ent_3',
+          scope: 'patch_test_clearances' as const,
+          date: '2026-09-10',
+          performingStudioName: 'Posie Maison SF',
+          performingPractitioner: 'Elena Rostova',
+          summary: 'PPD tint patch test 48h clear',
+        },
+      ];
+
+      // 1. Create client passport
+      const passport = createCarePassportRecord('cli_chloe_du', 'Chloe Dupont', '415-555-4499', mockEntries);
+      expect(passport.verifiedEntries).toHaveLength(3);
+
+      // 2. Issue scoped 24h grant to a guest studio for formula notes and patch tests only (excludes history)
+      const grant = issueCarePassportGrant(
+        passport,
+        'Atelier NYC',
+        'Sylvia Vance',
+        ['formula_notes', 'patch_test_clearances'],
+        24
+      );
+
+      expect(grant.accessToken).toBeDefined();
+      expect(grant.isRevoked).toBe(false);
+
+      // 3. Recipient accesses passport data
+      const accessRes = accessCarePassport(grant, passport, '198.51.100.22');
+      expect(accessRes.isAccessGranted).toBe(true);
+      expect(accessRes.authorizedEntries).toHaveLength(2); // Only formula_notes & patch_test_clearances
+      expect(accessRes.authorizedEntries.map(e => e.scope)).not.toContain('treatment_history');
+
+      // 4. Client exercises instant kill switch revocation
+      const revokedGrant = revokeCarePassportGrant(grant, 'cli_chloe_du');
+      expect(revokedGrant.isRevoked).toBe(true);
+
+      const revokedAccess = accessCarePassport(revokedGrant, passport, '198.51.100.22');
+      expect(revokedAccess.isAccessGranted).toBe(false);
+      expect(revokedAccess.rejectionReason).toContain('explicitly revoked');
+    });
+  });
+
+  describe('Posie Core Logic - F158 (Practitioner Relocation Workflow)', () => {
+    it('honors 1099 contractor data ownership rights while restricting W-2 salon client lists without signoff', () => {
+      // 1. 1099 Booth Renter leaves studio: Under WB F37, renter owns their client list
+      const renterReq = initiateRelocationTransition(
+        'staff_renter_sienna',
+        'Sienna Woods',
+        '2026-12-01',
+        'Sienna Aesthetics Studio',
+        '1099_independent_booth_renter',
+        ['personal_earnings_history', 'client_contact_directory', 'clinical_treatment_portfolio']
+      );
+
+      expect(renterReq.status).toBe('authorized_for_export');
+      expect(renterReq.authorizedScopes).toContain('client_contact_directory');
+
+      const renterNotice = generateLawfulDepartureNotice(renterReq, 'Posie Atelier');
+      expect(renterNotice).toContain('transitioning their independent practice');
+
+      // 2. W-2 Employee leaves studio: Client contacts belong to salon unless manager signs off
+      const w2Req = initiateRelocationTransition(
+        'staff_w2_maya',
+        'Maya Lin',
+        '2026-12-01',
+        'Downtown Spa Club',
+        'w2_commission_employee',
+        ['personal_earnings_history', 'client_contact_directory', 'clinical_treatment_portfolio']
+      );
+
+      expect(w2Req.status).toBe('restricted_w2_salon_owned');
+      expect(w2Req.authorizedScopes).not.toContain('client_contact_directory');
+      expect(w2Req.authorizedScopes).toContain('personal_earnings_history');
+
+      // Manager reviews and authorizes mutual departure transition
+      const approvedW2 = authorizeRelocationExport(w2Req, 'staff_manager_elena', true, 'Mutual separation agreement signed; non-solicitation waiver granted for direct regular clients.');
+      expect(approvedW2.status).toBe('authorized_for_export');
+      expect(approvedW2.authorizedScopes).toContain('client_contact_directory');
+      expect(approvedW2.managerSignoff?.complianceNotes).toContain('Mutual separation');
+    });
+  });
+
+  describe('Posie Core Logic - F159 (Recovery Operations and Security Assurance)', () => {
+    it('executes automated restore drills proving RTO and RPO benchmarks and prunes stale access tokens', () => {
+      // 1. Create encrypted backup snapshot
+      const snapshot = createEncryptedBackupSnapshot({
+        appointments: 1420,
+        clients: 890,
+        giftCardLedgerCents: 4500000, // $45,000.00
+        transactionLines: 3100,
+      });
+
+      expect(snapshot.sha256Digest).toContain('sha256:');
+
+      // 2. Run automated restore drill with passing RTO and RPO
+      const drill = executeAutomatedRestoreDrill(snapshot, {
+        targetRtoMinutes: 15,
+        targetRpoMinutes: 5,
+        simulatedLatencyMinutes: 3.8,
+        simulatedLagMinutes: 1.2,
+      });
+
+      expect(drill.status).toBe('passed_clean');
+      expect(drill.isRtoMet).toBe(true);
+      expect(drill.isRpoMet).toBe(true);
+      expect(drill.integrityChecks.appointmentsMatched).toBe(true);
+      expect(drill.integrityChecks.ledgerBalancesBalanced).toBe(true);
+      expect(drill.auditReport).toContain('Restore Drill');
+
+      // 3. Audit access tokens and prune stale credentials (>30 days)
+      const mockTokens = [
+        { tokenId: 'tok_active', staffId: 's1', staffName: 'Elena Rostova', role: 'owner', lastUsedAt: new Date().toISOString() },
+        { tokenId: 'tok_stale', staffId: 's2', staffName: 'Former Intern', role: 'assistant', lastUsedAt: '2026-08-01T12:00:00Z' },
+      ];
+
+      const review = auditAndPruneAccessTokens(mockTokens, 30);
+      expect(review.activeTokens).toHaveLength(1);
+      expect(review.revokedTokens).toHaveLength(1);
+      expect(review.revokedTokens[0].staffName).toBe('Former Intern');
+    });
+  });
+
+  describe('Posie Core Logic - F160 (Enterprise Administration)', () => {
+    it('configures enterprise SSO, processes SCIM deprovisioning with instant session kills, and exports audit digests', () => {
+      // 1. SSO Configuration
+      const ssoResult = configureEnterpriseSso({
+        enterpriseName: 'Posie Luxury Group LLC',
+        identityProvider: 'okta',
+        ssoProtocol: 'saml_2_0',
+        entityIdOrClientId: 'sp_posie_okta_prod',
+        ssoLoginUrl: 'https://auth.posiegroup.okta.com/app/sso',
+        enforceSsoForAllStaff: true,
+        allowedBreakGlassAdmins: ['elena.breakglass@posiegroup.com'],
+      });
+
+      expect(ssoResult.isConfigured).toBe(true);
+      expect(ssoResult.ssoStatus).toContain('OKTA');
+
+      // 2. SCIM Provisioning: Create Regional Director
+      const initialUsers: any[] = [];
+      const createRes = processScimProvisioningEvent(
+        {
+          action: 'create_user',
+          userEmail: 'director.sofia@posiegroup.com',
+          fullName: 'Sofia Valenti',
+          assignedLocationIds: ['loc_beverly_hills', 'loc_soho'],
+          enterpriseRole: 'regional_director',
+        },
+        initialUsers
+      );
+
+      expect(createRes.event.status).toBe('success');
+      expect(createRes.updatedUsers[0].isActive).toBe(true);
+      expect(createRes.updatedUsers[0].assignedLocationIds).toHaveLength(2);
+
+      // 3. SCIM Deprovisioning: Invariant: Instant token kill across all enterprise locations
+      const userWithSessions = [{ ...createRes.updatedUsers[0], activeSessionsCount: 4 }];
+      const deprovRes = processScimProvisioningEvent(
+        {
+          action: 'deprovision_user',
+          userEmail: 'director.sofia@posiegroup.com',
+          assignedLocationIds: [],
+          enterpriseRole: 'regional_director',
+        },
+        userWithSessions
+      );
+
+      expect(deprovRes.event.status).toBe('revocation_complete');
+      expect(deprovRes.updatedUsers[0].isActive).toBe(false);
+      expect(deprovRes.updatedUsers[0].activeSessionsCount).toBe(0); // All 4 sessions instantly killed
+
+      // 4. Enterprise Audit Export
+      const auditExport = generateEnterpriseAuditExport('Posie Luxury Group LLC', '2026-10-01', '2026-10-31', 1250);
+      expect(auditExport.totalSecurityEvents).toBe(1250);
+      expect(auditExport.sha256Digest).toContain('sha256:');
+      expect(auditExport.downloadUrl).toContain('/api/v1/enterprise/audit-logs');
+    });
+  });
+
 
 
 

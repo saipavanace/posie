@@ -153,4 +153,9 @@ export * from './growth_experiments';
 export * from './cancellation_simulator';
 export * from './service_match_assistant';
 export * from './purchasing_recommendations';
+export * from './template_marketplace';
+export * from './care_passport';
+export * from './practitioner_relocation';
+export * from './recovery_operations';
+export * from './enterprise_admin';
 

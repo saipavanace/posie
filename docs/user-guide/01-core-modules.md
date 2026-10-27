@@ -924,6 +924,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Inventory procurement recommendation engine analyzing stock on hand, committed appointment allocations, supplier lead times, and owner budget caps to calculate optimal reorder quantities.
 * **Key Invariant (Basis: Expansion (X); DATA OPS PART, WB F155, Rule F155):** **Demand-Aware Replenishment & Authorized Buyer Signoff.** "The owner approves costs and substitutions before ordering." Reorder models incorporate minimum order quantities (MOQ) and case pack constraints. Generating recommendations or draft purchase orders never automatically spends salon funds or transmits orders until an authorized buyer explicitly reviews and signs the purchase order.
 
+---
+
+## F156 — Expert Template Marketplace (WB F156)
+* **What it is:** Vetted community and expert marketplace where licensed aesthetic clinicians, legal counsel, and certified salon designers publish, version, and license intake forms, chart layouts, and aftercare templates.
+* **Key Invariant (Basis: Expansion (X); DATA CLIN LEG, WB F156, Rule F156):** **Qualified Reviewer Credentials & Prohibited Universal Compliance Claims.** "Templates carry jurisdiction, version, author credentials, and qualified reviewer credentials; universal 'compliant' badges are prohibited." Clinical and legal intake templates mandate explicit jurisdiction (e.g. `US-CA`), qualified professional credentials (license or bar number), and semantic versions. Studios adopting templates receive automated update detection notifications when authoring specialists release newer revisions.
+
+---
+
+## F157 — Client-Controlled Care Passport (WB F157)
+* **What it is:** Client-sovereign portable treatment record allowing guests to securely store and share patch test clearances, chemical peel / hair color formulations, and clinical treatment histories with independent specialists across different studios.
+* **Key Invariant (Basis: Trust (T); DATA PRIV, WB F157, Rule F157):** **Time-Limited Granular Grants & Instant Client Revocation.** "Client controls grant scope and expiry; businesses access records only under an active grant; revocation is immediate." External studios cannot browse client records without a cryptographically scoped, time-limited token. Clients retain absolute kill-switch authority to terminate active access grants at any instant.
+
+---
+
+## F158 — Practitioner Relocation Workflow (WB F158, F037, F140)
+* **What it is:** Governed practitioner transition system ensuring orderly, lawful relocations while maintaining strict distinction between 1099 independent contractor customer books and W-2 employer-owned client lists.
+* **Key Invariant (Basis: Expansion (X); DATA LEG PRIV, WB F158, Rule F158):** **Statutory Contract Classification & Professional Continuity of Care.** "Contractual terms govern client contact export rights; W-2 client lists remain business property unless an explicit non-solicitation waiver is signed; departure notices maintain continuity of care." Independent 1099 booth renters can export their client contacts and formulas. For W-2 departures, export access is locked unless authorized by salon management, while ensuring clients receive neutral, professional continuity-of-care notices.
+
+---
+
+## F159 — Recovery Operations and Security Assurance (WB F159)
+* **What it is:** Automated disaster recovery orchestration and continuous security governance engine maintaining encrypted system snapshots, verifying data integrity digests, and conducting simulated restore drills.
+* **Key Invariant (Basis: Trust (T); DATA SEC OPS, WB F159, Rule F159):** **RTO <= 15m / RPO <= 5m Verification & Automated Token Pruning.** "Automated restore drills verify recovery time objectives (RTO <= 15m) and recovery point objectives (RPO <= 5m); access tokens are continuously reviewed and expired credentials pruned." Snapshots carry SHA-256 cryptographic digests. Automated recovery drills simulate point-in-time restores to confirm zero data corruption across appointments, gift card balances, and financial ledgers.
+
+---
+
+## F160 — Enterprise Administration (WB F160, F139)
+* **What it is:** Enterprise multi-location identity and security administration console featuring SAML 2.0 / OpenID Connect Single Sign-On (SSO), automated SCIM user provisioning/deprovisioning, and cryptographically verifiable audit logging.
+* **Key Invariant (Basis: Trust (T); DATA SEC ENT, WB F160, Rule F160):** **SCIM Instant Session Kill & Scoped RBAC Delegation.** "Automated SCIM deprovisioning instantly invalidates enterprise credentials and terminates all active sessions across all locations; role delegations are location-scoped with verifiable audit exports." Deprovisioning an employee via SCIM immediately kills active session tokens across all studio branches in real time.
+
+
 
 
 
