@@ -1164,6 +1164,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Multi-channel booking and intake access workflow enabling clients without smartphones, apps, or email to schedule, consent, and pay via phone operators, counter tablets, or physical wet-signed paper records.
 * **Key Invariant (Basis: Launch candidate (L); UX LEG OPS SEC, WB F195, Rule F195, Table 91):** **Zero E-Signature Fabrication & Scanned Paper Audit Trail.** "Allow a client to book and complete necessary steps by phone, on an accessible in-salon device or with paper where permitted, without requiring their own smartphone, app or email; staff record the channel and authorized assistance; unresolved digital steps remain visible; never fabricate a client e-signature or mark a failed message as delivered; support secure wet-signed scan attachment, identity checks, read-back of price/policy, duplicate prevention and restricted staff handling."
 
+---
+
+## F196 — Task Mastery Learning in a Safe Demo (WB F196, X11, WB F012, Table 91)
+* **What it is:** Interactive sandbox onboarding and task mastery training engine providing staff and managers with short role-specific practice drills inside isolated fictional data.
+* **Key Invariant (Basis: Launch candidate (L); UX CLIN, WB F196, Rule F196, Table 91):** **Strict Demo Sandbox Isolation & Licensure Disclaimers.** "Provide short role-specific practice tasks inside fictional data, with feedback on completing a booking, change, form review or checkout correctly; show competence in app tasks rather than attendance; practice cannot message real clients, take payment or count as operational performance; do not imply professional licensing or clinical competence." Evaluates step completion accuracy in real time without leaking test records to production.
+
+---
+
+## F197 — Calibrate Service Durations from Actual Stages (WB F197, X12, Table 91)
+* **What it is:** Empirical duration calibration engine comparing observed hands-on treatment, chemical processing, and finishing times against catalog standards to optimize schedule buffers.
+* **Key Invariant (Basis: Expansion (X); DATA CLIN, WB F197, Rule F197, Table 91):** **Sample Size Gate & Practitioner Decision Authority.** "Capture optional actual hands-on, processing and finish times; propose conservative duration/buffer updates for a service/provider after sufficient comparable observations, with uncertainty and an explanation; provider approves changes; do not infer protected attributes or turn delays into public staff rankings; sparse or biased samples revert to merchant-set durations; validate predictions on future visits." Enforces a 5-visit minimum sample threshold and mandates practitioner sign-off before modifying booking rules.
+
+---
+
+## F198 — Recurring Booth and Chair Rent (WB F198, VG06, WB F140, WB F171, Table 91)
+* **What it is:** Independent contractor booth rental management system governing recurring lease schedules, deposit holding, invoices, partial payments, and statements for 1099 stylists.
+* **Key Invariant (Basis: Growth (G); FIN LEG PAY, WB F198, Rule F198, Table 91):** **Segregated Security Deposits & Merchant Data Separation.** "Manage ongoing renter agreements, rent schedules, deposits, invoices, partial payments, late balances and statements for named renters; approved agreements and billing ledger; security deposits stay distinct from rent; financial and client data remain separated where renters are independent merchants." Guarantees tenant isolation so booth renter client books and merchant processing are firewalled from the salon owner.
+
+---
+
+## F199 — Invoices and Receivables (WB F199, GG16, VG01, WB F036, WB F085, Table 91)
+* **What it is:** Commercial billing engine issuing sequential invoices (`INV-2026-0001`) with due dates, staged milestone payments, credit notes, and automated receivables aging buckets.
+* **Key Invariant (Basis: Launch candidate (L); FIN PAY LEG, WB F199, Rule F199, Table 91):** **Ledger Reconciled Revisions & Aging Categorization.** "Issue numbered invoices with due dates, staged payments, paid and remaining balances, reminders, credit notes and receivables aging; ledger, document versions and hosted checkout; partial payments and refunds reconcile without rewriting the issued invoice or billing the client twice." Automatically categorizes outstanding balances into 0-30, 31-60, 61-90, and 90+ days aging buckets.
+
+---
+
+## F200 — Platform Assurance & Global Audit Verification (F001–F200 Capstone)
+* **What it is:** System-wide platform compliance audit rollup and cryptographic readiness verification engine certifying all 200 platform modules across multi-tenant security, clinical governance, financial ledger integrity, discovery attribution, and privacy.
+* **Key Invariant (Basis: Complete Platform Capstone):** **Subsystem Health Certification & Tamper-Proof Cryptographic Ledgers.** Executes automated end-to-end audit checks across 6 core subsystems; computes SHA-256 cryptographic digests of financial ledgers and consent records; verifies zero regressions across all vitest suites; generates an immutable Production Readiness Attestation certificate.
+
+
 
 
 

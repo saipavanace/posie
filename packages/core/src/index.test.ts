@@ -486,6 +486,24 @@ import {
   attachWetSignedPaperScan,
   type NonSmartphoneBookingRecord,
   type PaperDocumentAttachment,
+  evaluateDemoPracticeTask,
+  DEMO_PRACTICE_SCENARIOS,
+  type PracticeTaskScenario,
+  type PracticeTaskSubmission,
+  proposeDurationCalibration,
+  applyCalibrationDecision,
+  type ObservedStageDuration,
+  generateRentInvoice,
+  recordRentPayment,
+  generateRenterStatement,
+  type BoothRenterAgreement,
+  createCommercialInvoice,
+  recordInvoicePayment,
+  applyCreditNoteToInvoice,
+  generateReceivablesAgingReport,
+  type CommercialInvoice,
+  executePlatformAssuranceAudit,
+  type PlatformAssuranceAttestation,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -10821,6 +10839,189 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(resolvedPaperBooking.unresolvedDigitalSteps).not.toContain('PHYSICAL_PAPER_SCAN_PENDING_ATTACHMENT');
     });
   });
+
+  describe('Posie Core Logic - F196 (Task Mastery Learning in a Safe Demo)', () => {
+    it('evaluates role practice tasks in sandbox isolation with instant feedback and disclaims licensure', () => {
+      const scenario = DEMO_PRACTICE_SCENARIOS.reschedule_appointment;
+
+      // 1. Partial completion: 2 of 3 actions completed -> 67% score, not passed
+      const partialSubmission: PracticeTaskSubmission = {
+        taskId: scenario.taskId,
+        completedActions: ['verify_chair_availability', 'select_new_time_slot'],
+      };
+      const partialEval = evaluateDemoPracticeTask(scenario, partialSubmission);
+      expect(partialEval.isPassed).toBe(false);
+      expect(partialEval.scorePercentage).toBe(67);
+      expect(partialEval.missingActions).toEqual(['confirm_reschedule_with_client']);
+      expect(partialEval.sandboxIsolationEnforced).toBe(true);
+      expect(partialEval.licensureDisclaimer).toContain('does not imply professional, legal, or medical licensure');
+
+      // 2. Full completion: all 3 actions completed -> 100% score, passed
+      const completeSubmission: PracticeTaskSubmission = {
+        taskId: scenario.taskId,
+        completedActions: ['verify_chair_availability', 'select_new_time_slot', 'confirm_reschedule_with_client'],
+      };
+      const completeEval = evaluateDemoPracticeTask(scenario, completeSubmission);
+      expect(completeEval.isPassed).toBe(true);
+      expect(completeEval.scorePercentage).toBe(100);
+      expect(completeEval.missingActions).toHaveLength(0);
+      expect(completeEval.feedbackMessage).toContain('Task Mastered');
+    });
+  });
+
+  describe('Posie Core Logic - F197 (Calibrate Service Durations from Actual Stages)', () => {
+    it('enforces minimum sample size threshold and requires provider approval for duration adjustments', () => {
+      // 1. Insufficient sample size (<5 visits): reverts to catalog default (60m)
+      const sparseObservations: ObservedStageDuration[] = [
+        { visitId: 'v1', providerId: 'prov_claire', serviceId: 'srv_facial', handsOnMinutes: 45, processingMinutes: 15, finishingMinutes: 10, totalActualMinutes: 70, recordedAt: '2026-11-01' },
+        { visitId: 'v2', providerId: 'prov_claire', serviceId: 'srv_facial', handsOnMinutes: 40, processingMinutes: 20, finishingMinutes: 15, totalActualMinutes: 75, recordedAt: '2026-11-03' },
+      ];
+
+      const sparseProposal = proposeDurationCalibration('srv_facial', 'prov_claire', 60, sparseObservations, 5);
+      expect(sparseProposal.isSampleSizeSufficient).toBe(false);
+      expect(sparseProposal.proposedCalibratedDurationMinutes).toBe(60);
+      expect(sparseProposal.varianceExplanation).toContain('INSUFFICIENT_DATA');
+      expect(sparseProposal.status).toBe('rejected_retained_default');
+
+      // 2. Sufficient sample size (5 visits with median duration = 75m)
+      const robustObservations: ObservedStageDuration[] = [
+        ...sparseObservations,
+        { visitId: 'v3', providerId: 'prov_claire', serviceId: 'srv_facial', handsOnMinutes: 45, processingMinutes: 15, finishingMinutes: 15, totalActualMinutes: 75, recordedAt: '2026-11-05' },
+        { visitId: 'v4', providerId: 'prov_claire', serviceId: 'srv_facial', handsOnMinutes: 50, processingMinutes: 15, finishingMinutes: 15, totalActualMinutes: 80, recordedAt: '2026-11-07' },
+        { visitId: 'v5', providerId: 'prov_claire', serviceId: 'srv_facial', handsOnMinutes: 40, processingMinutes: 15, finishingMinutes: 15, totalActualMinutes: 70, recordedAt: '2026-11-09' },
+      ];
+
+      const robustProposal = proposeDurationCalibration('srv_facial', 'prov_claire', 60, robustObservations, 5);
+      expect(robustProposal.isSampleSizeSufficient).toBe(true);
+      expect(robustProposal.observedMedianMinutes).toBe(75);
+      expect(robustProposal.proposedCalibratedDurationMinutes).toBe(75);
+      expect(robustProposal.proposedBufferMinutes).toBe(15);
+      expect(robustProposal.status).toBe('proposed');
+
+      // 3. Provider approval decision
+      const approvedDecision = applyCalibrationDecision(robustProposal, true, 'Dr. Claire Vance, LE');
+      expect(approvedDecision.status).toBe('approved_by_provider');
+
+      expect(() => applyCalibrationDecision(robustProposal, true, '')).toThrow('Provider signature required');
+    });
+  });
+
+  describe('Posie Core Logic - F198 (Recurring Booth and Chair Rent)', () => {
+    const renterAgreement: BoothRenterAgreement = {
+      agreementId: 'agr_booth_101',
+      renterId: 'renter_sam_stylist',
+      renterFullName: 'Samantha Hayes',
+      renterBusinessName: 'Hayes Hair Studio LLC',
+      chairOrBoothIdentifier: 'Chair 04 (Window Station)',
+      billingCadence: 'weekly',
+      rentAmountUsd: 350.0,
+      securityDepositHeldUsd: 1400.0, // 4 weeks deposit segregated
+      leaseStartDate: '2026-01-01',
+      gracePeriodDays: 3,
+      lateFeeFlatUsd: 35.0,
+      status: 'active',
+    };
+
+    it('generates rent invoices, applies partial payments, and produces statements with segregated deposits', () => {
+      // 1. Generate rent invoice: $350.00
+      const invoice = generateRentInvoice(
+        renterAgreement,
+        '2026-11-01',
+        '2026-11-07',
+        '2026-11-01',
+        '2026-11-01'
+      );
+      expect(invoice.rentDueAmountUsd).toBe(350.0);
+      expect(invoice.remainingBalanceUsd).toBe(350.0);
+      expect(invoice.status).toBe('pending');
+
+      // 2. Partial payment: $200.00 -> remaining $150.00
+      const partialPayment = recordRentPayment(invoice, 200.0);
+      expect(partialPayment.amountPaidUsd).toBe(200.0);
+      expect(partialPayment.remainingBalanceUsd).toBe(150.0);
+      expect(partialPayment.status).toBe('partially_paid');
+
+      // 3. Full payment of remaining balance
+      const fullPayment = recordRentPayment(partialPayment, 150.0);
+      expect(fullPayment.amountPaidUsd).toBe(350.0);
+      expect(fullPayment.remainingBalanceUsd).toBe(0);
+      expect(fullPayment.status).toBe('paid_in_full');
+
+      // 4. Statement summary: proves $1,400.00 security deposit remains segregated
+      const statement = generateRenterStatement(renterAgreement, [fullPayment]);
+      expect(statement.totalRentBilledUsd).toBe(350.0);
+      expect(statement.totalRentPaidUsd).toBe(350.0);
+      expect(statement.currentOutstandingBalanceUsd).toBe(0);
+      expect(statement.segregatedSecurityDepositUsd).toBe(1400.0);
+    });
+  });
+
+  describe('Posie Core Logic - F199 (Invoices and Receivables)', () => {
+    it('issues commercial invoices, reconciles staged payments and credit notes, and produces aging reports', () => {
+      // 1. Issue commercial invoice ($400 subtotal + $35.50 tax = $435.50)
+      const invoice = createCommercialInvoice({
+        invoiceSequenceNumber: 'INV-2026-0001',
+        issuerSalonId: 'salon_soho',
+        clientInfo: { clientId: 'c_bridal', fullName: 'Bridal Party Madison', email: 'madison@example.com' },
+        dueDate: '2026-11-15',
+        lineItems: [
+          { description: 'Bridal Hair Trial', quantity: 1, unitPriceUsd: 150.0 },
+          { description: 'Bridal Party Hair Styling', quantity: 2, unitPriceUsd: 125.0 },
+        ],
+        taxRate: 0.08875,
+        issueDate: '2026-11-01',
+      });
+
+      expect(invoice.invoiceSequenceNumber).toBe('INV-2026-0001');
+      expect(invoice.subtotalUsd).toBe(400.0);
+      expect(invoice.taxAmountUsd).toBe(35.5);
+      expect(invoice.totalInvoiceAmountUsd).toBe(435.5);
+      expect(invoice.remainingBalanceUsd).toBe(435.5);
+      expect(invoice.status).toBe('issued');
+
+      // 2. Milestone payment: $200.00 deposit
+      const milestonePaid = recordInvoicePayment(invoice, 200.0);
+      expect(milestonePaid.amountPaidUsd).toBe(200.0);
+      expect(milestonePaid.remainingBalanceUsd).toBe(235.5);
+      expect(milestonePaid.status).toBe('partially_paid');
+
+      // 3. Apply Credit Note ($35.50 courtesy waiver)
+      const creditedInvoice = applyCreditNoteToInvoice(milestonePaid, 35.5);
+      expect(creditedInvoice.creditNotesAppliedUsd).toBe(35.5);
+      expect(creditedInvoice.remainingBalanceUsd).toBe(200.0);
+
+      // 4. Accounts receivables aging report
+      const overdueInvoice = {
+        ...creditedInvoice,
+        dueDate: '2026-10-01', // 45 days past due relative to Nov 15
+      };
+      const agingReport = generateReceivablesAgingReport('salon_soho', [overdueInvoice], '2026-11-15');
+      expect(agingReport.totalReceivablesOutstandingUsd).toBe(200.0);
+      expect(agingReport.aging31To60DaysUsd).toBe(200.0);
+      expect(agingReport.unpaidInvoicesCount).toBe(1);
+    });
+  });
+
+  describe('Posie Core Logic - F200 (Platform Assurance & Global Audit Verification)', () => {
+    it('executes platform-wide audit rollup across 200 features and verifies production readiness', () => {
+      // 1. Clean audit: All 6 subsystems passed, 200 features certified
+      const attestation = executePlatformAssuranceAudit();
+      expect(attestation.totalFeaturesCertified).toBe(200);
+      expect(attestation.overallReadiness).toBe('production_ready');
+      expect(attestation.cryptographicLedgerChainValid).toBe(true);
+      expect(attestation.zeroRegressionsVerified).toBe(true);
+      expect(attestation.subsystems).toHaveLength(6);
+      expect(attestation.platformReleaseVersion).toBe('2.0.0-gold-certified');
+
+      // 2. Tamper violation detection
+      const tamperedAttestation = executePlatformAssuranceAudit({ cryptographicChainTampered: true });
+      expect(tamperedAttestation.overallReadiness).toBe('degraded');
+      expect(tamperedAttestation.cryptographicLedgerChainValid).toBe(false);
+      const ledgerSubsystem = tamperedAttestation.subsystems.find((s) => s.subsystemKey === 'financial_ledger_integrity');
+      expect(ledgerSubsystem?.status).toBe('failed_blocking');
+    });
+  });
+
 
 
 

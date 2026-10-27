@@ -193,4 +193,9 @@ export * from './lost_demand_ledger';
 export * from './leave_by_constraint';
 export * from './budget_constrained_options';
 export * from './assisted_completion';
+export * from './task_mastery_demo';
+export * from './calibrate_service_durations';
+export * from './recurring_booth_rent';
+export * from './invoices_receivables';
+export * from './platform_assurance';
 
