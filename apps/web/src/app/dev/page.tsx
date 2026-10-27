@@ -397,6 +397,21 @@ export default function PosieStudioPage() {
   // F135 Supported Wallet Payment Methods State
   const [activeClientPlatform, setActiveClientPlatform] = useState<'ios_safari' | 'android_chrome'>('ios_safari');
 
+  // F136 Waitlist Priorities State
+  const [waitlistOfferClaimed, setWaitlistOfferClaimed] = useState<boolean>(false);
+
+  // F137 OCR Intake Assistance State
+  const [ocrSensitiveVerified, setOcrSensitiveVerified] = useState<boolean>(false);
+
+  // F138 Branded Mobile App State
+  const [mobileBiometricsAuthed, setMobileBiometricsAuthed] = useState<boolean>(true);
+
+  // F139 Multi-Location Operations State
+  const [selectedEnterpriseLocation, setSelectedEnterpriseLocation] = useState<'all' | 'beverly' | 'soho'>('all');
+
+  // F140 Booth Renter Merchant State
+  const [renterSplitSimulated, setRenterSplitSimulated] = useState<boolean>(true);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -417,7 +432,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F135)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F140)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -6921,6 +6936,340 @@ export default function PosieStudioPage() {
               onClick={() => setActiveClientPlatform('android_chrome')}
             >
               Simulate Android Chrome (Google Pay Primary)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F136: Transparent Waitlist Priorities */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Transparent Waitlist Priorities (F136)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={waitlistOfferClaimed ? 'sage' : 'muted'}>
+                {waitlistOfferClaimed ? 'Slot Confirmed: Anne Hathaway' : 'Exclusive Timed Claim: 14m Remaining'}
+              </Badge>
+              <Badge variant="muted">WB F81 Fair Recovery</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Matches cancellation openings to waitlist clients using objective criteria (duration fit, practitioner, and notice requirements).
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Cancellation Opening: 60m at 2:00 PM with Dr. Evelyn Reed (4h notice)
+              </strong>
+              <Badge variant={waitlistOfferClaimed ? 'sage' : 'rose'}>
+                {waitlistOfferClaimed ? 'Booked & Removed from Waitlist' : '15m Anti-Collusion Lock'}
+              </Badge>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>#1 Rank: Anne Hathaway</div>
+                <strong style={{ color: '#2B5329' }}>✓ Exact 60m Fit &amp; 2h Notice</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Filtered: Zendaya Coleman</div>
+                <strong style={{ color: '#8F4A3E' }}>Inadequate Notice (12h Req)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Anti-Double-Booking:</div>
+                <strong style={{ color: '#2B5329' }}>1-to-1 Exclusive Offer</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              ⚖ <strong>WB F81 Invariant:</strong> Prioritization never uses inferred health, wealth or protected characteristics. Ranking is determined strictly by declared notice windows, duration fit, and waitlist seniority.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={waitlistOfferClaimed ? 'outline' : 'primary'}
+              onClick={() => setWaitlistOfferClaimed(!waitlistOfferClaimed)}
+            >
+              {waitlistOfferClaimed ? 'Re-open Timed Claim Window' : 'Claim Exclusive Timed Offer (Rule F136)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F137: Intake and Note OCR Assistance */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Eye size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Intake &amp; Note OCR Assistance (F137)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={ocrSensitiveVerified ? 'sage' : 'rose'}>
+                {ocrSensitiveVerified ? 'Status: 100% Verified & Committed' : 'Triage Required: 2 Unverified Fields'}
+              </Badge>
+              <Badge variant="muted">WB F148 Human-in-Loop</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Scanned document digitization with confidence scoring, triage flags, and mandatory human verification for clinical fields.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Scanned Intake Questionnaire: Maya Lin (scan_01.jpg)
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: ocrSensitiveVerified ? '#2B5329' : '#8F4A3E', fontWeight: 600 }}>
+                {ocrSensitiveVerified ? 'Official Health Record Committed' : 'Uncommitted Draft (Triage Active)'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Client Full Name:</div>
+                <strong>Maya Lin (98% Conf) ✓</strong>
+              </div>
+              <div style={{ background: ocrSensitiveVerified ? '#FFF' : '#FFF5F3', padding: '8px', borderRadius: '4px', border: ocrSensitiveVerified ? '1px solid var(--color-border)' : '1px solid #E5C3B8' }}>
+                <div>Allergies &amp; Retin-A:</div>
+                <strong style={{ color: ocrSensitiveVerified ? '#2B5329' : '#8F4A3E' }}>
+                  {ocrSensitiveVerified ? 'Retin-A 0.05% (Verified)' : '72% Conf (⚠ Human Triage)'}
+                </strong>
+              </div>
+              <div style={{ background: ocrSensitiveVerified ? '#FFF' : '#FFF5F3', padding: '8px', borderRadius: '4px', border: ocrSensitiveVerified ? '1px solid var(--color-border)' : '1px solid #E5C3B8' }}>
+                <div>Past Chemical Peels:</div>
+                <strong style={{ color: ocrSensitiveVerified ? '#2B5329' : '#8F4A3E' }}>
+                  {ocrSensitiveVerified ? 'TCA 10% 2025 (Verified)' : '88% Conf (⚠ Human Triage)'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔍 <strong>WB F148 Invariant:</strong> A human confirms identity and sensitive fields before they become records. AI and OCR outputs remain uncommitted drafts until explicitly approved by a practitioner.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={ocrSensitiveVerified ? 'outline' : 'primary'}
+              onClick={() => setOcrSensitiveVerified(!ocrSensitiveVerified)}
+            >
+              {ocrSensitiveVerified ? 'Revert to Raw OCR Draft' : 'Human Verify & Commit Clinical Record (Rule F137)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F138: Business Branded Mobile App */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Smartphone size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Business Branded Mobile App (F138)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">
+                {mobileBiometricsAuthed ? 'Face ID / Touch ID Authenticated' : 'Guest / Pin Authentication'}
+              </Badge>
+              <Badge variant="muted">WB F62 Branded Native</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Dedicated client mobile app with studio visual branding, push notification itineraries, and complete data freedom.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>App Bundle ID:</div>
+                <strong style={{ fontSize: '0.75rem' }}>com.posie.beverly</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Custom Domain:</div>
+                <strong style={{ fontSize: '0.75rem' }}>book.posieatelier.com</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Push Channels:</div>
+                <strong style={{ color: '#2B5329' }}>Reminders, Aftercare</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Data Export Fee:</div>
+                <strong style={{ color: '#2B5329' }}>$0.00 (Rule DR06)</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📱 <strong>WB F62 Invariant:</strong> Each supported app receives security updates and has an exit plan. Clients enjoy a seamless branded experience matching web booking with zero platform extortion fees.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMobileBiometricsAuthed(!mobileBiometricsAuthed)}
+            >
+              Toggle Biometric Authentication ({mobileBiometricsAuthed ? 'Simulate Passcode PIN' : 'Simulate Face ID'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F139: Multi Location Operations */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Multi-Location Operations &amp; Enterprise Reach (F139)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Consolidated Enterprise: 5 Unique Clients</Badge>
+              <Badge variant="muted">WB F59 Enterprise</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Coordinates multi-atelier groups with cross-location entitlements and deduplicated client reach reporting.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Total Gross Revenue:</div>
+                <strong style={{ color: '#2B5329' }}>$22,300.00</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Total Appointments:</div>
+                <strong>90 Visits (2 Locations)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Deduplicated Clients:</div>
+                <strong style={{ color: '#2B5329' }}>5 Unique (No Double Count)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Cross-Visit Rate:</div>
+                <strong>28.6% Shared Reach</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '10px', fontSize: '0.8rem', marginBottom: '10px' }}>
+              <div>• <strong>Beverly Hills Atelier:</strong> $12,500.00 (50 visits, 4 unique clients) • Tax: 9.5%</div>
+              <div style={{ marginTop: '4px' }}>• <strong>Soho Manhattan Studio:</strong> $9,800.00 (40 visits, 3 unique clients) • Tax: 8.875%</div>
+              <div style={{ marginTop: '4px', color: '#2B5329' }}>• <strong>Cross-Location Perk:</strong> Gift Card #GC-100 redeemed at both Beverly Hills and Soho seamlessly.</div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🏢 <strong>WB F59 Invariant:</strong> Location consolidation avoids double-counting shared clients. Reporting deduplicates multi-location visitors while physical locations retain municipal tax and lease autonomy.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={selectedEnterpriseLocation === 'all' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEnterpriseLocation('all')}
+            >
+              Enterprise Consolidated View
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedEnterpriseLocation === 'beverly' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEnterpriseLocation('beverly')}
+            >
+              Beverly Hills Atelier
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedEnterpriseLocation === 'soho' ? 'primary' : 'outline'}
+              onClick={() => setSelectedEnterpriseLocation('soho')}
+            >
+              Soho Manhattan Studio
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F140: Booth Renter Merchant Separation */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Coins size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Booth Renter Merchant Separation (F140)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Destination Split: $165.00 Direct to Renter</Badge>
+              <Badge variant="muted">Stripe Custom Connect / WB F37</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Independent merchant architecture for 1099 booth renters with direct bank payouts and firewalled client lists.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Renter: Sienna Woods Esthetics LLC (acct_renter_99182)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                Zero Co-Mingling Verified
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Total Client Paid:</div>
+                <strong>$180.00 ($150 + $30 tip)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Salon Facility Fee (10%):</div>
+                <strong>-$15.00 (Salon Revenue)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Renter Direct Net Transfer:</div>
+                <strong style={{ color: '#2B5329' }}>$165.00 (To Renter Bank)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Client Data Ownership:</div>
+                <strong style={{ color: '#2B5329' }}>Firewalled from Owner</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔒 <strong>WB F37 Invariant:</strong> Shared checkout does not mix legal ownership or bank balances. Funds route directly to the independent contractor's bank account, and client books belong exclusively to the booth renter.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={renterSplitSimulated ? 'primary' : 'outline'}
+              onClick={() => setRenterSplitSimulated(!renterSplitSimulated)}
+            >
+              Verify Destination Stripe Split (WB F37)
             </Button>
           </div>
         </Card>

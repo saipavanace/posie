@@ -293,6 +293,17 @@ import {
   approveConsequentialChange,
   rejectConsequentialChange,
   evaluateSupportedPaymentMethods,
+  rankWaitlistCandidatesForOpening,
+  issueExclusiveWaitlistOffer,
+  processOcrDocumentDraft,
+  verifyOcrField,
+  commitVerifiedOcrRecord,
+  buildMobileAppConfig,
+  establishClientMobileSession,
+  compileConsolidatedEnterpriseReport,
+  validateCrossLocationRedemption,
+  calculateBoothRenterSplit,
+  checkBoothRenterClientAccess,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -6966,6 +6977,228 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(bnplFee?.rateText).toBe('5.9% + 30¢');
     });
   });
+
+  describe('Posie Core Logic - F136 (Transparent Waitlist Priorities)', () => {
+    it('ranks waitlist candidates on objective criteria, filters inadequate notice, and issues timed exclusive offers', () => {
+      const opening = {
+        openingId: 'open_slot_99',
+        practitionerId: 'prac_reed',
+        practitionerName: 'Dr. Evelyn Reed',
+        date: '2026-10-28',
+        startTime: '14:00',
+        availableDurationMinutes: 60,
+        hoursUntilSlotStarts: 4, // 4 hours until slot
+      };
+
+      const entries = [
+        {
+          id: 'wait_1',
+          clientId: 'cli_1',
+          clientName: 'Anne Hathaway',
+          clientPhone: '(310) 555-0101',
+          serviceId: 'srv_peel',
+          serviceDurationMinutes: 60, // Exact fit
+          preferredPractitionerId: 'prac_reed',
+          minimumNoticeHoursRequired: 2, // 2h notice required (fits within 4h)
+          isFlexibleTiming: true,
+          joinedAtUtc: '2026-10-25T10:00:00Z',
+        },
+        {
+          id: 'wait_2',
+          clientId: 'cli_2',
+          clientName: 'Zendaya Coleman',
+          clientPhone: '(310) 555-0102',
+          serviceId: 'srv_peel',
+          serviceDurationMinutes: 60,
+          preferredPractitionerId: 'prac_reed',
+          minimumNoticeHoursRequired: 12, // Needs 12h notice! Inadequate notice for 4h slot
+          isFlexibleTiming: false,
+          joinedAtUtc: '2026-10-24T10:00:00Z',
+        },
+        {
+          id: 'wait_3',
+          clientId: 'cli_3',
+          clientName: 'Gemma Chan',
+          clientPhone: '(310) 555-0103',
+          serviceId: 'srv_facial',
+          serviceDurationMinutes: 45, // 45m fit (15m gap)
+          minimumNoticeHoursRequired: 1,
+          isFlexibleTiming: false,
+          joinedAtUtc: '2026-10-26T10:00:00Z',
+        },
+      ];
+
+      const ranked = rankWaitlistCandidatesForOpening(opening, entries);
+
+      // Invariants: wait_2 filtered out due to 12h notice requirement; wait_1 ranked #1 due to exact duration & practitioner match
+      expect(ranked.length).toBe(2);
+      expect(ranked[0].entry.id).toBe('wait_1');
+      expect(ranked[0].rank).toBe(1);
+      expect(ranked[0].matchReasons).toContain('Exact schedule duration fit (0 gap)');
+      expect(ranked[0].matchReasons).toContain('Preferred practitioner match');
+
+      // Issue timed exclusive claim offer
+      const offer = issueExclusiveWaitlistOffer(opening, ranked[0], 15);
+      expect(offer.durationMinutesClaimWindow).toBe(15);
+      expect(offer.status).toBe('exclusive_active');
+    });
+  });
+
+  describe('Posie Core Logic - F137 (Intake and Note OCR Assistance)', () => {
+    it('flags low-confidence and sensitive fields for triage and prevents committing unverified drafts', () => {
+      const rawDetections = [
+        { fieldKey: 'full_name', fieldLabel: 'Client Full Name', extractedValue: 'Maya Lin', confidenceScore: 0.98, isMedicallySensitive: false },
+        { fieldKey: 'allergies', fieldLabel: 'Allergies & Sensitivities', extractedValue: 'Retin-A, Fragrance (unclear)', confidenceScore: 0.72, isMedicallySensitive: true },
+        { fieldKey: 'treatment_history', fieldLabel: 'Past Peels', extractedValue: 'TCA 10% in 2025', confidenceScore: 0.88, isMedicallySensitive: false },
+      ];
+
+      const session = processOcrDocumentDraft('doc_ocr_1', 'paper_intake_form', 'file:///scans/scan_01.jpg', rawDetections);
+
+      expect(session.status).toBe('draft_pending_human_verification');
+      expect(session.triagePendingCount).toBe(2); // allergies (<0.9 & sensitive) and past peels (<0.9)
+      expect(session.allFieldsVerified).toBe(false);
+
+      // Invariant: cannot commit unverified draft
+      expect(() => commitVerifiedOcrRecord(session, 'staff_1')).toThrow('Cannot commit unverified OCR draft');
+
+      // Human verifies sensitive fields
+      const step1 = verifyOcrField(session, 'allergies', 'Retin-A 0.05%, Synthetic Fragrance', 'staff_1');
+      const step2 = verifyOcrField(step1, 'treatment_history', 'TCA 10% in June 2025', 'staff_1');
+
+      expect(step2.triagePendingCount).toBe(0);
+      expect(step2.allFieldsVerified).toBe(true);
+
+      const committed = commitVerifiedOcrRecord(step2, 'staff_1');
+      expect(committed.status).toBe('verified_and_committed');
+      expect(committed.committedRecordId).toBeDefined();
+    });
+  });
+
+  describe('Posie Core Logic - F138 (Business Branded Mobile App)', () => {
+    it('builds branded app config matching web identity with zero exit fee guarantee', () => {
+      const config = buildMobileAppConfig('Posie Beverly Hills Atelier', 'https://book.posieatelier.com', '#C47059');
+
+      expect(config.appDisplayName).toBe('Posie Beverly Hills Atelier');
+      expect(config.bundleIdentifier).toBe('com.posie.posiebeverlyhillsatelier');
+      expect(config.primaryBrandColor).toBe('#C47059');
+      expect(config.hasBiometricsEnabled).toBe(true);
+      expect(config.customDomainUrl).toBe('https://book.posieatelier.com');
+
+      const clientProfile = {
+        clientId: 'cli_99',
+        clientFullName: 'Zendaya Coleman',
+        email: 'zendaya@example.com',
+        isPushOptedIn: true,
+        upcomingAppointmentsCount: 1,
+        availableCareSummariesCount: 3,
+      };
+
+      const session = establishClientMobileSession(config, clientProfile, 'ios', true);
+      expect(session.isBiometricAuthenticated).toBe(true);
+      expect(session.dataExportAvailableUSD).toBe(0.0); // Rule DR06 zero extortion fee
+      expect(session.activeNotificationBadgeCount).toBe(1);
+    });
+  });
+
+  describe('Posie Core Logic - F139 (Multi Location Operations)', () => {
+    it('manages cross-location entitlements and deduplicates shared clients in enterprise reporting', () => {
+      // 1. Cross-location gift card redemption
+      const card = {
+        entitlementId: 'gc_100',
+        type: 'gift_card' as const,
+        issuedAtLocationId: 'loc_beverly',
+        clientId: 'cli_1',
+        originalValueOrCredits: 200.0,
+        remainingBalance: 150.0,
+        allowCrossLocationRedemption: true,
+      };
+
+      const redeemBeverly = validateCrossLocationRedemption(card, 'loc_beverly');
+      expect(redeemBeverly.isEligible).toBe(true);
+
+      const redeemSoho = validateCrossLocationRedemption(card, 'loc_soho');
+      expect(redeemSoho.isEligible).toBe(true);
+
+      // Restricted card
+      const restrictedCard = { ...card, allowCrossLocationRedemption: false };
+      const redeemBlocked = validateCrossLocationRedemption(restrictedCard, 'loc_soho');
+      expect(redeemBlocked.isEligible).toBe(false);
+      expect(redeemBlocked.reason).toContain('restricted from cross-location redemption');
+
+      // 2. Enterprise consolidated reporting with unique client deduplication
+      const locations = [
+        {
+          locationId: 'loc_beverly',
+          locationName: 'Beverly Hills Atelier',
+          grossRevenueUSD: 12500.0,
+          appointmentsCount: 50,
+          clientIdsServed: ['cli_1', 'cli_2', 'cli_3', 'cli_4'],
+        },
+        {
+          locationId: 'loc_soho',
+          locationName: 'Soho Manhattan Studio',
+          grossRevenueUSD: 9800.0,
+          appointmentsCount: 40,
+          clientIdsServed: ['cli_1', 'cli_4', 'cli_5'], // cli_1 and cli_4 visited both!
+        },
+      ];
+
+      const enterpriseReport = compileConsolidatedEnterpriseReport('Posie Global Group', locations);
+
+      expect(enterpriseReport.totalEnterpriseGrossRevenueUSD).toBe(22300.0);
+      expect(enterpriseReport.totalAppointmentsCount).toBe(90);
+      // Invariant: Total unique clients deduplicated (cli_1 through cli_5 = 5 unique clients, not 7)
+      expect(enterpriseReport.totalUniqueClientsCount).toBe(5);
+      expect(enterpriseReport.clientCrossVisitationRatePercentage).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Posie Core Logic - F140 (Booth Renter Merchant Separation)', () => {
+    it('routes destination split directly to renter account preventing funds co-mingling and firewalls client books', () => {
+      const renterProfile = {
+        renterId: 'renter_sienna',
+        practitionerName: 'Sienna Woods',
+        businessEntityName: 'Sienna Woods Esthetics LLC',
+        stripeConnectAccountId: 'acct_renter_99182',
+        payoutStatus: 'active_verified' as const,
+        facilityRentAgreementType: 'percentage_facility_fee' as const,
+        facilityFeePercentage: 10.0, // 10% facility fee to salon
+        fixedRentBalanceDueUSD: 0,
+        isClientDataFirewalled: true,
+      };
+
+      const checkoutLine = {
+        serviceId: 'srv_facial',
+        serviceName: 'Hydra-Dew Glass Facial',
+        practitionerId: 'renter_sienna',
+        isIndependentBoothRenter: true,
+        renterConnectAccountId: 'acct_renter_99182',
+        serviceAmountUSD: 150.0,
+        tipAmountUSD: 30.0, // 100% tip goes to renter
+      };
+
+      const split = calculateBoothRenterSplit(checkoutLine, renterProfile);
+
+      // Invariants: zero co-mingling, direct net transfer
+      expect(split.totalCustomerPaidUSD).toBe(180.0);
+      expect(split.renterGrossAmountUSD).toBe(150.0);
+      expect(split.renterTipsUSD).toBe(30.0);
+      expect(split.facilityFeeDeductionUSD).toBe(15.0); // 10% of $150
+      expect(split.salonOperatingRevenueUSD).toBe(15.0);
+      expect(split.renterDirectNetTransferUSD).toBe(165.0); // ($150 - $15) + $30 tip
+      expect(split.destinationStripeAccountId).toBe('acct_renter_99182');
+      expect(split.coMinglingPrevented).toBe(true);
+
+      // Invariant: Client records privacy firewall
+      const renterAccess = checkBoothRenterClientAccess('cli_private_1', 'renter_sienna', 'renter_sienna', false);
+      expect(renterAccess.isAccessGranted).toBe(true);
+
+      const ownerAccess = checkBoothRenterClientAccess('cli_private_1', 'renter_sienna', 'owner_salon', true);
+      expect(ownerAccess.isAccessGranted).toBe(false);
+      expect(ownerAccess.reason).toContain('Booth renters legally own their client lists');
+    });
+  });
+
 
 
 

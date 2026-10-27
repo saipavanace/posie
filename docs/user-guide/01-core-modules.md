@@ -804,6 +804,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Modern digital wallet configuration supporting Apple Pay, Google Pay, Link by Stripe, and interest-free BNPL (Klarna/Afterpay) across web booking and in-person POS.
 * **Key Invariant (Basis: Growth (G); WB F30, Payment Foundation):** **Transparent Fee & Device Capability Disclosure.** "Supported methods and fees are disclosed per country and device." The checkout engine detects hardware/browser capabilities (activating Apple Pay on Safari/iOS and Google Pay on Chrome/Android) and itemizes processing fees transparently. All credentials flow through hosted tokenization fields, maintaining strict PCI DSS SAQ A compliance.
 
+---
+
+## F136 — Transparent Waitlist Priorities (WB F81)
+* **What it is:** Fair recovery waitlist engine matching clients to last-minute openings based on explicit preferences (service, practitioner, notice window, and time flexibility).
+* **Key Invariant (Basis: Growth (G); Fair Recovery Design, WB F81, Rule F136):** **Objective Prioritization & Anti-Double-Booking.** "Prioritization never uses inferred health, wealth or protected characteristics." Prioritization rules are strictly objective and studio-configured. Openings issue an exclusive timed claim offer (e.g. 15-minute countdown) to prevent two clients from double-booking the same slot.
+
+---
+
+## F137 — Intake and Note OCR Assistance (WB F148)
+* **What it is:** Document OCR digitization engine extracting structured draft fields from paper intake questionnaires, handwritten SOAP notes, and product labels with per-field confidence scoring.
+* **Key Invariant (Basis: Growth (G); Document Processing & Privacy, WB F148, Rule F137):** **Human-in-the-Loop & Provenance Lock.** "A human confirms identity and sensitive fields before they become records." Extracted fields remain uncommitted drafts until verified by a qualified staff member. Medically sensitive items (allergies, medications) and any extraction with confidence <90% trigger a mandatory triage review flag.
+
+---
+
+## F138 — Business Branded Mobile App (WB F62)
+* **What it is:** Dedicated client mobile application (iOS, Android, PWA) reflecting the studio's custom visual branding, app icon, custom domain links, and push notification itineraries.
+* **Key Invariant (Basis: Expansion (X); WB F62, Rule F138):** **Delivered Experience Parity & Security Exit.** "Each supported app receives security updates and has an exit plan." The branded app experience matches web booking capabilities with biometric authentication and an instant $0 client record export exit guarantee (Rule DR06) without hidden platform convenience fees.
+
+---
+
+## F139 — Multi Location Operations (WB F59)
+* **What it is:** Enterprise coordination engine managing multi-studio ateliers with shared service catalogs, location-specific tax/pricing autonomy, cross-location gift card/series redemption, and consolidated reporting.
+* **Key Invariant (Basis: Expansion (X); WB F59, Rule F139):** **Consolidation Truth & Unique Client Deduplication.** "Location consolidation avoids double-counting shared clients." Clients who book services across multiple locations are deduplicated by canonical identity in enterprise reporting, measuring true client reach and cross-visitation rates without inflating numbers.
+
+---
+
+## F140 — Booth Renter Merchant Separation (WB F37)
+* **What it is:** Independent merchant architecture supporting 1099 booth and chair renters with dedicated Stripe Connect merchant accounts, direct destination transfers, and firewalled client databases.
+* **Key Invariant (Basis: Expansion (X); WB F37, Legal Entity & Merchant Separation, Rule F140):** **Legal Entity Autonomy & Zero Co-Mingling.** "Shared checkout does not mix legal ownership or bank balances." Customer payments for booth renter treatments route directly to the renter's designated merchant account via destination splits (minus agreed facility fees). The salon owner never co-mingles or holds renter funds, and renter client lists remain firewalled from salon management.
+
+
 
 
 

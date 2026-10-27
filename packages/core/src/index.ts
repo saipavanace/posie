@@ -133,4 +133,9 @@ export * from './tax_configuration';
 export * from './integration_connection';
 export * from './consequential_approvals';
 export * from './wallet_payment_methods';
+export * from './waitlist_priorities';
+export * from './ocr_intake_assistance';
+export * from './branded_mobile_app';
+export * from './multi_location_ops';
+export * from './booth_renter_merchant';
 
