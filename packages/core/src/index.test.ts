@@ -97,6 +97,14 @@ import {
   issueClientBalance,
   redeemClientBalance,
   maskGiftCardSecret,
+  generateStaffOnboardingPacket,
+  signStaffOnboardingPacket,
+  generateCommissionEarningsStatement,
+  approveCommissionStatement,
+  getLocalizedServiceDisplay,
+  recordLocalizedSignedConsent,
+  generateRebookingOffer,
+  recordClientRebookingChoice,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -2264,6 +2272,162 @@ describe('Posie Core Logic - F068 (Client Credit & Balance Explanations - D15, D
     expect(giftCard.plainEnglishSummary).toContain('$75.00 spendable store credit');
   });
 });
+
+describe('Posie Core Logic - F069 (Staff Document Generation - Documents D19, D20)', () => {
+  const businessId = '11111111-1111-1111-1111-111111111111';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('generates relationship-accurate onboarding packets and auditable commission earnings statements', () => {
+    // 1. Independent Booth Renter Packet (D19)
+    const renterPacket = generateStaffOnboardingPacket({
+      businessId,
+      businessLegalName: 'Posie Beauty Atelier LLC',
+      staffId,
+      staffLegalName: 'Camila Rodriguez',
+      relationshipType: 'booth_or_chair_renter',
+      jobTitle: 'Independent Master Esthetician',
+      jurisdictionState: 'TX',
+      boothRentalWeeklyFeeCents: 27500, // $275/week
+    });
+
+    expect(renterPacket.relationshipType).toBe('booth_or_chair_renter');
+    expect(renterPacket.isIndependentMerchantAccount).toBe(true);
+    expect(renterPacket.clientDataOwnershipNotice).toContain('Independent Business Notice');
+    expect(renterPacket.status).toBe('draft_issued');
+
+    // Sign packet
+    const signedPacket = signStaffOnboardingPacket(renterPacket, 'Camila Rodriguez');
+    expect(signedPacket.status).toBe('signed_and_active');
+    expect(signedPacket.signedAt).toBeDefined();
+
+    // 2. Commission Earnings Statement (D20)
+    const earningsStatement = generateCommissionEarningsStatement({
+      businessId,
+      staffId,
+      staffName: 'Camila Rodriguez',
+      payPeriodStart: '2026-10-15',
+      payPeriodEnd: '2026-10-31',
+      lineItems: [
+        {
+          date: '2026-10-16',
+          serviceOrItemName: 'Signature Biab Gel Manicure',
+          category: 'service_commission',
+          grossRevenueCents: 8000,
+          commissionRatePercent: 50,
+          earnedCommissionCents: 4000, // $40.00
+        },
+        {
+          date: '2026-10-16',
+          serviceOrItemName: 'Cuticle Conditioning Oil',
+          category: 'retail_product_commission',
+          grossRevenueCents: 2400,
+          commissionRatePercent: 15,
+          earnedCommissionCents: 360, // $3.60
+        },
+        {
+          date: '2026-10-16',
+          serviceOrItemName: 'Client Gratuity Tip',
+          category: 'client_tips',
+          grossRevenueCents: 2000,
+          commissionRatePercent: 100,
+          earnedCommissionCents: 2000, // $20.00
+        },
+      ],
+    });
+
+    expect(earningsStatement.status).toBe('estimated');
+    expect(earningsStatement.grossTotalPayableCents).toBe(6360); // $63.60
+    expect(earningsStatement.statutoryPayslipDisclaimer).toContain('serves as an earnings detail report');
+
+    // Manager approves earnings statement
+    const approved = approveCommissionStatement(earningsStatement, 'Elena Rostova (General Manager)');
+    expect(approved.status).toBe('manager_approved');
+    expect(approved.managerApproverName).toBe('Elena Rostova (General Manager)');
+  });
+});
+
+describe('Posie Core Logic - F070 (International Language Presentation - Documents DR08, DR09)', () => {
+  const serviceId = '44444444-4444-4444-4444-444444444444';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+
+  it('translates client-facing service catalog while strictly preserving prices and salon currency', () => {
+    // 1. Localize into Spanish (es-US)
+    const spanishService = getLocalizedServiceDisplay({
+      serviceId,
+      serviceKey: 'hydra-dew-facial',
+      defaultName: 'Hydra-Dew Glass Glow Facial',
+      priceCents: 12000, // $120.00
+      durationMinutes: 60,
+      catalogCurrency: 'USD',
+      targetLocale: 'es-US',
+    });
+
+    expect(spanishService.locale).toBe('es-US');
+    expect(spanishService.localizedTitle).toBe('Facial Hidratante Efecto Vidrio Glow');
+    expect(spanishService.priceCents).toBe(12000); // INVARIANT: Price unchanged
+    expect(spanishService.currency).toBe('USD');   // INVARIANT: Currency NEVER inferred from locale
+    expect(spanishService.durationMinutes).toBe(60);
+
+    // 2. Localized Signed Consent (DR09)
+    const signedRecord = recordLocalizedSignedConsent({
+      clientId,
+      documentType: 'chemical_peel_informed_consent',
+      locale: 'es-US',
+      renderedText: 'Entiendo que se debe evitar la exposición directa al sol durante 7 días posteriores al tratamiento.',
+      signerName: 'Sofia Fernandez',
+    });
+
+    expect(signedRecord.renderedLocale).toBe('es-US');
+    expect(signedRecord.verbatimRenderedText).toContain('evitar la exposición directa al sol');
+    expect(signedRecord.counselReviewCertified).toBe(true);
+  });
+});
+
+describe('Posie Core Logic - F071 (Rebooking at Checkout)', () => {
+  const appointmentId = '33333333-3333-3333-3333-333333333333';
+  const clientId = '22222222-2222-2222-2222-222222222222';
+  const staffId = '99999999-9999-9999-9999-999999999999';
+
+  it('calculates recommended return intervals and preserves client right to defer without forced booking', () => {
+    // 1. Generate return recommendation for 4-week brow sculpt
+    const offer = generateRebookingOffer({
+      appointmentId,
+      clientId,
+      clientName: 'Chloe Bennett',
+      serviceName: 'Fluff & Define Brow Sculpt',
+      specialistStaffId: staffId,
+      specialistName: 'Elena Rostova',
+      currentVisitDate: '2026-11-01',
+      cadenceType: 'brow_sculpt_and_tint',
+    });
+
+    expect(offer.recommendedIntervalWeeks).toBe(4);
+    expect(offer.recommendedTargetDate).toBe('2026-11-29');
+    expect(offer.decision).toBe('pending_decision'); // Invariant: Unbooked until accepted
+    expect(offer.suggestedSlots.length).toBe(2);
+
+    // 2. Client chooses "Remind me via SMS 1 week before"
+    const deferredChoice = recordClientRebookingChoice(offer, {
+      decision: 'deferred_remind_via_sms',
+      reminderDate: '2026-11-22',
+    });
+
+    expect(deferredChoice.decision).toBe('deferred_remind_via_sms');
+    expect(deferredChoice.scheduledReminderDate).toBe('2026-11-22');
+    expect(deferredChoice.confirmedNextAppointmentId).toBeNull();
+
+    // 3. Client accepts suggested slot #1
+    const acceptedChoice = recordClientRebookingChoice(offer, {
+      decision: 'accepted_and_booked',
+      selectedSlotId: 'slot-1',
+    });
+
+    expect(acceptedChoice.decision).toBe('accepted_and_booked');
+    expect(acceptedChoice.selectedSlotId).toBe('slot-1');
+    expect(acceptedChoice.confirmedNextAppointmentId).toBeDefined();
+  });
+});
+
 
 
 

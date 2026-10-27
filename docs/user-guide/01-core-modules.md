@@ -400,3 +400,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F068 — Client Credit & Balance Explanations (Documents D15, D17)
 * **What it is:** Entitlement ledger translating gift cards, prepaid package series, and monthly membership allowances into plain, friendly English explanations.
 * **Key Invariant (D15, D17):** Every balance reduction **strictly links to an authoritative appointment ID or checkout event**, preventing untracked balance deductions. Gift card certificates automatically mask secret redemption codes (`GIFT-****-9842`) to protect balances from public exposure.
+
+
+---
+
+## F069 — Staff Document Generation (Documents D19, D20)
+* **What it is:** Automated legal template generator for worker onboarding packets, relationship separation agreements, and commission earnings detail statements.
+* **Key Invariant (D19, D20):** **Worker classification integrity.** Strictly distinguishes W-2 studio employees from independent 1099 booth renters. Independent renters retain their own merchant accounts and client data ownership without merging into salon commercial records. Commission statements clearly differentiate estimates from manager-approved amounts.
+
+---
+
+## F070 — International Language Presentation (Documents DR08, DR09)
+* **What it is:** Multi-language localization system supporting client-facing service menus, intake disclosures, and waiver forms (English, Spanish, French, Vietnamese, Korean).
+* **Key Invariant (DR08, DR09):** **Zero pricing drift.** Translations change neither cents prices nor service entitlements, and **currencies are never inferred from locale**. Signed intake and consent records permanently preserve the exact translated language and text shown to the client at signature time.
+
+---
+
+## F071 — Rebooking at Checkout
+* **What it is:** Post-service rebooking engine offering biological return cadence recommendations (e.g. 4-week brow tint refresh, 6-week toner) with convenient suggested appointment slots.
+* **Key Invariant (Basis: B):** **Complete freedom to defer.** Proposed return slots remain strictly unbooked until explicitly accepted by the client. Clients can reserve instantly, request an automated text reminder 1 week before their window, or defer gracefully without forced pressure.

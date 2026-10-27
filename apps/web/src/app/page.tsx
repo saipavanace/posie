@@ -60,6 +60,9 @@ import {
   Video,
   Type,
   Wallet,
+  Briefcase,
+  Languages,
+  RotateCcw,
 } from 'lucide-react';
 
 // Brand Information
@@ -146,6 +149,16 @@ export default function PosieStudioPage() {
 
   // F068 Client Balances & Entitlement State
   const [redeemedSessionCount, setRedeemedSessionCount] = useState(1);
+
+  // F069 Staff Documents & Commission State
+  const [staffRelationship, setStaffRelationship] = useState<'w2_employee' | 'booth_or_chair_renter'>('booth_or_chair_renter');
+  const [statementApproved, setStatementApproved] = useState(false);
+
+  // F070 International Language State
+  const [selectedLocale, setSelectedLocale] = useState<'en-US' | 'es-US' | 'fr-CA' | 'vi-US' | 'ko-US'>('es-US');
+
+  // F071 Rebooking at Checkout State
+  const [rebookingChoice, setRebookingChoice] = useState<'pending' | 'booked' | 'sms_reminder' | 'declined'>('pending');
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -1219,6 +1232,256 @@ export default function PosieStudioPage() {
           </div>
         </Card>
       </section>
+
+      {/* F069: Staff Document Generation (Documents D19, D20) Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Briefcase size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Staff Document & Commission Generation (F069 / D19 / D20)
+              </h3>
+            </div>
+            <Badge variant="sage">Document D19/D20 Certified</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Protects your team with legally accurate relationship boundaries. W-2 employees receive statutory terms; independent booth renters keep their own merchant accounts and separate client data ownership.
+          </p>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            <Button
+              size="sm"
+              variant={staffRelationship === 'booth_or_chair_renter' ? 'primary' : 'outline'}
+              onClick={() => setStaffRelationship('booth_or_chair_renter')}
+            >
+              Independent Booth Renter (1099)
+            </Button>
+            <Button
+              size="sm"
+              variant={staffRelationship === 'w2_employee' ? 'primary' : 'outline'}
+              onClick={() => setStaffRelationship('w2_employee')}
+            >
+              W-2 Studio Employee
+            </Button>
+          </div>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <strong>Onboarding Agreement Terms (Camila Rodriguez)</strong>
+              <Badge variant="sage">
+                {staffRelationship === 'booth_or_chair_renter' ? '$275/week Chair Rent' : 'Hourly Base + 50% Commission'}
+              </Badge>
+            </div>
+            <p style={{ fontStyle: 'italic', margin: '4px 0 0', color: 'var(--color-text)' }}>
+              {staffRelationship === 'booth_or_chair_renter'
+                ? 'Independent Business Notice: As a booth renter, you operate your own business, maintain your own merchant credentials, and own your client list. Posie does not merge your commercial records into the salon.'
+                : 'Employee Relationship Notice: As an employee, you receive statutory protections, workers compensation, and employer payroll tax withholdings as defined under state law.'}
+            </p>
+          </div>
+
+          {/* D20 Commission Statement Breakdown */}
+          <div style={{ border: '1px solid #E8E5E0', borderRadius: '8px', padding: '14px', background: '#FAFAFA' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Commission & Gratuity Statement (Oct 15 – Oct 31)</span>
+              <Badge variant={statementApproved ? 'sage' : 'muted'}>
+                {statementApproved ? 'Manager Approved' : 'Estimated Draft'}
+              </Badge>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div>Services (50%): <strong>$40.00</strong></div>
+              <div>Retail (15%): <strong>$3.60</strong></div>
+              <div>Tips (100%): <strong>$20.00</strong></div>
+              <div>Total Payable: <strong style={{ color: 'var(--color-primary)' }}>$63.60</strong></div>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0 0 10px' }}>
+              Notice: Reflects internal earnings detail report and does not substitute for a statutory payroll pay stub.
+            </p>
+            {!statementApproved ? (
+              <Button size="sm" variant="outline" onClick={() => setStatementApproved(true)}>
+                Manager Sign-Off & Approve for Payroll
+              </Button>
+            ) : (
+              <span style={{ fontSize: '0.82rem', color: '#3A523A', fontWeight: 600 }}>
+                ✓ Approved by Elena Rostova (General Manager) on {new Date().toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F070: International Language Presentation (Documents DR08, DR09) Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Languages size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                International Language Presentation (F070 / DR08 / DR09)
+              </h3>
+            </div>
+            <Badge variant="sage">Counsel & Clinician Certified</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Welcomes diverse clients in their preferred language while strictly guaranteeing that translations never alter service pricing or entitlements. Currencies are never inferred from browser locale.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            <Button
+              size="sm"
+              variant={selectedLocale === 'en-US' ? 'primary' : 'outline'}
+              onClick={() => setSelectedLocale('en-US')}
+            >
+              English (en-US)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedLocale === 'es-US' ? 'primary' : 'outline'}
+              onClick={() => setSelectedLocale('es-US')}
+            >
+              Español (es-US)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedLocale === 'fr-CA' ? 'primary' : 'outline'}
+              onClick={() => setSelectedLocale('fr-CA')}
+            >
+              Français (fr-CA)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedLocale === 'vi-US' ? 'primary' : 'outline'}
+              onClick={() => setSelectedLocale('vi-US')}
+            >
+              Tiếng Việt (vi-US)
+            </Button>
+            <Button
+              size="sm"
+              variant={selectedLocale === 'ko-US' ? 'primary' : 'outline'}
+              onClick={() => setSelectedLocale('ko-US')}
+            >
+              한국어 (ko-US)
+            </Button>
+          </div>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                {selectedLocale === 'es-US' && 'Facial Hidratante Efecto Vidrio Glow'}
+                {selectedLocale === 'en-US' && 'Hydra-Dew Glass Glow Facial'}
+                {selectedLocale === 'fr-CA' && 'Soin Facial Hydra-Rosée Éclat Sublime'}
+                {selectedLocale === 'vi-US' && 'Liệu Trình Chăm Sóc Da Căng Bóng Hydra-Dew'}
+                {selectedLocale === 'ko-US' && '하이드라 듀 물광 페이셜 케어'}
+              </strong>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                  $120.00 USD
+                </span>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Catalog Currency Preserved</div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.86rem', color: 'var(--color-text)', margin: '0 0 10px', lineHeight: 1.5 }}>
+              {selectedLocale === 'es-US' && 'Doble limpieza profunda, exfoliación enzimática de frutas e infusión ultra hidratante de ácido hialurónico.'}
+              {selectedLocale === 'en-US' && 'Double cleanse, fruit enzyme sweep, and ultra-drenching hyaluronic infusion.'}
+              {selectedLocale === 'fr-CA' && 'Double nettoyage en profondeur, balayage enzymatique de fruits et infusion ultra-hydratante d\'acide hyaluronique.'}
+              {selectedLocale === 'vi-US' && 'Làm sạch kép, tẩy tế bào chết enzyme trái cây và truyền tinh chất hyaluronic cấp ẩm sâu.'}
+              {selectedLocale === 'ko-US' && '딥 듀얼 클렌징, 천연 과일 효소 각질 케어 및 히알루론산 수분 집중 충전.'}
+            </p>
+
+            <div style={{ fontSize: '0.78rem', color: '#3A523A', background: '#F4F7F4', padding: '8px 12px', borderRadius: '6px' }}>
+              ✓ <strong>DR09 Legal Invariant:</strong> Client-signed consent records permanently store exact rendered language (<code>{selectedLocale}</code>) and certified translation wording.
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* F071: Rebooking at Checkout Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <RotateCcw size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Smart Rebooking at Checkout (F071)
+              </h3>
+            </div>
+            <Badge variant="sage">Zero-Pressure Flow</Badge>
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Thoughtfully suggests the ideal return cadence based on treatment biology, offering convenient slots while fully respecting the client's freedom to defer.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <strong>Recommended Return: Fluff & Define Brow Sculpt</strong>
+              <Badge variant="muted">4-Week Cadence (Nov 29, 2026)</Badge>
+            </div>
+            <p style={{ fontSize: '0.84rem', color: 'var(--color-text)', margin: '0 0 10px' }}>
+              "Brow shaping and tinting look crispest with a 4-week maintenance cadence to catch your natural growth cycle."
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ border: '1px solid var(--color-primary)', padding: '10px 14px', borderRadius: '8px', background: '#FFFFFF', fontSize: '0.84rem' }}>
+                <div>Thu, Nov 29 • <strong>10:00 AM</strong></div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>with Elena Rostova</span>
+              </div>
+              <div style={{ border: '1px solid #CCC', padding: '10px 14px', borderRadius: '8px', background: '#FFFFFF', fontSize: '0.84rem' }}>
+                <div>Fri, Nov 30 • <strong>2:30 PM</strong></div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>with Elena Rostova</span>
+              </div>
+            </div>
+          </div>
+
+          {rebookingChoice === 'pending' && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setRebookingChoice('booked')}
+              >
+                Reserve Thu Nov 29 (10:00 AM)
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRebookingChoice('sms_reminder')}
+              >
+                Remind Me via Text 1 Week Before
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRebookingChoice('declined')}
+              >
+                I'll Book Later Online
+              </Button>
+            </div>
+          )}
+
+          {rebookingChoice === 'booked' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: '#3A523A' }}>
+              ✓ <strong>Appointment Reserved:</strong> Thursday, Nov 29 at 10:00 AM with Elena Rostova. Added to your studio schedule!
+            </div>
+          )}
+
+          {rebookingChoice === 'sms_reminder' && (
+            <div style={{ background: '#FAF8F5', border: '1px solid #738A73', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+              ✓ <strong>Friendly Reminder Set:</strong> We'll text you on Nov 22 with one-tap booking links so you never miss your maintenance window.
+            </div>
+          )}
+
+          {rebookingChoice === 'declined' && (
+            <div style={{ background: '#FAFAFA', border: '1px solid #CCC', padding: '12px 14px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              No problem! Your receipt has been sent and your booking link is always available whenever you're ready.
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 

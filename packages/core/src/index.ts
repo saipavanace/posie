@@ -66,3 +66,6 @@ export * from './virtual_consultations';
 export * from './arrival_status';
 export * from './device_preferences';
 export * from './client_balances';
+export * from './staff_documents';
+export * from './international_locale';
+export * from './rebooking';
