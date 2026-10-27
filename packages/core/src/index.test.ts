@@ -321,6 +321,17 @@ import {
   evaluateTrafficDelayAlert,
   processReceptionistQuery,
   verifyCallerIdentity,
+  initiateCrossChannelSession,
+  switchSessionChannel,
+  executeChannelBookingAction,
+  evaluateScreenAssistantRequest,
+  confirmAndExecuteAssistantAction,
+  generateDictationNoteDraft,
+  updateSoapSection,
+  signAndFinalizeDictationNote,
+  executeGovernedDataQuery,
+  GOVERNED_METRIC_DEFINITIONS,
+  generateDemandStaffingForecast,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -7639,6 +7650,257 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(unkRes.staffTriageTicket?.reason).toContain('outside approved receptionist knowledge base');
     });
   });
+
+  describe('Posie Core Logic - F146 (Reliable Booking Across Channels)', () => {
+    it('maintains single reservation identity across channel handoffs, generates receipts, and prevents duplicates', () => {
+      // 1. Client starts on Voice AI
+      let session = initiateCrossChannelSession('cli_sara_99', '415-555-7722', 'voice_ai');
+      expect(session.originatingChannel).toBe('voice_ai');
+      expect(session.currentChannel).toBe('voice_ai');
+      expect(session.status).toBe('intent_in_progress');
+
+      // 2. Provisional hold created via Voice AI
+      const serviceDetails = {
+        serviceId: 'srv_signature_facial',
+        serviceName: 'Signature Bespoke Facial',
+        providerId: 'prov_maya',
+        providerName: 'Maya Lin',
+        startIso: '2026-11-10T14:00:00Z',
+        durationMinutes: 60,
+        priceCents: 19500,
+      };
+
+      const holdRes = executeChannelBookingAction(session, 'create_hold', serviceDetails, 'voice_ai', 'idemp_hold_1');
+      session = holdRes.updatedSession;
+      expect(session.status).toBe('held_provisional');
+      expect(session.activeReservationId).toBeDefined();
+      expect(holdRes.receipt.action).toBe('create_hold');
+
+      const initialReservationId = session.activeReservationId;
+
+      // 3. Client hangs up and completes confirmation via SMS interactive link
+      const switchSms = switchSessionChannel(session, 'sms_interactive');
+      session = switchSms.updatedSession;
+      expect(session.currentChannel).toBe('sms_interactive');
+      expect(session.channelHandoffs).toHaveLength(1);
+      expect(session.channelHandoffs[0].fromChannel).toBe('voice_ai');
+      expect(session.channelHandoffs[0].toChannel).toBe('sms_interactive');
+
+      // Confirm via SMS
+      const confirmRes = executeChannelBookingAction(session, 'confirm_booking', serviceDetails, 'sms_interactive', 'idemp_conf_1');
+      session = confirmRes.updatedSession;
+      expect(session.status).toBe('confirmed');
+      // Invariant: MUST preserve the exact same reservation ID, NEVER creating a phantom duplicate
+      expect(session.activeReservationId).toBe(initialReservationId);
+      expect(confirmRes.receipt.channel).toBe('sms_interactive');
+
+      // 4. Later, client opens Web Portal to reschedule
+      const switchWeb = switchSessionChannel(session, 'web_portal');
+      session = switchWeb.updatedSession;
+      expect(session.currentChannel).toBe('web_portal');
+      expect(session.channelHandoffs).toHaveLength(2);
+
+      const rescheduleDetails = {
+        ...serviceDetails,
+        startIso: '2026-11-10T16:30:00Z',
+      };
+
+      const rescheduleRes = executeChannelBookingAction(session, 'reschedule_slot', rescheduleDetails, 'web_portal', 'idemp_resched_1');
+      session = rescheduleRes.updatedSession;
+      expect(session.status).toBe('rescheduled');
+      expect(session.activeReservationId).toBe(initialReservationId);
+      expect(rescheduleRes.receipt.changesSummary).toContain('16:30:00Z');
+    });
+  });
+
+  describe('Posie Core Logic - F147 (Screen-Aware Assistant)', () => {
+    it('understands active record context, validates role permissions, declines unauthorized actions, and enforces confirmation on consequential diffs', () => {
+      const mockCheckoutContext = {
+        screenName: 'checkout_ticket' as const,
+        activeRecordId: 'tkt_8819',
+        activeRecordType: 'ticket' as const,
+        recordSnapshot: {
+          ticketId: 'tkt_8819',
+          clientName: 'Julianne Moore',
+          totalCents: 20000,
+          discountPercentage: 0,
+        },
+        operatorRole: 'front_desk_coordinator' as const,
+        operatorStaffId: 'staff_reception_amy',
+        operatorName: 'Amy Pond',
+      };
+
+      // 1. Front desk attempts to apply discount (Consequential financial action restricted to manager/owner)
+      const unauthPreview = evaluateScreenAssistantRequest(mockCheckoutContext, 'Give client a 20% discount');
+      expect(unauthPreview.status).toBe('declined_unauthorized');
+      expect(unauthPreview.declineReason).toContain('lacks permissions');
+
+      // 2. Salon owner requests 15% discount on checkout ticket
+      const ownerContext = {
+        ...mockCheckoutContext,
+        operatorRole: 'salon_owner' as const,
+        operatorStaffId: 'staff_owner_elena',
+        operatorName: 'Elena Rostova',
+      };
+
+      const ownerPreview = evaluateScreenAssistantRequest(ownerContext, 'Apply 15% discount for first visit');
+      expect(ownerPreview.status).toBe('pending_confirmation');
+      expect(ownerPreview.isConsequential).toBe(true);
+      expect(ownerPreview.requiresExplicitConfirmation).toBe(true);
+      expect(ownerPreview.diffItems).toHaveLength(2);
+      expect(ownerPreview.diffItems[1].proposedValue).toBe(17000); // $200 -> $170
+
+      // Consequential execution rejected by operator
+      const rejectedResult = confirmAndExecuteAssistantAction(ownerPreview, ownerContext, false);
+      expect(rejectedResult.rejectionNotice).toContain('rejected');
+      expect(rejectedResult.updatedRecord.totalCents).toBe(20000);
+
+      // Consequential execution confirmed by operator
+      const approvedResult = confirmAndExecuteAssistantAction(ownerPreview, ownerContext, true);
+      expect(approvedResult.updatedRecord.totalCents).toBe(17000);
+      expect(approvedResult.auditLog?.isConsequential).toBe(true);
+      expect(approvedResult.auditLog?.operatorStaffId).toBe('staff_owner_elena');
+
+      // 3. Non-consequential hospitality update (valid for any role)
+      const profileContext = {
+        screenName: 'client_profile' as const,
+        activeRecordId: 'cli_julianne',
+        activeRecordType: 'client' as const,
+        recordSnapshot: { clientId: 'cli_julianne', hospitalityNotes: '' },
+        operatorRole: 'front_desk_coordinator' as const,
+        operatorStaffId: 'staff_reception_amy',
+        operatorName: 'Amy Pond',
+      };
+
+      const hospPreview = evaluateScreenAssistantRequest(profileContext, 'Client loves oat milk matcha latte');
+      expect(hospPreview.status).toBe('executed_immediately');
+      expect(hospPreview.isConsequential).toBe(false);
+      expect(hospPreview.proposedSnapshot.hospitalityNotes).toContain('matcha latte');
+    });
+  });
+
+  describe('Posie Core Logic - F148 (Draft Notes from Dictation)', () => {
+    const mockProvenance = {
+      audioRecordingId: 'rec_audio_991',
+      durationSeconds: 120,
+      clientConsentDocumentId: 'consent_audio_julianne',
+      recordedAt: '2026-11-01T15:00:00Z',
+      practitionerStaffId: 'staff_daniela',
+    };
+
+    it('transcribes dictation into structured SOAP draft, flags phonetic clinical terms, allows section revision, and mandates license signoff', () => {
+      const rawDictation = `
+        Subjective: Client reports mild dehydration and sensitivity to winter air.
+        Objective: Evident mild localized erythema across cheeks. Skin barrier looks compromised.
+        Assessment: Impaired stratum corneum barrier. Recommended avoiding tretinoin for 5 days.
+        Plan: Custom calming hyaluronic infusion and soothing lipid barrier balm. Follow up next month.
+      `;
+
+      const draft = generateDictationNoteDraft('draft_note_1', 'appt_881', 'cli_julianne', rawDictation, mockProvenance);
+
+      expect(draft.status).toBe('triage_flagged'); // "erythema", "tretinoin", "hyaluronic" detected
+      expect(draft.sections.subjective.content).toContain('mild dehydration');
+      expect(draft.sections.objective.flaggedUncertainTerms).toContain('erythema');
+      expect(draft.sections.assessment.flaggedUncertainTerms).toContain('tretinoin');
+
+      // Invariant: Cannot finalize/sign note with active unverified clinical triage flags
+      expect(() => {
+        signAndFinalizeDictationNote(draft, {
+          signedByStaffId: 'staff_daniela',
+          signedByName: 'Daniela Cruz, LE',
+          licenseNumber: 'LE-CA-88192',
+          ipAddress: '192.168.1.10',
+        });
+      }).toThrow(/unresolved phonetic clinical triage flags/i);
+
+      // Practitioner reviews and updates the sections, clearing triage flags
+      let updatedDraft = updateSoapSection(draft, 'objective', 'Evident mild localized erythema across cheeks verified by practitioner.', 'staff_daniela');
+      updatedDraft = updateSoapSection(updatedDraft, 'assessment', 'Impaired stratum corneum barrier. Verified avoiding tretinoin for 5 days.', 'staff_daniela');
+      updatedDraft = updateSoapSection(updatedDraft, 'plan', 'Custom calming hyaluronic infusion and barrier balm.', 'staff_daniela');
+
+      expect(updatedDraft.status).toBe('unfinalized_draft');
+
+      // Now sign note with valid license
+      const signedNote = signAndFinalizeDictationNote(updatedDraft, {
+        signedByStaffId: 'staff_daniela',
+        signedByName: 'Daniela Cruz, LE',
+        licenseNumber: 'LE-CA-88192',
+        ipAddress: '192.168.1.10',
+      });
+
+      expect(signedNote.status).toBe('practitioner_signed');
+      expect(signedNote.practitionerSignature?.licenseNumber).toBe('LE-CA-88192');
+
+      // Locked: cannot edit signed clinical note
+      expect(() => {
+        updateSoapSection(signedNote, 'subjective', 'New note', 'staff_daniela');
+      }).toThrow(/already been signed/i);
+    });
+  });
+
+  describe('Posie Core Logic - F149 (Ask Questions of Business Data)', () => {
+    it('answers queries using official metric definitions, honors filters, and reports insufficient data rather than hallucinating', () => {
+      const mockDataset = [
+        { recordId: 'r1', metricId: 'direct_contribution_margin_pct' as const, date: '2026-10-05', value: 72 },
+        { recordId: 'r2', metricId: 'direct_contribution_margin_pct' as const, date: '2026-10-12', value: 68 },
+        { recordId: 'r3', metricId: 'direct_contribution_margin_pct' as const, date: '2026-10-19', value: 75 },
+        { recordId: 'r4', metricId: 'direct_contribution_margin_pct' as const, date: '2026-10-26', value: 71 },
+        { recordId: 'r5', metricId: 'direct_contribution_margin_pct' as const, date: '2026-10-28', value: 74 },
+        { recordId: 'r6', metricId: 'rebooking_rate_at_checkout' as const, date: '2026-10-05', value: 62 },
+        { recordId: 'r7', metricId: 'rebooking_rate_at_checkout' as const, date: '2026-10-12', value: 58 },
+      ];
+
+      // 1. Contribution margin query with sufficient sample size (5 records)
+      const filterSufficient = { startDate: '2026-10-01', endDate: '2026-10-31' };
+      const answer = executeGovernedDataQuery('What is our direct contribution margin this month?', filterSufficient, mockDataset);
+
+      expect(answer.isDataSufficient).toBe(true);
+      expect(answer.metricMeta.metricId).toBe('direct_contribution_margin_pct');
+      expect(answer.sampleSize).toBe(5);
+      expect(answer.computedValueNumeric).toBe(72);
+      expect(answer.formattedDisplayValue).toBe('72.0%');
+      expect(answer.reproducibleReportLink).toContain('direct_contribution_margin_pct');
+
+      // 2. Rebooking rate query with insufficient sample size (only 2 records vs minimum 5)
+      const answerInsufficient = executeGovernedDataQuery('What was our rebooking rate at checkout?', filterSufficient, mockDataset);
+      expect(answerInsufficient.isDataSufficient).toBe(false);
+      expect(answerInsufficient.formattedDisplayValue).toBe('Insufficient Data');
+      expect(answerInsufficient.explanationText).toContain('A minimum of 5 records is required');
+    });
+  });
+
+  describe('Posie Core Logic - F150 (Forecast Demand and Staffing)', () => {
+    it('estimates demand with 80% confidence uncertainty intervals, compares against moving baseline, and degrades gracefully for cold starts', () => {
+      const mockHistory = [
+        { weekLabel: 'Week 40', completedAppointments: 45, cancellationsAndNoShows: 5, staffedHours: 55, revenueCents: 607500 },
+        { weekLabel: 'Week 41', completedAppointments: 48, cancellationsAndNoShows: 6, staffedHours: 60, revenueCents: 648000 },
+        { weekLabel: 'Week 42', completedAppointments: 52, cancellationsAndNoShows: 7, staffedHours: 65, revenueCents: 702000 },
+        { weekLabel: 'Week 43', completedAppointments: 50, cancellationsAndNoShows: 6, staffedHours: 62, revenueCents: 675000 },
+      ];
+
+      // 1. Forecast for established studio (4 weeks history)
+      const forecast = generateDemandStaffingForecast('studio_sf_01', 'upcoming_30_days', mockHistory);
+      expect(forecast.isColdStartBusiness).toBe(false);
+      expect(forecast.buckets).toHaveLength(4);
+      expect(forecast.buckets[0].uncertaintyInterval.confidenceLevelPct).toBe(80);
+      expect(forecast.buckets[0].uncertaintyInterval.lowerBound).toBeLessThan(forecast.buckets[0].expectedAppointments);
+      expect(forecast.buckets[0].uncertaintyInterval.upperBound).toBeGreaterThan(forecast.buckets[0].expectedAppointments);
+      expect(forecast.buckets[0].simpleBaselineEstimate).toBe(49); // avg of 45, 48, 52, 50
+      expect(forecast.aggregateSummary.totalExpectedAppointments).toBeGreaterThan(180);
+      expect(forecast.aggregateSummary.totalRecommendedStaffHours).toBeGreaterThan(200);
+
+      // 2. Cold-start studio with only 1 week of history
+      const coldStartHistory = [
+        { weekLabel: 'Week 1', completedAppointments: 20, cancellationsAndNoShows: 2, staffedHours: 25, revenueCents: 270000 },
+      ];
+      const coldForecast = generateDemandStaffingForecast('studio_new_01', 'upcoming_7_days', coldStartHistory);
+      expect(coldForecast.isColdStartBusiness).toBe(true);
+      expect(coldForecast.modelDegradationNotice).toContain('Limited history');
+      expect(coldForecast.modelDegradationNotice).toContain('Uncertainty intervals widened');
+      expect(coldForecast.buckets).toHaveLength(7);
+    });
+  });
+
 
 
 

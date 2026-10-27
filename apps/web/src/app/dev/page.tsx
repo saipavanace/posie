@@ -433,6 +433,24 @@ export default function PosieStudioPage() {
   const [receptionistCallerVerified, setReceptionistCallerVerified] = useState<boolean>(false);
   const [receptionistSafetyEscalation, setReceptionistSafetyEscalation] = useState<boolean>(false);
 
+  // F146 Reliable Booking Across Channels State
+  const [crossChannelActive, setCrossChannelActive] = useState<'voice' | 'sms' | 'web'>('web');
+  const [crossChannelRescheduleCount, setCrossChannelRescheduleCount] = useState<number>(1);
+
+  // F147 Screen-Aware Assistant State
+  const [assistantRole, setAssistantRole] = useState<'front_desk' | 'owner'>('owner');
+  const [assistantDiscountConfirmed, setAssistantDiscountConfirmed] = useState<boolean>(false);
+
+  // F148 Dictation Notes State
+  const [dictationFlagsResolved, setDictationFlagsResolved] = useState<boolean>(false);
+  const [dictationSigned, setDictationSigned] = useState<boolean>(false);
+
+  // F149 Governed Data Queries State
+  const [governedQueryMetric, setGovernedQueryMetric] = useState<'contribution_margin' | 'rebooking_rate'>('contribution_margin');
+
+  // F150 Forecast Demand & Staffing State
+  const [forecastHorizon, setForecastHorizon] = useState<'30_days' | '7_days_cold_start'>('30_days');
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -453,7 +471,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F145)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F150)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -7658,6 +7676,399 @@ export default function PosieStudioPage() {
           </div>
         </Card>
       </section>
+
+      {/* F146: Reliable Booking Across Channels */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <RotateCcw size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Reliable Booking Across Channels (F146)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Channel: {crossChannelActive.toUpperCase()}</Badge>
+              <Badge variant="muted">WB F64 / Rule F146</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Unified omnichannel booking orchestration preserving reservation identity across Voice AI, interactive SMS, and Web without phantom bookings.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Active Reservation: res_sara_99120 | Client: Sara Kensington (415-555-7722)
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: '#2B5329', fontWeight: 600 }}>
+                Zero Duplicate Bookings Verified
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Originating Channel:</div>
+                <strong style={{ color: '#2B5329' }}>Voice AI (Inquiry Hold)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Handoff Confirmation:</div>
+                <strong style={{ color: '#2B5329' }}>SMS Secure Link (Confirmed)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Web Reschedule Sync:</div>
+                <strong style={{ color: '#2B5329' }}>Rescheduled to 4:30 PM</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Action Audit Receipts:</div>
+                <strong>3 Immutable Receipts Logged</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🔁 <strong>WB F64 Invariant:</strong> Shared action tools and confirmation rules. Channel switching does not create another booking; every state change generates an authorized audit receipt.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={crossChannelActive === 'voice' ? 'primary' : 'outline'}
+              onClick={() => setCrossChannelActive('voice')}
+            >
+              Voice AI Hold
+            </Button>
+            <Button
+              size="sm"
+              variant={crossChannelActive === 'sms' ? 'primary' : 'outline'}
+              onClick={() => setCrossChannelActive('sms')}
+            >
+              SMS Handoff Confirmation
+            </Button>
+            <Button
+              size="sm"
+              variant={crossChannelActive === 'web' ? 'primary' : 'outline'}
+              onClick={() => setCrossChannelActive('web')}
+            >
+              Web Portal Reschedule (Rule F146)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F147: Screen-Aware Assistant */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Eye size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Screen-Aware Assistant &amp; Consequential Diffs (F147)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={assistantRole === 'owner' ? 'sage' : 'muted'}>
+                Role: {assistantRole === 'owner' ? 'Salon Owner' : 'Front Desk (Scoped)'}
+              </Badge>
+              <Badge variant="muted">WB F65 / Rule F147</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Understands the active screen and record, previews proposed mutations with field-by-field diffs, and strictly enforces role permissions.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Active Screen: Checkout Ticket #tkt_8819 | Client: Julianne Moore
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: assistantRole === 'front_desk' ? '#A65B32' : '#2B5329', fontWeight: 600 }}>
+                {assistantRole === 'front_desk' ? '⚠️ 15% Discount Action Declined (Unauthorized)' : 'Consequential Diff Pending Approval'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Original Ticket Total:</div>
+                <strong>$200.00 (Standard Service)</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Proposed Consequential Diff:</div>
+                <strong style={{ color: assistantDiscountConfirmed ? '#2B5329' : '#A65B32' }}>
+                  {assistantDiscountConfirmed ? '-$30.00 Applied ($170.00)' : 'Apply 15% Courtesy Discount'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Human Confirmation Gate:</div>
+                <strong style={{ color: assistantDiscountConfirmed ? '#2B5329' : '#666' }}>
+                  {assistantDiscountConfirmed ? 'Elena Rostova (Confirmed)' : 'Awaiting Explicit Click'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              🛡️ <strong>Rule DR03 &amp; DR06 Invariant:</strong> Role-aware context and action logs. Unsupported actions are declined, and consequential financial or medical edits strictly require explicit human operator confirmation.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={assistantRole === 'owner' ? 'primary' : 'outline'}
+              onClick={() => {
+                const nextRole = assistantRole === 'owner' ? 'front_desk' : 'owner';
+                setAssistantRole(nextRole);
+                if (nextRole === 'front_desk') setAssistantDiscountConfirmed(false);
+              }}
+            >
+              Switch Role to {assistantRole === 'owner' ? 'Front Desk (Simulate Rejection)' : 'Salon Owner'}
+            </Button>
+            {assistantRole === 'owner' && (
+              <Button
+                size="sm"
+                variant={assistantDiscountConfirmed ? 'outline' : 'secondary'}
+                onClick={() => setAssistantDiscountConfirmed(!assistantDiscountConfirmed)}
+              >
+                {assistantDiscountConfirmed ? 'Revoke Discount' : 'Confirm Consequential 15% Diff (Rule F147)'}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F148: Draft Notes from Dictation */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Draft Notes from Dictation &amp; Clinical Locking (F148)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={dictationSigned ? 'sage' : dictationFlagsResolved ? 'muted' : 'rose'}>
+                {dictationSigned ? 'Practitioner Signed (Locked)' : dictationFlagsResolved ? 'Draft Ready for Sign' : 'Phonetic Triage Flagged'}
+              </Badge>
+              <Badge variant="muted">WB F66 / Rule F148</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Consented audio dictation converted into structured SOAP chart drafts with phonetic clinical triage flags and licensed practitioner locking.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Provider: Daniela Cruz, LE (Lic #LE-CA-88192) | Consent: Verified on File
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: dictationFlagsResolved ? '#2B5329' : '#A65B32', fontWeight: 600 }}>
+                {dictationFlagsResolved ? 'All Clinical Terms Verified' : '2 Terms Flagged: "erythema", "tretinoin"'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Subjective (0-30s):</div>
+                <strong style={{ fontSize: '0.75rem' }}>Mild dehydration after flight</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Objective (30-66s):</div>
+                <strong style={{ fontSize: '0.75rem', color: dictationFlagsResolved ? '#2B5329' : '#A65B32' }}>
+                  {dictationFlagsResolved ? 'Erythema across cheeks verified' : 'Flagged: "erythema"'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Assessment (66-90s):</div>
+                <strong style={{ fontSize: '0.75rem', color: dictationFlagsResolved ? '#2B5329' : '#A65B32' }}>
+                  {dictationFlagsResolved ? 'Pause tretinoin for 5d verified' : 'Flagged: "tretinoin"'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Plan (90-120s):</div>
+                <strong style={{ fontSize: '0.75rem' }}>Calming hyaluronic infusion</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📝 <strong>WB F66 Invariant:</strong> The professional reviews and signs; AI drafts stay unfinalized until approved. Uncertain phonetic clinical terms remain flagged to guarantee patient medical chart safety.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={dictationFlagsResolved ? 'primary' : 'outline'}
+              onClick={() => {
+                setDictationFlagsResolved(!dictationFlagsResolved);
+                if (dictationSigned) setDictationSigned(false);
+              }}
+            >
+              {dictationFlagsResolved ? 'Reset Triage Flags' : 'Verify Flagged Terms (Daniela Cruz)'}
+            </Button>
+            <Button
+              size="sm"
+              variant={dictationSigned ? 'outline' : 'secondary'}
+              disabled={!dictationFlagsResolved}
+              onClick={() => setDictationSigned(!dictationSigned)}
+            >
+              {dictationSigned ? 'Unlock Note (Simulate Amendment)' : 'Sign & Lock Note with License (LE-CA-88192)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F149: Ask Questions of Business Data */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calculator size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Ask Questions of Business Data (F149)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Governed Metric Engine</Badge>
+              <Badge variant="muted">WB F65 / F111 / Rule F149</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Governed natural-language analytics inquiries strictly evaluated against official metric definitions and declared filters with zero hallucinated numbers.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Query: &quot;{governedQueryMetric === 'contribution_margin' ? 'What is our direct contribution margin this month?' : 'What is our rebooking rate at checkout?'}&quot;
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: governedQueryMetric === 'contribution_margin' ? '#2B5329' : '#A65B32', fontWeight: 600 }}>
+                {governedQueryMetric === 'contribution_margin' ? 'Sufficient Data (5 Records)' : '⚠️ Insufficient Data (<5 Records)'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Governed Formula:</div>
+                <strong style={{ fontSize: '0.75rem' }}>
+                  {governedQueryMetric === 'contribution_margin'
+                    ? '(Revenue - Pay - Backbar) / Revenue'
+                    : 'Rebooked Checkouts / Total Checkouts'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Computed Result:</div>
+                <strong style={{ color: governedQueryMetric === 'contribution_margin' ? '#2B5329' : '#A65B32' }}>
+                  {governedQueryMetric === 'contribution_margin' ? '72.0% Contribution Margin' : 'Insufficient Data (Truthful Fallback)'}
+                </strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Reproducible Report Link:</div>
+                <strong style={{ color: '#2B5329' }}>/admin/reports?metric={governedQueryMetric}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📊 <strong>WB F65 Invariant:</strong> The answer reproduces a saved report or clearly says data are insufficient. Operates without direct unrestricted database access, preventing speculative hallucinations.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={governedQueryMetric === 'contribution_margin' ? 'primary' : 'outline'}
+              onClick={() => setGovernedQueryMetric('contribution_margin')}
+            >
+              Query Contribution Margin (Sufficient Data)
+            </Button>
+            <Button
+              size="sm"
+              variant={governedQueryMetric === 'rebooking_rate' ? 'primary' : 'outline'}
+              onClick={() => setGovernedQueryMetric('rebooking_rate')}
+            >
+              Query Rebooking Rate (Demonstrate Insufficient Data)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F150: Forecast Demand and Staffing */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Forecast Demand and Staffing (F150)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Horizon: {forecastHorizon === '30_days' ? '30 Days (4 Weeks)' : '7 Days (Cold Start)'}</Badge>
+              <Badge variant="muted">WB F150 / Rule F150</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Empirical demand and staffing forecasting with 80% confidence intervals, cancellation exposure modeling, and graceful degradation for new studios.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                Studio Model: {forecastHorizon === '30_days' ? 'Established Atelier (4 Weeks Analyzed)' : 'Cold-Start Studio (1 Week Analyzed)'}
+              </strong>
+              <span style={{ fontSize: '0.82rem', color: forecastHorizon === '30_days' ? '#2B5329' : '#A65B32', fontWeight: 600 }}>
+                {forecastHorizon === '30_days' ? '80% CI: [42 – 56] Appointments/Wk' : '⚠️ Cold Start: Uncertainty Widened (±30%)'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.8rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Expected Demand:</div>
+                <strong style={{ color: '#2B5329' }}>{forecastHorizon === '30_days' ? '196 Appointments' : '28 Appointments'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Recommended Labor:</div>
+                <strong>{forecastHorizon === '30_days' ? '245 Staff Hours' : '35 Staff Hours'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Cancellation Exposure:</div>
+                <strong style={{ color: '#A65B32' }}>{forecastHorizon === '30_days' ? '24 Appts ($3,240)' : '3 Appts ($405)'}</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                <div>Capacity Utilization:</div>
+                <strong>{forecastHorizon === '30_days' ? '89% (Optimal)' : '78% (Conservative)'}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+              📈 <strong>WB F150 Invariant:</strong> Forecasts are evaluated on future periods with transparent uncertainty bounds and comparisons against simple 4-week moving baselines; new businesses degrade gracefully without false precision.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={forecastHorizon === '30_days' ? 'primary' : 'outline'}
+              onClick={() => setForecastHorizon('30_days')}
+            >
+              Established Studio Forecast (30 Days)
+            </Button>
+            <Button
+              size="sm"
+              variant={forecastHorizon === '7_days_cold_start' ? 'primary' : 'outline'}
+              onClick={() => setForecastHorizon('7_days_cold_start')}
+            >
+              Cold-Start Studio Forecast (Degraded Baseline)
+            </Button>
+          </div>
+        </Card>
+      </section>
+
 
 
 

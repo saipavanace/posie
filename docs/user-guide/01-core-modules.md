@@ -864,6 +864,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Strictly governed conversational voice and text assistant for incoming studio phone calls and messages, handling verified business inquiries (opening hours, address, parking, pricing) and permitted booking tasks with caller identity verification and immediate human handoff.
 * **Key Invariant (Basis: Growth (G); AI MSG OPS, WB F64, SQUIRE / Zenoti Parity, Rule F145):** **Zero-Hallucination Guardrails & Critical Safety Escalation.** "Unknown prices or policies trigger clarification rather than invention. Differentiate reliability and truthful handoff." The assistant is strictly constrained to the studio's verified knowledge base and pricing catalog. Any query involving medical contraindications, allergic reactions, retinol sensitivity, or clinical conditions immediately escalates to urgent staff triage with an unedited conversation transcript. Booking actions under registered profiles require OTP verification.
 
+---
+
+## F146 — Reliable Booking Across Channels (WB F64, Channel Completeness)
+* **What it is:** Unified omnichannel booking and modification engine synchronizing in-progress reservations across Voice AI, interactive SMS, native mobile apps, and web booking portals.
+* **Key Invariant (Basis: Expansion (X); AI MSG SEC, WB F64, Rule F146):** **Single Reservation Identity & Zero-Duplicate Guarantee.** "Shared action tools, channel identity and confirmation rules. Channel switching does not create another booking." Clients can initiate an inquiry via phone, transition seamlessly to an SMS secure confirmation link, and reschedule on the web portal without spawning duplicate reservations or ghost bookings. Every state transition produces an immutable, visible action receipt with idempotency enforcement.
+
+---
+
+## F147 — Assistant That Acts in Current Screen (WB F65)
+* **What it is:** Context-aware operator assistant embedded inside practitioner workflows (day calendar, client profiles, checkout tickets, SOAP charts) capable of inspecting the active on-screen record and safely drafting proposed actions.
+* **Key Invariant (Basis: Growth (G); AI SEC, WB F65, Rule F147):** **Role-Based Scope & Consequential Change Diff Confirmation.** "Role-aware context and action logs. Unsupported actions are declined and consequential edits require confirmation." Actions altering finances (courtesy discounts), schedule slots, or patient medical histories require explicit human confirmation of a structured before/after diff. Out-of-scope actions or actions attempted by unauthorized roles (e.g. front-desk applying discounts) are cleanly declined.
+
+---
+
+## F148 — Draft Notes from Dictation (WB F66)
+* **What it is:** Hands-free clinical dictation transcription engine transforming consented audio recordings into structured SOAP treatment note drafts (Subjective, Objective, Assessment, Plan) with time-stamped audio provenance.
+* **Key Invariant (Basis: Expansion (X); AI CLIN SEC, WB F66, Rule F148):** **Phonetic Medical Triage & Licensed Practitioner Locking.** "The professional signs the note; uncertain terms remain flagged." AI drafts stay uncommitted in draft status. Phonetically ambiguous or clinical terms (erythema, tretinoin, hyaluronic, keloid) are highlighted with triage flags. The licensed practitioner must review, edit, and append their verified professional license number and signature before the chart becomes an immutable clinical record.
+
+---
+
+## F149 — Ask Questions of Business Data (WB F65)
+* **What it is:** Governed natural-language analytics query engine answering questions about studio performance using standardized metric definitions (F111 Metric Dictionary) and declared dimensional filters.
+* **Key Invariant (Basis: Growth (G); AI DATA, WB F65, Rule F149):** **Governed Metric Precedence & Truthful Insufficient Data Reporting.** "Metric layer and evaluation set. The answer reproduces a saved report or clearly says data are insufficient." Operates without raw, unrestricted SQL execution. If the sample size is below verified thresholds (e.g. <5 transactions), the engine explicitly reports insufficient data rather than interpolating or hallucinating business numbers. Every response links to a reproducible saved report.
+
+---
+
+## F150 — Forecast Demand and Staffing (WB F150)
+* **What it is:** Predictive operations and staffing engine estimating future appointment demand, chair capacity utilization, cancellation risk exposure, and recommended labor hours.
+* **Key Invariant (Basis: Expansion (X); DATA, WB F150, Rule F150):** **Empirical Uncertainty Intervals & Cold-Start Graceful Degradation.** "Sufficient history and monitoring. Forecasts are evaluated on future periods and degrade gracefully for new businesses." Every projection outputs explicit statistical uncertainty intervals (80% confidence bounds) alongside simple 4-week historical moving averages. For new ateliers or services with <4 weeks of history, the model flags limited data and gracefully widens confidence bounds to prevent overstaffing or understaffing.
+
+
 
 
 

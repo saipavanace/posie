@@ -143,4 +143,9 @@ export * from './offline_operations';
 export * from './schedule_optimization';
 export * from './mobile_service_routes';
 export * from './constrained_ai_receptionist';
+export * from './cross_channel_booking';
+export * from './screen_aware_assistant';
+export * from './dictation_notes';
+export * from './governed_data_queries';
+export * from './demand_staffing_forecast';
 
