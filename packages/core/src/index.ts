@@ -72,3 +72,6 @@ export * from './rebooking';
 export * from './business_telephony';
 export * from './tenant_security';
 export * from './financial_ledger';
+export * from './booking_engine';
+export * from './resource_scheduling';
+export * from './service_intervals';

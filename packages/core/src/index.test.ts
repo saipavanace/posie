@@ -113,6 +113,15 @@ import {
   TenantSecurityViolation,
   executeIdempotentCheckoutPayment,
   reconcilePayoutPeriod,
+  holdBookingSlot,
+  confirmHeldBooking,
+  createProvisionalBooking,
+  confirmProvisionalBooking,
+  isResourceAvailable,
+  reserveAppointmentResources,
+  cancelResourceReservations,
+  buildSplitIntervalSchedule,
+  canFitSecondaryServiceInProcessingGap,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -2567,6 +2576,295 @@ describe('Posie Core Logic - F074 (Financial Ledger & Event History - Documents 
     expect(reconciliation.explanationNotice).toContain('Three-Way Payout Tie-Out');
   });
 });
+
+describe('Posie Core Logic - F075 (Reliable Booking Engine)', () => {
+  const tenantId = 'tenant_posie_east_village';
+  const practitionerId = 'prac_maya_stylist';
+  const serviceId = 'srv_custom_balayage';
+
+  it('creates temporary atomic slot holds, rejects concurrent collisions, and confirms guest bookings', () => {
+    const slotStart = '2026-11-15T14:00:00.000Z';
+    const currentTime = '2026-11-15T10:00:00.000Z';
+
+    // 1. Guest A creates a 10-minute hold for 2:00 PM (duration 90m)
+    const holdA = holdBookingSlot({
+      tenantId,
+      practitionerId,
+      serviceId,
+      startTime: slotStart,
+      durationMinutes: 90,
+      existingAppointments: [],
+      existingHolds: [],
+      currentTime,
+    });
+
+    expect(holdA.success).toBe(true);
+    if (!holdA.success) return;
+    expect(holdA.hold.status).toBe('active');
+    expect(holdA.hold.holdToken).toBeDefined();
+
+    // 2. Guest B tries to hold an overlapping slot at 2:30 PM for same practitioner -> Rejected!
+    const holdB = holdBookingSlot({
+      tenantId,
+      practitionerId,
+      serviceId,
+      startTime: '2026-11-15T14:30:00.000Z',
+      durationMinutes: 60,
+      existingAppointments: [],
+      existingHolds: [holdA.hold],
+      currentTime,
+    });
+
+    expect(holdB.success).toBe(false);
+    if (holdB.success) return;
+    expect(holdB.reason).toContain('Slot is currently held');
+
+    // 3. Guest A confirms booking without needing an account or app download
+    const confirmResult = confirmHeldBooking({
+      hold: holdA.hold,
+      client: {
+        fullName: 'Elena Rostova',
+        email: 'elena@gmail.com',
+        phoneNumber: '+1-212-555-8932',
+        timeZone: 'America/New_York',
+      },
+      serviceName: 'Custom Sun-Kissed Balayage',
+      policyAcknowledged: true,
+      currentTime: '2026-11-15T10:05:00.000Z',
+    });
+
+    expect(confirmResult.success).toBe(true);
+    if (!confirmResult.success) return;
+    expect(confirmResult.appointment.status).toBe('confirmed');
+    expect(confirmResult.appointment.bookingMethod).toBe('guest_self_service');
+    expect(confirmResult.updatedHold.status).toBe('confirmed');
+
+    // 4. Stale/expired hold cannot be confirmed
+    const expiredConfirm = confirmHeldBooking({
+      hold: {
+        ...holdA.hold,
+        status: 'active',
+        expiresAt: '2026-11-15T10:10:00.000Z',
+      },
+      client: {
+        fullName: 'Elena Rostova',
+        email: 'elena@gmail.com',
+        phoneNumber: '+1-212-555-8932',
+      },
+      serviceName: 'Custom Sun-Kissed Balayage',
+      policyAcknowledged: true,
+      currentTime: '2026-11-15T10:15:00.000Z', // 5 minutes after expiration
+    });
+
+    expect(expiredConfirm.success).toBe(false);
+    if (expiredConfirm.success) return;
+    expect(expiredConfirm.reason).toContain('expired');
+  });
+
+  it('supports staff-created provisional express links confirmed by client with card hold', () => {
+    // Pro initiates express booking
+    const provisional = createProvisionalBooking({
+      tenantId,
+      practitionerId,
+      serviceId,
+      serviceName: 'Full Set Sculpted Gel Extensions',
+      estimatedPriceCents: 16500,
+      startTime: '2026-11-20T16:00:00.000Z',
+      durationMinutes: 90,
+      client: {
+        fullName: 'Zoe Kravitz',
+        email: 'zoe@example.com',
+        phoneNumber: '+1-310-555-2244',
+      },
+    });
+
+    expect(provisional.status).toBe('pending_client_confirmation');
+    expect(provisional.secureExpressToken).toBeDefined();
+
+    // Client confirms via link by providing card hold token
+    const clientConfirmation = confirmProvisionalBooking({
+      provisional,
+      cardHoldToken: 'card_hold_tok_test_9999',
+      policyAcknowledged: true,
+    });
+
+    expect(clientConfirmation.success).toBe(true);
+    if (!clientConfirmation.success) return;
+    expect(clientConfirmation.appointment.status).toBe('confirmed');
+    expect(clientConfirmation.appointment.bookingMethod).toBe('provisional_express_link');
+    expect(clientConfirmation.updatedProvisional.status).toBe('confirmed');
+  });
+});
+
+describe('Posie Core Logic - F076 (Room & Equipment Scheduling)', () => {
+  const tenantId = 'tenant_posie_tribeca';
+
+  const roomA = {
+    resourceId: 'res_room_suite_a',
+    tenantId,
+    name: 'Esthetics Suite A',
+    type: 'treatment_room' as const,
+    turnaroundCleanupMinutes: 15, // 15m disinfection turnaround
+    isActive: true,
+  };
+
+  const laserDevice = {
+    resourceId: 'res_device_ipl_1',
+    tenantId,
+    name: 'IPL Laser Handpiece 01',
+    type: 'laser_device' as const,
+    turnaroundCleanupMinutes: 20, // 20m sterilization turnaround
+    isActive: true,
+  };
+
+  it('atomically reserves multi-resource rooms and devices with sanitization buffer', () => {
+    // 1. Reserve Suite A and IPL Laser for 2:00 PM (60m duration)
+    const reserve1 = reserveAppointmentResources({
+      tenantId,
+      appointmentId: 'apt_1001',
+      serviceName: 'Full Face IPL Photofacial',
+      practitionerId: 'prac_laser_nurse_kim',
+      startTime: '2026-11-18T14:00:00.000Z',
+      durationMinutes: 60, // Ends at 15:00, Suite A blocked until 15:15, Laser blocked until 15:20
+      requiredResources: [roomA, laserDevice],
+      existingReservations: [],
+    });
+
+    expect(reserve1.success).toBe(true);
+    if (!reserve1.success) return;
+    expect(reserve1.reservations.length).toBe(2);
+
+    const laserReservation = reserve1.reservations.find((r) => r.resourceId === laserDevice.resourceId)!;
+    expect(laserReservation.serviceEndTime).toBe('2026-11-18T15:00:00.000Z');
+    expect(laserReservation.totalBlockedUntil).toBe('2026-11-18T15:20:00.000Z'); // 60m + 20m buffer
+
+    // 2. Conflicting attempt at 15:10 PM during sanitization window -> REJECTED!
+    const reserve2 = reserveAppointmentResources({
+      tenantId,
+      appointmentId: 'apt_1002',
+      serviceName: 'Acne Spot Laser',
+      practitionerId: 'prac_laser_dr_smith',
+      startTime: '2026-11-18T15:10:00.000Z', // Starts before laser cleanup finishes at 15:20
+      durationMinutes: 30,
+      requiredResources: [laserDevice],
+      existingReservations: reserve1.reservations,
+    });
+
+    expect(reserve2.success).toBe(false);
+    if (reserve2.success) return;
+    expect(reserve2.reason).toContain('sanitization buffer');
+
+    // 3. Booking at 15:25 PM after sanitization buffer -> SUCCEEDS!
+    const reserve3 = reserveAppointmentResources({
+      tenantId,
+      appointmentId: 'apt_1003',
+      serviceName: 'Laser Hair Removal',
+      practitionerId: 'prac_laser_nurse_kim',
+      startTime: '2026-11-18T15:25:00.000Z',
+      durationMinutes: 30,
+      requiredResources: [laserDevice],
+      existingReservations: reserve1.reservations,
+    });
+
+    expect(reserve3.success).toBe(true);
+
+    // 4. Cancellation releases the active reservations
+    const cancelled = cancelResourceReservations('apt_1001', reserve1.reservations);
+    expect(cancelled.every((r) => r.status === 'cancelled')).toBe(true);
+  });
+});
+
+describe('Posie Core Logic - F077 (Processing & Finishing Intervals)', () => {
+  const tenantId = 'tenant_posie_soho';
+  const practitionerId = 'prac_maya_master_colorist';
+  const stylingChairId = 'res_station_chair_04';
+  const secondaryChairId = 'res_station_chair_05';
+
+  const balayageDefinition = {
+    serviceId: 'srv_multi_stage_balayage',
+    serviceName: 'Signature Balayage & Gloss',
+    handsOnDurationMinutes: 45, // 45m foils application
+    processingGapMinutes: 40,   // 40m color development (practitioner is FREE!)
+    finishingDurationMinutes: 35, // 35m rinse, gloss & blowout
+    requiresSameStationThroughout: true, // Primary client remains seated in Chair 04
+  };
+
+  it('builds split interval schedule where processing gap frees practitioner while keeping station occupied', () => {
+    const startTime = '2026-11-19T10:00:00.000Z';
+
+    const schedule = buildSplitIntervalSchedule({
+      tenantId,
+      appointmentId: 'apt_balayage_2001',
+      practitionerId,
+      primaryStationResourceId: stylingChairId,
+      definition: balayageDefinition,
+      startTime,
+    });
+
+    expect(schedule.totalSpanMinutes).toBe(120); // 45 + 40 + 35
+    expect(schedule.totalPractitionerHandsOnMinutes).toBe(80); // 45 + 35
+    expect(schedule.totalFreedProcessingMinutes).toBe(40);
+    expect(schedule.segments.length).toBe(3);
+
+    const [handsOn, gap, finish] = schedule.segments;
+
+    // Segment 1: Hands-on (10:00 - 10:45)
+    expect(handsOn.practitionerBusy).toBe(true);
+    expect(handsOn.stationOccupied).toBe(true);
+    expect(handsOn.endTime).toBe('2026-11-19T10:45:00.000Z');
+
+    // Segment 2: Processing Gap (10:45 - 11:25)
+    // KEY INVARIANT: Practitioner is FREE, but Station 04 is STILL OCCUPIED!
+    expect(gap.practitionerBusy).toBe(false);
+    expect(gap.stationOccupied).toBe(true);
+    expect(gap.stationResourceId).toBe(stylingChairId);
+    expect(gap.startTime).toBe('2026-11-19T10:45:00.000Z');
+    expect(gap.endTime).toBe('2026-11-19T11:25:00.000Z');
+
+    // Segment 3: Finishing (11:25 - 12:00)
+    expect(finish.practitionerBusy).toBe(true);
+    expect(finish.stationOccupied).toBe(true);
+    expect(finish.startTime).toBe('2026-11-19T11:25:00.000Z');
+    expect(finish.endTime).toBe('2026-11-19T12:00:00.000Z');
+
+    // INVARIANT TEST 1: Secondary service fits into the gap using a SEPARATE station
+    const canFitDryCut = canFitSecondaryServiceInProcessingGap({
+      primarySchedule: schedule,
+      secondaryServiceDurationMinutes: 25,
+      secondaryRequestedStartTime: '2026-11-19T10:50:00.000Z', // 10:50 - 11:15 (finishes 10m before 11:25)
+      secondaryTargetStationResourceId: secondaryChairId,
+      safetyBufferMinutes: 5,
+    });
+
+    expect(canFitDryCut.canFit).toBe(true);
+
+    // INVARIANT TEST 2: Rejects secondary service attempting to steal primary client's occupied station
+    const stationTheftAttempt = canFitSecondaryServiceInProcessingGap({
+      primarySchedule: schedule,
+      secondaryServiceDurationMinutes: 25,
+      secondaryRequestedStartTime: '2026-11-19T10:50:00.000Z',
+      secondaryTargetStationResourceId: stylingChairId, // Same chair where client is processing!
+    });
+
+    expect(stationTheftAttempt.canFit).toBe(false);
+    if (stationTheftAttempt.canFit) return;
+    expect(stationTheftAttempt.reason).toContain('Primary client remains seated');
+
+    // INVARIANT TEST 3: Rejects secondary service that runs over into finishing segment
+    const tooLongService = canFitSecondaryServiceInProcessingGap({
+      primarySchedule: schedule,
+      secondaryServiceDurationMinutes: 38,
+      secondaryRequestedStartTime: '2026-11-19T10:50:00.000Z', // 10:50 + 38m = 11:28, encroaches on 11:25 finish!
+      secondaryTargetStationResourceId: secondaryChairId,
+      safetyBufferMinutes: 5,
+    });
+
+    expect(tooLongService.canFit).toBe(false);
+    if (tooLongService.canFit) return;
+    expect(tooLongService.reason).toContain('encroaches on the practitioner\'s finishing segment');
+  });
+});
+
 
 
 

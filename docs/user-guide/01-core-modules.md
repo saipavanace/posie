@@ -438,3 +438,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Immutable double-entry financial transaction ledger with 3-way payout reconciliation and network-retry idempotency safeguards.
 * **Key Invariant (Documents D14, D15, D17):** **Idempotent payment execution.** In flaky salon Wi-Fi environments, double-tapping checkout buttons or retrying payment requests never double-debits a client card. The ledger strictly reconciles gross client charges, card processing fees, and net bank payouts to the exact penny with zero unaccounted leakage.
 
+---
+
+## F075 — Reliable Booking Engine & Guest Checkout
+* **What it is:** High-concurrency booking engine letting clients book as guests without being forced to download an app or create an account with passwords.
+* **Key Invariant (Basis: B; WB F5):** **Atomic slot hold protection.** When a client selects a time slot, a temporary 10-minute hold token locks the practitioner's calendar; concurrent booking attempts for overlapping windows are immediately rejected. Staff can also dispatch secure 1-click Express Provisional links for phone bookings, allowing clients to confirm their time and card hold without staff taking numbers over the phone.
+
+---
+
+## F076 — Room & Equipment Scheduling
+* **What it is:** Multi-resource reservation coordinator locking treatment suites, specialized esthetic devices (e.g. IPL laser, HydraFacial), and styling chairs alongside practitioners.
+* **Key Invariant (Basis: B; WB F16):** **Sanitization buffer isolation.** Two services cannot consume the same exclusive resource at the same time. Mandatory turnaround periods (e.g. 15-minute suite disinfection, 20-minute laser handpiece sterilization) are strictly attached to reservations, preventing any booking until cleanup is completed.
+
+---
+
+## F077 — Processing & Finishing Intervals
+* **What it is:** Three-phase appointment scheduler modeling hands-on work, chemical processing gaps (e.g. 40-minute hair color development or numbing cream dwell), and finishing blowouts.
+* **Key Invariant (Basis: B; WB F15):** **Non-evicting processing gaps.** During a chemical processing gap, the practitioner's hands-on time is freed to accept a quick secondary service (e.g. express dry cut or consultation) in another chair, **without releasing the primary client's occupied station**. Secondary services are blocked from stealing the occupied chair or encroaching on the finish time.
+
+

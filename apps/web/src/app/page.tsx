@@ -173,6 +173,19 @@ export default function PosieStudioPage() {
   // F074 Financial Ledger Idempotency State
   const [checkoutClickCount, setCheckoutClickCount] = useState(0);
 
+  // F075 Reliable Booking Engine State
+  const [bookingHoldState, setBookingHoldState] = useState<'none' | 'held' | 'collision_blocked' | 'confirmed'>('none');
+  const [provisionalLinkActive, setProvisionalLinkActive] = useState(false);
+  const [provisionalConfirmed, setProvisionalConfirmed] = useState(false);
+
+  // F076 Room & Equipment Scheduling State
+  const [roomScheduleAttempt, setRoomScheduleAttempt] = useState<'idle' | 'conflict_blocked' | 'booked_clean'>('idle');
+
+  // F077 Processing & Finishing Intervals State
+  const [gapServiceFitted, setGapServiceFitted] = useState(false);
+  const [gapStationTheftAttempted, setGapStationTheftAttempted] = useState(false);
+
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -1691,6 +1704,246 @@ export default function PosieStudioPage() {
           )}
         </Card>
       </section>
+
+      {/* F075: Reliable Booking Engine Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calendar size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Reliable Booking Engine (F075)
+              </h3>
+            </div>
+            <Badge variant="sage">Guest Checkout • Atomic Slot Lock</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Clients book effortlessly as guests with zero forced apps or account passwords. Temporary 10-minute slot holds atomically protect selected times from concurrent collisions. Staff can also text one-click express booking links to lock cards securely.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            {/* Box 1: Guest Checkout & Atomic Hold */}
+            <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <h4 style={{ margin: '0 0 10px', fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                1. Guest Atomic Slot Lock
+              </h4>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text)', marginBottom: '12px', background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid #EEE' }}>
+                <div><strong>Selected Time:</strong> Today at 2:00 PM (90m Balayage)</div>
+                <div><strong>Practitioner:</strong> Maya Lin (Master Colorist)</div>
+                <div><strong>Status:</strong> {bookingHoldState === 'none' ? 'Open' : bookingHoldState === 'held' ? 'Held for checkout (9:45 remaining)' : bookingHoldState === 'confirmed' ? 'Confirmed Appointment' : 'Collision Blocked'}</div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {bookingHoldState === 'none' && (
+                  <Button size="sm" variant="primary" onClick={() => setBookingHoldState('held')}>
+                    Hold 2:00 PM Slot (10m TTL)
+                  </Button>
+                )}
+                {bookingHoldState === 'held' && (
+                  <>
+                    <Button size="sm" variant="primary" onClick={() => setBookingHoldState('confirmed')}>
+                      Confirm (No App or Account Needed)
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setBookingHoldState('collision_blocked')}>
+                      Simulate Concurrent Double-Booker
+                    </Button>
+                  </>
+                )}
+                {(bookingHoldState === 'confirmed' || bookingHoldState === 'collision_blocked') && (
+                  <Button size="sm" variant="outline" onClick={() => setBookingHoldState('none')}>
+                    Reset Slot Demo
+                  </Button>
+                )}
+              </div>
+
+              {bookingHoldState === 'collision_blocked' && (
+                <div style={{ marginTop: '10px', background: '#FFF7F5', border: '1px solid #C67D6E', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', color: '#B36B5C' }}>
+                  ⚠️ <strong>Collision Prevented:</strong> A second client attempted to book 2:00 PM while Maya Lin was held in your cart. Second client was offered the next available opening at 3:45 PM.
+                </div>
+              )}
+              {bookingHoldState === 'confirmed' && (
+                <div style={{ marginTop: '10px', background: '#F4F7F4', border: '1px solid #738A73', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', color: '#3A523A' }}>
+                  ✓ <strong>Booking Confirmed:</strong> Token committed atomically into the salon master schedule.
+                </div>
+              )}
+            </div>
+
+            {/* Box 2: Express Provisional Pro Link */}
+            <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <h4 style={{ margin: '0 0 10px', fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                2. Express Staff Provisional Link
+              </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+                When booking over the phone, staff create a tentative slot. The client gets a secure text link to approve the time and add their card hold without reading card numbers aloud.
+              </p>
+
+              {!provisionalLinkActive ? (
+                <Button size="sm" variant="outline" onClick={() => { setProvisionalLinkActive(true); setProvisionalConfirmed(false); }}>
+                  Generate Express Link for Client
+                </Button>
+              ) : !provisionalConfirmed ? (
+                <div style={{ background: '#FFF', border: '1px solid #DDD', padding: '10px', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+                    🔗 <code>posie.com/express/exp_99a82f3</code>
+                  </div>
+                  <Button size="sm" variant="primary" onClick={() => setProvisionalConfirmed(true)}>
+                    Client Clicks Link & Approves Card Hold
+                  </Button>
+                </div>
+              ) : (
+                <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', color: '#3A523A' }}>
+                  ✓ <strong>Express Reservation Locked:</strong> Client confirmed time zone & card hold in 1 click. Zero phone friction.
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* F076: Room & Equipment Scheduling Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Room & Equipment Scheduling (F076)
+              </h3>
+            </div>
+            <Badge variant="sage">Sanitization Buffers • Conflict Defense</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Reserve exclusive treatment suites, chairs, and specialized laser devices alongside practitioners. Mandatory disinfection turnarounds are automatically locked into each resource's schedule.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '0.88rem' }}>Esthetics Suite A</strong>
+                <Badge variant="sage">15m Sanitization</Badge>
+              </div>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>Booked: 2:00 PM – 3:00 PM (+15m cleanup until 3:15 PM)</span>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '0.88rem' }}>IPL Photofacial Laser</strong>
+                <Badge variant="sage">20m Sanitization</Badge>
+              </div>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>Reserved: 2:00 PM – 3:00 PM (+20m sterilization until 3:20 PM)</span>
+            </div>
+            <div style={{ border: '1px solid #E8E5E0', padding: '12px', borderRadius: '8px', background: '#FAFAFA' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '0.88rem' }}>Styling Chair 04</strong>
+                <Badge variant="muted">10m Reset</Badge>
+              </div>
+              <span style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>Available starting 3:30 PM</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Test Resource Invariant:</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRoomScheduleAttempt('conflict_blocked')}
+            >
+              Attempt Booking at 3:10 PM (During Disinfection Buffer)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRoomScheduleAttempt('booked_clean')}
+            >
+              Attempt Booking at 3:25 PM (After Buffer)
+            </Button>
+          </div>
+
+          {roomScheduleAttempt === 'conflict_blocked' && (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              🚫 <strong>Resource Conflict Blocked:</strong> Cannot reserve IPL Photofacial Laser at 3:10 PM. Device is currently undergoing mandatory 20-minute sterilization cleanup until 3:20 PM.
+            </div>
+          )}
+
+          {roomScheduleAttempt === 'booked_clean' && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Resource Reserved:</strong> 3:25 PM slot successfully reserved. Disinfection window for previous client is 100% complete.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F077: Processing & Finishing Intervals Showcase */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Processing & Finishing Intervals (F077)
+              </h3>
+            </div>
+            <Badge variant="sage">Multi-Segment • Double-Booking Defense</Badge>
+          </div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Model hands-on application, chemical processing gaps, and finishing blowout steps. Processing gaps free up practitioner hands to take quick secondary services without releasing the primary client's occupied styling chair!
+          </p>
+
+          {/* Visual Timeline of Segments */}
+          <div style={{ border: '1px solid #E8E5E0', padding: '16px', borderRadius: '8px', background: '#FAFAFA', marginBottom: '16px' }}>
+            <h4 style={{ margin: '0 0 12px', fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+              Primary Client Appointment: Signature Balayage (10:00 AM – 12:00 PM)
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '45fr 40fr 35fr', gap: '8px', textAlign: 'center', fontSize: '0.78rem' }}>
+              <div style={{ background: '#E8ECE6', border: '1px solid #A2B59F', padding: '10px', borderRadius: '6px' }}>
+                <strong>10:00 – 10:45 AM (45m)</strong>
+                <div>Hands-On Foils</div>
+                <Badge variant="sage" style={{ marginTop: '4px' }}>Stylist Busy • Chair 04</Badge>
+              </div>
+              <div style={{ background: '#FFF9F2', border: '1px solid #E2A76F', padding: '10px', borderRadius: '6px' }}>
+                <strong>10:45 – 11:25 AM (40m)</strong>
+                <div>Processing / Color Dwell</div>
+                <Badge variant="rose" style={{ marginTop: '4px' }}>Stylist Free • Chair 04 Occupied</Badge>
+              </div>
+              <div style={{ background: '#E8ECE6', border: '1px solid #A2B59F', padding: '10px', borderRadius: '6px' }}>
+                <strong>11:25 – 12:00 PM (35m)</strong>
+                <div>Rinse, Gloss & Blowout</div>
+                <Badge variant="sage" style={{ marginTop: '4px' }}>Stylist Busy • Chair 04</Badge>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Test Gap Scheduling:</span>
+            <Button
+              size="sm"
+              variant={gapServiceFitted ? 'primary' : 'outline'}
+              onClick={() => { setGapServiceFitted(true); setGapStationTheftAttempted(false); }}
+            >
+              Fit 25m Express Dry Cut (10:50 – 11:15 AM) in Chair 05
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setGapStationTheftAttempted(true); setGapServiceFitted(false); }}
+            >
+              Attempt Secondary Booking in Primary Chair 04
+            </Button>
+          </div>
+
+          {gapServiceFitted && (
+            <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+              ✓ <strong>Gap Service Successfully Scheduled:</strong> Stylist Maya Lin will cut secondary client in Station 05 from 10:50 to 11:15 AM, ending 10 minutes before the 11:25 AM balayage finishing step begins.
+            </div>
+          )}
+
+          {gapStationTheftAttempted && (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#B36B5C' }}>
+              🚫 <strong>Station Collision Prevented:</strong> Although the stylist is freed during color processing, Chair 04 remains physically occupied by the balayage client. Secondary bookings must use another station!
+            </div>
+          )}
+        </Card>
+      </section>
+
 
 
 
