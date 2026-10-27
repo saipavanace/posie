@@ -272,6 +272,29 @@ export default function PosieStudioPage() {
   const [esignPaymentSeparationChecked, setEsignPaymentSeparationChecked] = useState<boolean>(true);
   const [esignTamperCheckPassed, setEsignTamperCheckPassed] = useState<boolean | null>(null);
 
+  // F101 Chart Amendments State
+  const [chartAmendmentDevAdded, setChartAmendmentDevAdded] = useState<boolean>(false);
+  const [chartRoleDev, setChartRoleDev] = useState<'esthetician' | 'front_desk'>('esthetician');
+
+  // F102 Before & After Photo State
+  const [photoAngleDev, setPhotoAngleDev] = useState<'frontal' | 'left_45' | 'right_45'>('frontal');
+  const [photoConsentMarketingDev, setPhotoConsentMarketingDev] = useState<boolean>(true);
+
+  // F103 Client Deduplication State
+  const [dedupMergeExecuted, setDedupMergeExecuted] = useState<boolean>(false);
+  const [dedupUnmerged, setDedupUnmerged] = useState<boolean>(false);
+
+  // F104 Migration Mapping State
+  const [migrationPlatform, setMigrationPlatform] = useState<'glossgenius' | 'vagaro' | 'boulevard'>('glossgenius');
+
+  // F105 Migration Rehearsal & Cutover State
+  const [cutoverBlockedByObligation, setCutoverBlockedByObligation] = useState<boolean>(false);
+  const [cutoverCertificateIssued, setCutoverCertificateIssued] = useState<boolean>(false);
+
+  // F106 Brand Propagation State
+  const [brandStagedTheme, setBrandStagedTheme] = useState<'Sage & Linen' | 'Rose Terracotta' | 'Noir Atelier'>('Sage & Linen');
+  const [brandPublishedStatus, setBrandPublishedStatus] = useState<'live' | 'staged_preview' | 'rolled_back'>('live');
+
 
 
 
@@ -298,7 +321,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab & Regression Matrix (F001 – F100)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F106)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -4225,6 +4248,499 @@ export default function PosieStudioPage() {
                 </Button>
               </div>
             )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F101: Private Records & Chart Amendments */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <HeartPulse size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Private Records &amp; Chart Amendments (F101)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={chartAmendmentDevAdded ? 'rose' : 'sage'}>
+                {chartAmendmentDevAdded ? 'Addendum AMD-01 Appended' : 'Signed Note (DR04 Locked)'}
+              </Badge>
+              <Badge variant="muted">Retention: 7-Year Statutory</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Enforces strict role-based charting privacy firewalls (Rule DR07), append-only addenda preserving historical entries verbatim (Rule DR04), and statutory retention tracking.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.94rem', color: 'var(--color-primary)' }}>
+                SOAP Chart #CH-89412 — Zendaya Coleman (Esthetician: Maya Lin)
+              </strong>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Signed: Oct 20, 2026 15:45 UTC</span>
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#555', lineHeight: 1.6, marginBottom: '10px' }}>
+              <div><strong>Subjective:</strong> Client reports mild barrier fatigue after transcontinental flight.</div>
+              <div><strong>Objective:</strong> Minor T-zone erythema; stratum corneum slightly dehydrated. Cleared for enzyme peel.</div>
+              <div><strong>Assessment:</strong> Barrier intact; responded well to chamomile botanical calm infusion.</div>
+              <div><strong>Plan:</strong> Prescribed Barrier Restore Ceramide Cream nightly. SPF 50 daily.</div>
+            </div>
+
+            {chartAmendmentDevAdded && (
+              <div style={{ background: '#FFF9F7', border: '1px solid #E5C3B8', borderRadius: '6px', padding: '10px 14px', fontSize: '0.8rem', marginTop: '10px' }}>
+                <strong style={{ color: '#8F4A3E', display: 'block', marginBottom: '4px' }}>
+                  ✓ Addendum AMD-01 Appended (Oct 20, 2026 18:30 UTC — Author: Maya Lin)
+                </strong>
+                <div style={{ color: '#555' }}>
+                  <strong>Reason:</strong> Late entry — Client texted 2h post-visit noting slight cheek warmth.<br />
+                  <strong>Clinical note:</strong> Advised chilled rosewater compress. Flush resolved completely in 15 mins. Original note preserved verbatim.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {!chartAmendmentDevAdded ? (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setChartAmendmentDevAdded(true)}
+              >
+                Append Late Entry Addendum (Rule DR04)
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setChartAmendmentDevAdded(false)}
+              >
+                Reset Note
+              </Button>
+            )}
+
+            <button
+              onClick={() => setChartRoleDev(chartRoleDev === 'esthetician' ? 'front_desk' : 'esthetician')}
+              style={{
+                background: 'none',
+                border: '1px solid var(--color-border)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              Simulate Role: <strong>{chartRoleDev === 'esthetician' ? 'Licensed Esthetician (Access OK)' : 'Front Desk / Marketing (Rule DR07 Blocked)'}</strong>
+            </button>
+          </div>
+
+          {chartRoleDev === 'front_desk' && (
+            <div style={{ marginTop: '10px', background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8F4A3E' }}>
+              ⚠ <strong>Rule DR07 Privacy Firewall:</strong> Non-clinical staff roles cannot view or edit private medical SOAP charts.
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F102: Standardized Before and After Photos */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Camera size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Standardized Before &amp; After Clinical Photos (F102)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={photoConsentMarketingDev ? 'sage' : 'muted'}>
+                {photoConsentMarketingDev ? 'Marketing Consent: Active (Doc D12)' : 'Marketing Revoked (Internal Only)'}
+              </Badge>
+              <Badge variant="sage">Angle: {photoAngleDev}</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Standardizes capture angles, discloses lighting differences exceeding 500K to prevent misleading marketing claims, and enforces strict two-tier marketing consent firewalls.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)' }}>Baseline Photo (Oct 20)</strong>
+                <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>SHA-256 Digest Bound</span>
+              </div>
+              <div style={{ height: '90px', background: '#F2EFE9', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.82rem', color: '#777' }}>
+                📷 Raw Capture • 3200K Tungsten • 18&quot; Distance
+              </div>
+            </div>
+
+            <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)' }}>Post-Peel Photo (Oct 27)</strong>
+                <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>SHA-256 Digest Bound</span>
+              </div>
+              <div style={{ height: '90px', background: '#F2EFE9', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.82rem', color: '#777' }}>
+                📷 Raw Capture • 5000K Daylight LED • 18&quot; Distance
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: '#555', marginBottom: '12px' }}>
+            ⚠ <strong>Lighting Delta Disclosed (&gt;500K):</strong> Baseline was captured under 3200K vs follow-up under 5000K (1800K difference). System automatically discloses this variance on all client-facing progress cards to prevent deceptive aesthetic marketing.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {(['frontal', 'left_45', 'right_45'] as const).map((angle) => (
+              <Button
+                key={angle}
+                size="sm"
+                variant={photoAngleDev === angle ? 'primary' : 'outline'}
+                onClick={() => setPhotoAngleDev(angle)}
+              >
+                {angle === 'frontal' ? 'Frontal Angle' : angle === 'left_45' ? 'Left 45° Angle' : 'Right 45° Angle'}
+              </Button>
+            ))}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPhotoConsentMarketingDev(!photoConsentMarketingDev)}
+            >
+              Toggle Document D12 Marketing Consent
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F103: Client Deduplication & Reversible Merge */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Client Deduplication &amp; Reversible Merge (F103)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={dedupMergeExecuted ? (dedupUnmerged ? 'muted' : 'sage') : 'rose'}>
+                {dedupMergeExecuted ? (dedupUnmerged ? 'Profiles Unmerged (Restored)' : 'Merged: Zendaya Coleman') : 'Duplicate Flagged'}
+              </Badge>
+              <Badge variant="muted">Shared Household Defense Active</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Intelligently flags potential duplicate profiles, protects family members sharing phone numbers from destructive auto-merges, and supports reversible merges via pre-merge audit snapshots.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '4px' }}>Profile A (Primary)</strong>
+                <div>Name: <strong>Zendaya Coleman</strong></div>
+                <div>Phone: <strong>(310) 555-0199</strong></div>
+                <div>Email: zendaya@example.com</div>
+                <div>Visits: 14 completed • Points: 450</div>
+              </div>
+
+              <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '4px' }}>Profile B (Candidate)</strong>
+                <div>Name: <strong>Claire Coleman (Mother)</strong></div>
+                <div>Phone: <strong>(310) 555-0199 (Shared Phone)</strong></div>
+                <div>Email: claire.c@example.com</div>
+                <div>Visits: 3 completed • Points: 75</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: '#555' }}>
+              🛡 <strong>Shared Household Contact Defense:</strong> Detected identical phone number with different first names. System blocks automated merge to prevent conflating mother and daughter medical charts. Requires explicit practitioner review.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {!dedupMergeExecuted ? (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  setDedupMergeExecuted(true);
+                  setDedupUnmerged(false);
+                }}
+              >
+                Execute Reversible Merge (Captures Pre-Merge Snapshot)
+              </Button>
+            ) : !dedupUnmerged ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setDedupUnmerged(true)}
+              >
+                <RotateCcw size={14} style={{ marginRight: '6px' }} />
+                Unmerge Profiles (Restore Pre-Merge State DR04)
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setDedupMergeExecuted(false);
+                  setDedupUnmerged(false);
+                }}
+              >
+                Reset Deduplication Test
+              </Button>
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {/* F104: Historical Migration Mapping & Provenance Archive */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Database size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Historical Migration Mapping &amp; Provenance Archive (F104)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Source: {migrationPlatform.toUpperCase()}</Badge>
+              <Badge variant="muted">Provenance Archive: Zero Data Loss</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Staging multi-platform imports (GlossGenius, Vagaro, Boulevard) with column mapping and an immutable provenance archive ensuring unmapped legacy formulas, notes, and custom fields are never discarded.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '14px', fontSize: '0.82rem', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong>Mapped Columns:</strong>
+                <div style={{ color: '#2B5329', marginTop: '4px' }}>✓ Client Name → client_name</div>
+                <div style={{ color: '#2B5329' }}>✓ Client Phone → phone_number</div>
+                <div style={{ color: '#2B5329' }}>✓ Total Spend → lifetime_spend</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong>Provenance Archive (F104):</strong>
+                <div style={{ color: '#8F4A3E', marginTop: '4px' }}>📦 legacy_hair_formula</div>
+                <div style={{ color: '#8F4A3E' }}>📦 vagaro_vip_tier_2023</div>
+                <div style={{ color: '#8F4A3E' }}>📦 custom_skin_sensitivities</div>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <strong>Validation Status:</strong>
+                <div style={{ color: '#2B5329', marginTop: '4px' }}>✓ 248 Valid Rows</div>
+                <div style={{ color: '#B36B5C' }}>⚠ 2 Rows with Missing Phone</div>
+                <div style={{ color: '#555' }}>Preserved in raw archive</div>
+              </div>
+            </div>
+
+            <div style={{ color: '#555' }}>
+              <strong>Rule:</strong> Any column not mapped to standard Posie schema is stored in <code>provenanceArchive</code> with platform name, column header, and raw value, preserving historical record integrity.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {(['glossgenius', 'vagaro', 'boulevard'] as const).map((plat) => (
+              <Button
+                key={plat}
+                size="sm"
+                variant={migrationPlatform === plat ? 'primary' : 'outline'}
+                onClick={() => setMigrationPlatform(plat)}
+              >
+                Adapter: {plat === 'glossgenius' ? 'GlossGenius' : plat === 'vagaro' ? 'Vagaro' : 'Boulevard'}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      {/* F105: Migration Rehearsal & Live Cutover */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Scale size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Migration Rehearsal &amp; Live Cutover (F105)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={cutoverCertificateIssued ? 'sage' : (cutoverBlockedByObligation ? 'rose' : 'muted')}>
+                {cutoverCertificateIssued ? 'Certificate #CUTOVER-CERT-2026-01' : (cutoverBlockedByObligation ? 'Cutover Blocked: Active Liability' : 'Rehearsal Ready')}
+              </Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Dry-run reconciliation engine verifying opening financial balances, active customer obligations, and sample audit records before issuing a legally binding cutover certificate.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Total Legacy Clients:</div>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>1,420</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Gift Card Liability Reconciled:</div>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>$4,250.00</strong>
+              </div>
+              <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                <div>Active Package Passes:</div>
+                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>68 Active</strong>
+              </div>
+            </div>
+
+            {cutoverBlockedByObligation ? (
+              <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#8F4A3E' }}>
+                ⚠ <strong>Cutover Blocked (F105 Invariant):</strong> Found 3 rows with active gift card liabilities unmapped to ledger accounts. All active customer obligations must be reconciled or approved under interim redemption workflow before live cutover.
+              </div>
+            ) : cutoverCertificateIssued ? (
+              <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A' }}>
+                ✓ <strong>Cutover Certificate Issued:</strong> Opening balances verified. SHA-256 seal: <code>9b8a...42c1</code>. Live cutover approved for Sunday 11:59 PM.
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#555' }}>
+                Ready to execute pre-cutover verification dry run.
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                setCutoverBlockedByObligation(false);
+                setCutoverCertificateIssued(true);
+              }}
+            >
+              Verify Reconciliation &amp; Issue Cutover Certificate
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setCutoverBlockedByObligation(true);
+                setCutoverCertificateIssued(false);
+              }}
+            >
+              Simulate Unmapped Active Obligation (Trigger Block)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setCutoverBlockedByObligation(false);
+                setCutoverCertificateIssued(false);
+              }}
+            >
+              Reset Cutover State
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F106: Brand Changes Across Surfaces & Historical Lock */}
+      <section style={{ marginBottom: '32px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={20} color="var(--color-primary)" />
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--color-primary)', margin: 0 }}>
+                Brand Changes Across Surfaces &amp; Historical Lock (F106)
+              </h3>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={brandPublishedStatus === 'live' ? 'sage' : (brandPublishedStatus === 'staged_preview' ? 'rose' : 'muted')}>
+                {brandPublishedStatus === 'live' ? 'Theme: ' + brandStagedTheme + ' (Live)' : (brandPublishedStatus === 'staged_preview' ? 'Draft Staged Preview' : 'Rolled Back')}
+              </Badge>
+              <Badge variant="muted">Historical Lock: Rules BR05 / DR04</Badge>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Stages brand revisions across booking sites, POS terminals, and customer portals with one-click rollback, while locking previously issued invoices and receipts against retroactive theme changes.
+          </p>
+
+          <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '6px' }}>
+                  Live Client Surface Preview
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '6px' }}>
+                  Active Palette: <strong>{brandStagedTheme}</strong><br />
+                  Surfaces Updated: Online Booking, POS Terminal, SMS Notifications.
+                </div>
+                <div style={{ height: '24px', background: brandStagedTheme === 'Sage & Linen' ? '#2D3E2F' : brandStagedTheme === 'Rose Terracotta' ? '#B36B5C' : '#1A1A1A', borderRadius: '4px', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.74rem' }}>
+                  Brand Primary Token: {brandStagedTheme === 'Sage & Linen' ? '#2D3E2F (Sage)' : brandStagedTheme === 'Rose Terracotta' ? '#B36B5C (Terracotta)' : '#1A1A1A (Noir)'}
+                </div>
+              </div>
+
+              <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                <strong style={{ color: 'var(--color-primary)', display: 'block', marginBottom: '6px' }}>
+                  Previously Issued Invoice #INV-2024-001 (Locked)
+                </strong>
+                <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '6px' }}>
+                  Issued: Nov 15, 2024 to Zendaya Coleman ($140.00)<br />
+                  Baked Palette: <strong>Original Sage &amp; Linen</strong>
+                </div>
+                <div style={{ background: '#F8F6F2', border: '1px solid #EAE6DF', padding: '6px 8px', borderRadius: '4px', fontSize: '0.74rem', color: '#666' }}>
+                  🔒 <strong>Rules BR05 &amp; DR04 Invariant:</strong> Changing studio theme does NOT modify past issued receipts. Original tokens and legal entity details remain permanent.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button
+              size="sm"
+              variant={brandStagedTheme === 'Sage & Linen' ? 'primary' : 'outline'}
+              onClick={() => {
+                setBrandStagedTheme('Sage & Linen');
+                setBrandPublishedStatus('live');
+              }}
+            >
+              Apply Sage &amp; Linen (Default)
+            </Button>
+            <Button
+              size="sm"
+              variant={brandStagedTheme === 'Rose Terracotta' ? 'primary' : 'outline'}
+              onClick={() => {
+                setBrandStagedTheme('Rose Terracotta');
+                setBrandPublishedStatus('live');
+              }}
+            >
+              Apply Rose Terracotta
+            </Button>
+            <Button
+              size="sm"
+              variant={brandStagedTheme === 'Noir Atelier' ? 'primary' : 'outline'}
+              onClick={() => {
+                setBrandStagedTheme('Noir Atelier');
+                setBrandPublishedStatus('live');
+              }}
+            >
+              Apply Noir Atelier
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setBrandStagedTheme('Sage & Linen');
+                setBrandPublishedStatus('rolled_back');
+              }}
+            >
+              <RotateCcw size={14} style={{ marginRight: '6px' }} />
+              1-Click Rollback to Previous Revision
+            </Button>
           </div>
         </Card>
       </section>

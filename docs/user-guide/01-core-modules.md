@@ -606,6 +606,31 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Standardized photographic clinical documentation suite tracking aesthetic progress across treatment courses with capture guidance, raw media preservation, and dual-tier consent management.
 * **Key Invariant (Basis: B; WB F24, U17; Document D12):** **Capture disparity disclosure & two-tier marketing firewall.** Guides camera angles (Frontal, Left/Right 45°, Macro) and metadata (distance in inches, ambient lighting Kelvin). Side-by-side comparison progress reports must explicitly disclose significant differences in lighting (>500K) or distance (>3") to eliminate deceptive before-and-after claims. Face mapping and markup layers (F039) are stored non-destructively, permanently preserving the raw camera capture with a SHA-256 fingerprint. Enforces a strict two-tier permission firewall: treatment consent covers private internal clinical evaluations, while public social media or marketing sharing requires explicit Document D12 authorization that can be revoked by the client at any time without compromising clinical history.
 
+---
+
+## F103 — Client Deduplication & Reversible Merge (Rules F007, F041, DR04)
+* **What it is:** Intelligent duplicate resolution suite identifying duplicate profiles, defending shared household family contacts from accidental consolidation, and executing reversible profile merges with complete audit snapshots.
+* **Key Invariant (Basis: B; WB F07, F41, DR04):** **Shared phone household defense & reversible merge snapshots.** Automated deduplication never blindly merges profiles sharing a phone number or billing address if first names differ (e.g. parent/child, spouses). Instead, they are flagged as shared household contacts requiring explicit practitioner review. Destructive profile merges capture pre-merge state snapshots of both source and target profiles, enabling `unmergeClientProfiles` to cleanly restore independent profiles, appointment histories, intake forms, and card tokens with zero data loss.
+
+---
+
+## F104 — Historical Migration Mapping & Provenance Archive
+* **What it is:** Multi-source migration staging engine supporting legacy beauty and wellness platforms (GlossGenius, Vagaro, Boulevard, Mindbody, Fresha, Square Appointments) with column mapping, data validation, and provenance archiving.
+* **Key Invariant (Basis: B; WB F08, F34):** **Provenance archive integrity.** Any legacy source field not explicitly mapped to Posie schema (e.g. legacy formula notes, custom client tags, external membership IDs) is never silently discarded. The migration engine archives raw unmapped values in an immutable `provenanceArchive` containing original column names, values, source platform, and migration timestamp. Staging pre-validates data rows, flagging anomalies (missing phones, duplicate emails, unmapped attributes) for resolution before cutover.
+
+---
+
+## F105 — Migration Rehearsal & Live Cutover (Rules BR05, DR04, DR05)
+* **What it is:** Pre-cutover rehearsal dry-run engine verifying financial opening balances, active customer obligations, and historical record fidelity before generating an authorized cutover certificate.
+* **Key Invariant (Basis: B; WB F09, F38, F39, DR04):** **Active customer obligations reconciliation.** Cutover strictly blocks if unmapped active customer obligations (unredeemed gift card balances or active package series passes) are detected in legacy data rows, unless management explicitly signs off on an approved interim redemption workflow. Archiving a customer liability alone is legally insufficient. Once pre-cutover reconciliation succeeds (verifying total gift card liability, package passes, sample audit records, and zero critical anomalies), Posie issues a tamper-evident `CutoverCertificate` authorizing live cutover.
+
+---
+
+## F106 — Brand Changes Across Surfaces & Historical Lock (Rules BR03, BR05, BR10, DR04)
+* **What it is:** Comprehensive design token propagation engine controlling brand identity (logos, color palettes, typography, voice tone) across online booking, customer portals, staff dashboards, SMS/email notifications, and physical print collateral.
+* **Key Invariant (Basis: B; WB F01, F32, Rules BR03, BR05, BR10, DR04):** **Draft staging, instant rollback & historical document immutability.** Brand identity changes are prepared in an isolated draft state and tested via live previews before atomic publishing across all surfaces. If an unexpected design clash occurs, studios can instantly revert to previous revisions via one-click rollback. In strict adherence to Rules BR05 and DR04, published brand updates apply only to future views and newly generated documents. Previously issued invoices, receipts, signed treatment consents, and clinical chart exports retain their original baked brand tokens and legal entity details permanently. Multi-location studios can apply localized styling overrides without disturbing parent merchant IDs or legal registrations.
+
+
 
 
 

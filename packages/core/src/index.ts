@@ -100,4 +100,8 @@ export * from './accounting_sync';
 export * from './electronic_signatures';
 export * from './chart_records';
 export * from './clinical_photos';
+export * from './client_deduplication';
+export * from './migration_mapping';
+export * from './migration_cutover';
+export * from './brand_propagation';
 

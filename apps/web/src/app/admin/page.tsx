@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function PosieStudioAdminPage() {
-  const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials' | 'brand_migration'>('calendar');
 
   // POS State
   const [posTipSplit, setPosTipSplit] = useState<boolean>(true);
@@ -52,6 +52,18 @@ export default function PosieStudioAdminPage() {
   // F102 Before/After Photos State
   const [marketingPermissionGranted, setMarketingPermissionGranted] = useState<boolean>(true);
   const [marketingRevocationReason, setMarketingRevocationReason] = useState<string | null>(null);
+
+  // F103 Deduplication State
+  const [adminDedupMerged, setAdminDedupMerged] = useState<boolean>(false);
+  const [adminDedupUnmerged, setAdminDedupUnmerged] = useState<boolean>(false);
+
+  // F104 & F105 Migration State
+  const [adminMigrationSource, setAdminMigrationSource] = useState<'glossgenius' | 'vagaro' | 'boulevard'>('glossgenius');
+  const [adminCutoverDone, setAdminCutoverDone] = useState<boolean>(false);
+
+  // F106 Brand Token State
+  const [adminThemeChoice, setAdminThemeChoice] = useState<'Sage & Linen' | 'Rose Terracotta' | 'Noir Atelier'>('Sage & Linen');
+  const [adminThemeStaged, setAdminThemeStaged] = useState<boolean>(false);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8F6F2' }}>
@@ -128,7 +140,7 @@ export default function PosieStudioAdminPage() {
                 background: '#FFF5F3',
               }}
             >
-              🧪 Feature Lab (F001–F100)
+              🧪 Feature Lab (F001–F106)
             </a>
           </div>
         </div>
@@ -146,6 +158,7 @@ export default function PosieStudioAdminPage() {
               { id: 'inventory', label: 'Retail & Store Orders', icon: Package },
               { id: 'team', label: 'Team & Commissions', icon: Briefcase },
               { id: 'financials', label: 'Accounting & Sync', icon: Scale },
+              { id: 'brand_migration', label: 'Brand & Migration', icon: Sparkles },
             ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = activeTab === tab.id;
@@ -996,6 +1009,248 @@ export default function PosieStudioAdminPage() {
               </Card>
             </div>
           )}
+
+          {/* 7. BRAND & MIGRATION STUDIO (F103, F104, F105, F106) */}
+          {activeTab === 'brand_migration' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.6rem', color: 'var(--color-primary)', margin: 0 }}>
+                    Studio Brand &amp; Legacy Migration Suite
+                  </h2>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    Design Token Propagation (F106), Client Deduplication (F103), and Zero-Loss Migration (F104, F105)
+                  </span>
+                </div>
+              </div>
+
+              {/* F106: Brand Propagation & Historical Lock */}
+              <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      Brand Identity &amp; Token Propagation (F106)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      Synchronizes typography, colors, and logos across all booking surfaces with safe staging and rollback.
+                    </div>
+                  </div>
+                  <Badge variant={adminThemeStaged ? 'rose' : 'sage'}>
+                    {adminThemeStaged ? 'Draft Staged Preview' : 'Active: ' + adminThemeChoice}
+                  </Badge>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)', display: 'block', marginBottom: '6px' }}>
+                      Surface Token Sync
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '10px' }}>
+                      Primary Palette: <strong>{adminThemeChoice}</strong><br />
+                      Surfaces: Client Booking (/) • Studio OS (/admin) • SMS Notifications
+                    </div>
+                    <div
+                      style={{
+                        padding: '10px',
+                        borderRadius: '6px',
+                        color: '#FFF',
+                        textAlign: 'center',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        backgroundColor: adminThemeChoice === 'Sage & Linen' ? '#2D3E2F' : adminThemeChoice === 'Rose Terracotta' ? '#B36B5C' : '#1A1A1A',
+                      }}
+                    >
+                      Brand Primary Token Preview: {adminThemeChoice}
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--color-primary)', display: 'block', marginBottom: '6px' }}>
+                      Historical Document Immutability (Rule BR05 / DR04)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '8px' }}>
+                      Receipt #REC-2024-912 (Issued to Zendaya Coleman):<br />
+                      Baked Brand: <strong>Sage &amp; Linen (Permanent)</strong>
+                    </div>
+                    <div style={{ background: '#FFF', border: '1px solid #EAE6DF', padding: '8px 10px', borderRadius: '6px', fontSize: '0.76rem', color: '#666' }}>
+                      🔒 Invariant: Future theme changes never alter previously issued invoices, receipts, or signed records. Past documents retain original legal entity details and colors.
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button
+                    size="sm"
+                    variant={adminThemeChoice === 'Sage & Linen' && !adminThemeStaged ? 'primary' : 'outline'}
+                    onClick={() => {
+                      setAdminThemeChoice('Sage & Linen');
+                      setAdminThemeStaged(false);
+                    }}
+                  >
+                    Sage &amp; Linen (Default)
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={adminThemeChoice === 'Rose Terracotta' && !adminThemeStaged ? 'primary' : 'outline'}
+                    onClick={() => {
+                      setAdminThemeChoice('Rose Terracotta');
+                      setAdminThemeStaged(false);
+                    }}
+                  >
+                    Rose Terracotta
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={adminThemeChoice === 'Noir Atelier' && !adminThemeStaged ? 'primary' : 'outline'}
+                    onClick={() => {
+                      setAdminThemeChoice('Noir Atelier');
+                      setAdminThemeStaged(false);
+                    }}
+                  >
+                    Noir Atelier
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAdminThemeStaged(!adminThemeStaged)}
+                  >
+                    {adminThemeStaged ? 'Publish Staged Theme' : 'Stage Draft Preview'}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* F103: Client Deduplication & Household Contact Defense */}
+              <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      Client Deduplication &amp; Household Defense (F103)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      Probable match scoring with reversible merges and shared family phone protection.
+                    </div>
+                  </div>
+                  <Badge variant={adminDedupMerged ? (adminDedupUnmerged ? 'muted' : 'sage') : 'rose'}>
+                    {adminDedupMerged ? (adminDedupUnmerged ? 'Profiles Restored' : 'Merged: Zendaya Coleman') : 'Review Required (Match Score: 85)'}
+                  </Badge>
+                </div>
+
+                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '14px', marginBottom: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                    <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <strong>Target Profile:</strong> Zendaya Coleman<br />
+                      Phone: (310) 555-0199 • 14 Visits • 450 Pts
+                    </div>
+                    <div style={{ background: '#FFF', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <strong>Candidate Profile:</strong> Claire Coleman (Mother)<br />
+                      Phone: (310) 555-0199 (Shared) • 3 Visits • 75 Pts
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', color: '#555' }}>
+                    🛡 <strong>Shared Household Defense:</strong> Auto-merge is blocked because distinct first names indicate a family household sharing a landline/mobile number. Only an explicit practitioner override can combine these accounts.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {!adminDedupMerged ? (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        setAdminDedupMerged(true);
+                        setAdminDedupUnmerged(false);
+                      }}
+                    >
+                      Execute Reversible Merge (Snapshot Captured)
+                    </Button>
+                  ) : !adminDedupUnmerged ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAdminDedupUnmerged(true)}
+                    >
+                      <RotateCcw size={14} style={{ marginRight: '6px' }} />
+                      Unmerge Profiles (Restore Independent Accounts DR04)
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setAdminDedupMerged(false);
+                        setAdminDedupUnmerged(false);
+                      }}
+                    >
+                      Reset Deduplication Demo
+                    </Button>
+                  )}
+                </div>
+              </Card>
+
+              {/* F104 & F105: Historical Migration Staging & Live Cutover */}
+              <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      Legacy Migration Staging &amp; Live Cutover (F104, F105)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      Multi-platform mapping (GlossGenius / Vagaro / Boulevard) with Provenance Archive and Cutover Verification.
+                    </div>
+                  </div>
+                  <Badge variant={adminCutoverDone ? 'sage' : 'muted'}>
+                    {adminCutoverDone ? 'Cutover Certified ✓' : 'Staging in Progress'}
+                  </Badge>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', fontSize: '0.82rem', marginBottom: '14px' }}>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <strong>Staged Records:</strong>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-primary)', marginTop: '4px' }}>1,420 Clients</div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Source: {adminMigrationSource.toUpperCase()}</div>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <strong>Provenance Archive (F104):</strong>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#8F4A3E', marginTop: '4px' }}>384 Custom Fields</div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Formulas, old tags preserved</div>
+                  </div>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                    <strong>Active Obligations (F105):</strong>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#2B5329', marginTop: '4px' }}>$4,250 Reconciled</div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>Gift cards &amp; packages verified</div>
+                  </div>
+                </div>
+
+                {adminCutoverDone ? (
+                  <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#3A523A', marginBottom: '14px' }}>
+                    ✓ <strong>Cutover Certificate #CUTOVER-CERT-2026-01:</strong> Opening balance sheet validated. Historical customer obligations reconciled with 0 anomalies. Studio is authorized for production cutover.
+                  </div>
+                ) : null}
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(['glossgenius', 'vagaro', 'boulevard'] as const).map((source) => (
+                    <Button
+                      key={source}
+                      size="sm"
+                      variant={adminMigrationSource === source ? 'primary' : 'outline'}
+                      onClick={() => setAdminMigrationSource(source)}
+                    >
+                      {source === 'glossgenius' ? 'GlossGenius' : source === 'vagaro' ? 'Vagaro' : 'Boulevard'}
+                    </Button>
+                  ))}
+
+                  <Button
+                    size="sm"
+                    variant={adminCutoverDone ? 'outline' : 'primary'}
+                    onClick={() => setAdminCutoverDone(!adminCutoverDone)}
+                  >
+                    {adminCutoverDone ? 'Revoke Cutover Staging' : 'Issue Cutover Certificate (F105)'}
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
         </main>
       </div>
 
@@ -1044,7 +1299,7 @@ export default function PosieStudioAdminPage() {
             background: '#FFF5F3',
           }}
         >
-          🧪 Feature Lab (F001–F100)
+          🧪 Feature Lab (F001–F106)
         </a>
       </div>
     </div>

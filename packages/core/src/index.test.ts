@@ -213,6 +213,19 @@ import {
   compareBeforeAndAfter,
   grantMediaPermissionD12,
   revokeMediaPermissionD12,
+  findDuplicateCandidates,
+  mergeClientProfiles,
+  unmergeClientProfiles,
+  getDefaultMappingRules,
+  stageMigrationRecords,
+  runMigrationRehearsal,
+  executeLiveCutover,
+  createInitialBrandTheme,
+  stageBrandRevision,
+  publishBrandRevision,
+  issueBrandedDocument,
+  verifyHistoricalArtifactIntegrity,
+  rollbackBrandTheme,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -5114,6 +5127,295 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       });
 
       expect(postRevocationComparison.marketingEligible).toBe(false);
+    });
+  });
+
+  // F103: Client Deduplication & Reversible Merge
+  describe('Posie Core Logic - F103 (Client Deduplication & Reversible Merge)', () => {
+    it('proposes duplicate candidates, protects shared phones, and performs reversible merges', () => {
+      const clientA = {
+        id: 'cli_01',
+        firstName: 'Zendaya',
+        lastName: 'Coleman',
+        email: 'zendaya@example.com',
+        phone: '310-555-0199',
+        loyaltyPoints: 300,
+        visitHistoryCount: 5,
+        activePackagePassIds: ['pass_1'],
+        treatmentChartIds: ['chart_1'],
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z',
+      };
+
+      const clientB = {
+        id: 'cli_02',
+        firstName: 'Zendaya M',
+        lastName: 'Coleman',
+        email: 'zendaya@example.com', // exact email match
+        phone: '310-555-0199',
+        loyaltyPoints: 150,
+        visitHistoryCount: 2,
+        activePackagePassIds: ['pass_2'],
+        treatmentChartIds: ['chart_2'],
+        createdAt: '2025-06-01T00:00:00Z',
+        updatedAt: '2025-06-01T00:00:00Z',
+      };
+
+      const householdMember = {
+        id: 'cli_03',
+        firstName: 'Kazembe',
+        lastName: 'Coleman',
+        phone: '310-555-0199', // same phone, different first name
+        loyaltyPoints: 50,
+        visitHistoryCount: 1,
+        activePackagePassIds: [],
+        treatmentChartIds: [],
+        createdAt: '2025-08-01T00:00:00Z',
+        updatedAt: '2025-08-01T00:00:00Z',
+      };
+
+      // 1. Detect probable duplicates
+      const dupCandidates = findDuplicateCandidates({
+        targetClient: clientB,
+        existingClients: [clientA],
+      });
+
+      expect(dupCandidates.length).toBe(1);
+      expect(dupCandidates[0].confidenceScore).toBeGreaterThanOrEqual(80);
+      expect(dupCandidates[0].recommendation).toBe('merge_review');
+
+      // 2. Invariant: Same phone with distinct names flags as shared household contact, NOT a merge candidate
+      const householdCandidates = findDuplicateCandidates({
+        targetClient: householdMember,
+        existingClients: [clientA],
+      });
+
+      expect(householdCandidates[0].hasConflictingPhoneIdentity).toBe(true);
+      expect(householdCandidates[0].recommendation).toBe('shared_household_flag');
+
+      // Attempting to merge distinct household members without explicit name override throws error
+      expect(() => {
+        mergeClientProfiles({
+          masterClient: clientA,
+          duplicateClient: householdMember,
+          performedBy: 'Audrey (Director)',
+        });
+      }).toThrow(/Invariant Protected: Cannot merge clients sharing phone/);
+
+      // 3. Perform valid merge
+      const { masterClient: mergedMaster, duplicateClient: mergedDup, mergeLog } =
+        mergeClientProfiles({
+          masterClient: clientA,
+          duplicateClient: clientB,
+          performedBy: 'Audrey (Director)',
+        });
+
+      // Consolidated attributes
+      expect(mergedMaster.loyaltyPoints).toBe(450); // 300 + 150
+      expect(mergedMaster.visitHistoryCount).toBe(7); // 5 + 2
+      expect(mergedMaster.activePackagePassIds).toEqual(['pass_1', 'pass_2']);
+      expect(mergedMaster.treatmentChartIds).toEqual(['chart_1', 'chart_2']);
+      expect(mergedDup.isMerged).toBe(true);
+      expect(mergedDup.mergedIntoId).toBe('cli_01');
+
+      // 4. Invariant: Reversible unmerge restores both original records exactly
+      const { restoredMaster, restoredDuplicate } = unmergeClientProfiles(mergeLog);
+      expect(restoredMaster.loyaltyPoints).toBe(300);
+      expect(restoredMaster.visitHistoryCount).toBe(5);
+      expect(restoredDuplicate.isMerged).toBe(false);
+      expect(restoredDuplicate.loyaltyPoints).toBe(150);
+    });
+  });
+
+  // F104: Historical Migration Mapping & Provenance Archive
+  describe('Posie Core Logic - F104 (Historical Migration Mapping & Provenance Archive)', () => {
+    it('maps legacy platform columns, preserves unsupported fields in provenance archive, and flags anomalies', () => {
+      const mappingRules = getDefaultMappingRules('glossgenius');
+
+      const rawRows = [
+        {
+          'First Name': 'Hailey',
+          'Last Name': 'Bieber',
+          'Client Phone': '310-555-7788',
+          'Client Email': 'hailey@example.com',
+          'Gift Card Balance': '$150.00',
+          'Legacy Custom Hair Formula 2021': 'Formula: 9N + 20 Vol Glaze', // Unsupported field
+        },
+        {
+          'First Name': '',
+          'Last Name': '',
+          'Client Phone': '310-555-0000',
+          'Gift Card Balance': '-$25.00', // Anomaly: Negative balance
+        },
+      ];
+
+      const batch = stageMigrationRecords({
+        batchId: 'BATCH-GG-01',
+        sourcePlatform: 'glossgenius',
+        mappingRules,
+        rawRows,
+      });
+
+      expect(batch.totalRows).toBe(2);
+      expect(batch.validRowsCount).toBe(1);
+      expect(batch.errorRowsCount).toBe(1);
+
+      const validClient = batch.stagedClients[0];
+      expect(validClient.firstName).toBe('Hailey');
+      expect(validClient.giftCardBalance).toBe(150.0);
+      // Invariant: Unsupported legacy field preserved in provenanceArchive
+      expect(validClient.provenanceArchive.length).toBe(1);
+      expect(validClient.provenanceArchive[0].sourceColumn).toBe('Legacy Custom Hair Formula 2021');
+      expect(validClient.provenanceArchive[0].rawValue).toContain('Formula: 9N');
+
+      const corruptedClient = batch.stagedClients[1];
+      expect(corruptedClient.validationStatus).toBe('error');
+      expect(corruptedClient.validationErrors).toContain('Negative gift card balance (-25) detected.');
+    });
+  });
+
+  // F105: Migration Rehearsal & Live Cutover
+  describe('Posie Core Logic - F105 (Migration Rehearsal & Live Cutover)', () => {
+    it('runs rehearsal dry-run, reconciles active customer obligations, and issues cutover certificate', () => {
+      const validBatch = stageMigrationRecords({
+        batchId: 'BATCH-VALID-01',
+        sourcePlatform: 'vagaro',
+        mappingRules: getDefaultMappingRules('vagaro'),
+        rawRows: [
+          {
+            FirstName: 'Chloe',
+            LastName: 'Bennett',
+            CellPhone: '310-555-4422',
+            EmailAddress: 'chloe@example.com',
+            GiftBalance: '50.00',
+            RemainingPackages: '3',
+          },
+        ],
+      });
+
+      // 1. Rehearsal on clean batch
+      const rehearsalClean = runMigrationRehearsal({
+        stagedBatch: validBatch,
+        futureAppointmentsCount: 4,
+      });
+
+      expect(rehearsalClean.canProceedToCutover).toBe(true);
+      expect(rehearsalClean.reconciliation.activeGiftCardLiabilityDollars).toBe(50.0);
+      expect(rehearsalClean.reconciliation.activePackageUnitsRemaining).toBe(3);
+
+      // 2. Rehearsal on corrupted batch with active obligations blocks cutover
+      const corruptedBatch = stageMigrationRecords({
+        batchId: 'BATCH-CORRUPT-01',
+        sourcePlatform: 'vagaro',
+        mappingRules: getDefaultMappingRules('vagaro'),
+        rawRows: [
+          {
+            FirstName: '',
+            LastName: '', // Missing name error
+            GiftBalance: '100.00', // Active obligation trapped in error row
+          },
+        ],
+      });
+
+      const rehearsalCorrupted = runMigrationRehearsal({
+        stagedBatch: corruptedBatch,
+      });
+
+      expect(rehearsalCorrupted.canProceedToCutover).toBe(false);
+      expect(rehearsalCorrupted.blockingReasons[0]).toContain('corrupted/error rows');
+
+      // Approving interim redemption workflow allows controlled cutover
+      const rehearsalApproved = runMigrationRehearsal({
+        stagedBatch: corruptedBatch,
+        interimRedemptionWorkflowApproved: true,
+      });
+      expect(rehearsalApproved.canProceedToCutover).toBe(true);
+
+      // 3. Live cutover execution
+      const certificate = executeLiveCutover({
+        stagedBatch: validBatch,
+        rehearsalResult: rehearsalClean,
+        approvedByManager: 'Audrey (Salon Owner)',
+        sampleRecordsSpotChecked: true,
+        cutoverTime: '2026-10-27T16:00:00Z',
+      });
+
+      expect(certificate.status).toBe('cutover_completed');
+      expect(certificate.openingBalances.giftCardLiabilityTotal).toBe(50.0);
+      expect(certificate.openingBalances.packageUnitsTotal).toBe(3);
+    });
+  });
+
+  // F106: Brand Changes Across All Surfaces (Rules BR02, BR03, BR05, BR07, BR10, DR04)
+  describe('Posie Core Logic - F106 (Brand Changes Across Surfaces - Rules BR03, BR05, BR10, DR04)', () => {
+    it('stages brand revisions, locks previously issued documents against theme updates, and supports rollback', () => {
+      const v1Tokens = {
+        primaryColor: '#2C3E30',
+        secondaryColor: '#8A9A86',
+        accentColor: '#C67D6E',
+        headlineFont: 'Newsreader',
+        bodyFont: 'Manrope',
+        logoSvg: '<svg id="v1-emblem"/>',
+        businessName: 'Posie Beauty Atelier',
+        tagline: 'Glow up without the headache',
+        contactEmail: 'hello@posie.com',
+        contactPhone: '310-555-0199',
+      };
+
+      // 1. Initial published theme
+      const themeV1 = createInitialBrandTheme({
+        tokens: v1Tokens,
+        publishedBy: 'Design Lead',
+      });
+      expect(themeV1.versionNumber).toBe(1);
+      expect(themeV1.status).toBe('published');
+
+      // 2. Issue document under Theme v1
+      const issuedInvoiceV1 = issueBrandedDocument({
+        documentId: 'INV-10992',
+        title: 'HydraFacial Treatment Invoice',
+        content: 'Services rendered: $120.00. Paid via Card.',
+        activeTheme: themeV1,
+      });
+
+      expect(issuedInvoiceV1.brandVersionApplied).toBe(1);
+      expect(issuedInvoiceV1.bakedBrandTokens.primaryColor).toBe('#2C3E30');
+
+      // 3. Stage brand revision (e.g. Autumn Refresh: Primary color becomes Dark Forest #1D2B20)
+      const stagedV2 = stageBrandRevision({
+        currentTheme: themeV1,
+        updatedTokens: {
+          primaryColor: '#1D2B20',
+          accentColor: '#D97757',
+        },
+        changelogNotes: 'Autumn Palette Refresh',
+      });
+      expect(stagedV2.status).toBe('draft');
+      expect(stagedV2.versionNumber).toBe(2);
+
+      // 4. Publish brand revision
+      const { publishedTheme: themeV2 } = publishBrandRevision({
+        stagedTheme: stagedV2,
+        publishedBy: 'Creative Director',
+      });
+      expect(themeV2.status).toBe('published');
+      expect(themeV2.tokens.primaryColor).toBe('#1D2B20');
+
+      // 5. Invariant DR04 & BR05: Previously issued invoice permanently preserves Theme v1 tokens
+      const isHistoricalIntact = verifyHistoricalArtifactIntegrity({
+        issuedDocument: issuedInvoiceV1,
+        newTheme: themeV2,
+      });
+      expect(isHistoricalIntact).toBe(true);
+      expect(issuedInvoiceV1.bakedBrandTokens.primaryColor).toBe('#2C3E30'); // Original #2C3E30 unchanged!
+
+      // 6. Safe rollback to v1 theme
+      const rolledBackTheme = rollbackBrandTheme({
+        historicalTheme: themeV1,
+        rolledBackBy: 'Design Lead',
+      });
+      expect(rolledBackTheme.tokens.primaryColor).toBe('#2C3E30');
+      expect(rolledBackTheme.changelogNotes).toContain('Rollback to Theme Version 1');
     });
   });
 
