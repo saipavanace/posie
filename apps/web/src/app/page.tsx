@@ -40,6 +40,10 @@ import {
   Star,
   UserCheck,
   UserX,
+  Gift,
+  Tag,
+  Percent,
+  Share2,
 } from 'lucide-react';
 
 // Brand Information
@@ -72,20 +76,28 @@ export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // F047 Purchase Order State
-  const [poReceivedUnits, setPoReceivedUnits] = useState(15);
+  // F051 Referral State
+  const [copiedReferral, setCopiedReferral] = useState(false);
 
-  // F048 Campaign Send State
-  const [campaignSent, setCampaignSent] = useState(false);
-
-  // F049 Segment Filter Tab
-  const [activeSegmentTab, setActiveSegmentTab] = useState<'included' | 'excluded'>('included');
-
-  // F050 Review Feedback State
-  const [selectedRating, setSelectedRating] = useState<number | null>(null);
-  const [reviewFeedbackSubmitted, setReviewFeedbackSubmitted] = useState(false);
+  // F052 Promo State
+  const [promoCodeInput, setPromoCodeInput] = useState('SPRING20');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState(24);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
+  const finalPrice = promoApplied ? activeServiceObj.price - discountAmount : activeServiceObj.price;
+
+  const handleApplyPromo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (promoCodeInput.trim().toUpperCase() === 'SPRING20') {
+      // 20% discount on selected service
+      const disc = Math.round(activeServiceObj.price * 0.2);
+      setDiscountAmount(Math.min(disc, 30)); // Capped at $30
+      setPromoApplied(true);
+    } else {
+      alert('Invalid promo code. Try "SPRING20" for 20% off.');
+    }
+  };
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
@@ -138,7 +150,10 @@ export default function PosieStudioPage() {
           {services.map((svc) => (
             <Card
               key={svc.id}
-              onClick={() => setSelectedService(svc.id)}
+              onClick={() => {
+                setSelectedService(svc.id);
+                setPromoApplied(false);
+              }}
               style={{
                 cursor: 'pointer',
                 borderColor: selectedService === svc.id ? 'var(--color-secondary)' : 'var(--color-border)',
@@ -163,231 +178,128 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* F047: Purchase Orders & Vendor Receiving */}
+      {/* F051: Client Referral Program ("Give $20, Get $20") */}
       <section style={{ marginBottom: '36px' }}>
-        <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
+        <Card style={{ borderLeft: '4px solid var(--color-secondary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Truck size={18} color="var(--color-primary)" />
+              <Gift size={18} color="var(--color-secondary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 047: Purchase Orders & Partial Receiving
+                Feature 051: Client Referral Program (Give $20, Get $20)
               </strong>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant={poReceivedUnits < 20 ? 'rose' : 'sage'}>
-                {poReceivedUnits < 20 ? 'Partially Received (5 Outstanding)' : 'Fully Received'}
-              </Badge>
-              <Badge variant="muted">PO-2026-0012</Badge>
+              <Badge variant="sage">Available Credit: $20.00</Badge>
+              <Badge variant="muted">Code: SARAH-GLOW</Badge>
             </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Supplier ordering with traceable receiving. Missing items remain visibly outstanding until fully reconciled into the stock ledger.
+            Friends get $20 off their first treatment; you get $20 credit when their visit completes. Self-referrals and cancellations are strictly safeguarded.
           </p>
 
-          <div style={{ background: '#FAF8F5', borderRadius: '8px', padding: '14px', marginBottom: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <strong>Vendor: Organic Botanical Labs</strong>
-              <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Approved by Chloe V.</span>
+          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block' }}>Your Personal Share Link</span>
+              <code style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+                https://glow.posieatelier.com/refer?code=SARAH-GLOW
+              </code>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '10px', fontSize: '0.82rem', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>
-              <span><strong>Item:</strong> Soothing Oat Milk Cleanser (150ml)</span>
-              <span><strong>Ordered:</strong> 20 units</span>
-              <span><strong>Received:</strong> {poReceivedUnits} units</span>
-              <span style={{ color: poReceivedUnits < 20 ? '#B36B5C' : 'var(--color-secondary)', fontWeight: 600 }}>
-                <strong>Outstanding:</strong> {20 - poReceivedUnits} units
-              </span>
-            </div>
-          </div>
-
-          {poReceivedUnits < 20 ? (
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                setPoReceivedUnits(20);
-                alert('Remaining 5 units received into stock! Ledger entry generated under Lot #LOT-BOT-2026B.');
+                setCopiedReferral(true);
+                setTimeout(() => setCopiedReferral(false), 2500);
               }}
             >
-              <Package size={14} style={{ marginRight: '6px' }} /> Receive Remaining 5 Units into Stock
+              <Share2 size={13} style={{ marginRight: '6px' }} />
+              {copiedReferral ? 'Copied to Clipboard!' : 'Copy Referral Link'}
             </Button>
-          ) : (
-            <div style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
-              ✓ All 20 units received, audited, and added to sellable stock.
-            </div>
-          )}
+          </div>
         </Card>
       </section>
 
-      {/* F048 & F049: Email Campaign Builder & Client Segments Inspector */}
+      {/* F052: Promotion Controls & Margin Safeguards */}
       <section style={{ marginBottom: '36px' }}>
         <Card style={{ backgroundColor: '#FAF8F5' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Mail size={18} color="var(--color-secondary)" />
+              <Tag size={18} color="var(--color-primary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 048 & 049: Campaign Builder & Segment Inspector
+                Feature 052: Promotion Controls & Margin Safeguards
               </strong>
             </div>
-            <Badge variant="sage">Send-Time Consent Active</Badge>
+            <Badge variant="sage">Anti-Stacking Protected</Badge>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Transparent audience segmentation. Inspect exactly who is included and why others were excluded. Consent is re-verified at the second of send.
+            Coupons respect service eligibility, expiry dates, and owner margin floors. Discounts never stack silently.
           </p>
 
-          <div style={{ background: '#FFF', borderRadius: '8px', border: '1px solid var(--color-border)', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <div>
-                <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
-                  Spring Skin Refresh Promo
-                </strong>
-                <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                  Target Segment: <strong>First-Visit Completed Welcome Series</strong>
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={() => setActiveSegmentTab('included')}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: '0.78rem',
-                    borderRadius: '6px',
-                    border: '1px solid var(--color-border)',
-                    background: activeSegmentTab === 'included' ? 'var(--color-primary)' : '#FFF',
-                    color: activeSegmentTab === 'included' ? '#FFF' : 'var(--color-primary)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <UserCheck size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                  Included (1)
-                </button>
-                <button
-                  onClick={() => setActiveSegmentTab('excluded')}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: '0.78rem',
-                    borderRadius: '6px',
-                    border: '1px solid var(--color-border)',
-                    background: activeSegmentTab === 'excluded' ? 'var(--color-primary)' : '#FFF',
-                    color: activeSegmentTab === 'excluded' ? '#FFF' : 'var(--color-primary)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <UserX size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                  Excluded & Reasons (2)
-                </button>
-              </div>
-            </div>
-
-            {/* Segment Inspector Details */}
-            {activeSegmentTab === 'included' ? (
-              <div style={{ background: '#FAF8F5', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem' }}>
-                <strong style={{ color: 'var(--color-secondary)' }}>✓ Emma Watson (emma@example.com)</strong> — 1 completed visit, opted-in to marketing.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem' }}>
-                <div style={{ background: '#FAF8F5', padding: '8px 12px', borderRadius: '6px' }}>
-                  <strong>Regular VIP (regular@example.com)</strong>: Excluded because client has 4 completed visits (filter requires exactly 1).
-                </div>
-                <div style={{ background: '#FAF8F5', padding: '8px 12px', borderRadius: '6px' }}>
-                  <strong>Opted Out Client (optout@example.com)</strong>: Excluded because client opted out of marketing communications.
-                </div>
-              </div>
+          <form onSubmit={handleApplyPromo} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px' }}>
+            <input
+              type="text"
+              value={promoCodeInput}
+              onChange={(e) => setPromoCodeInput(e.target.value)}
+              placeholder="Enter promo code (e.g. SPRING20)..."
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                width: '200px',
+                textTransform: 'uppercase',
+              }}
+            />
+            <Button variant="primary" size="sm" type="submit">
+              Apply Coupon
+            </Button>
+            {promoApplied && (
+              <span style={{ fontSize: '0.82rem', color: 'var(--color-secondary)', fontWeight: 600 }}>
+                ✓ SPRING20 Applied: -$24.00 (20% off, max $30 cap respected)
+              </span>
             )}
-          </div>
+          </form>
 
-          {campaignSent ? (
-            <div style={{ background: 'var(--color-secondary-light)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem' }}>
-              <strong>✓ Campaign Dispatched!</strong> Delivered to 1 opted-in recipient. 1 opted-out client excluded at send-time.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button variant="primary" size="sm" onClick={() => setCampaignSent(true)}>
-                <Send size={13} style={{ marginRight: '6px' }} /> Execute Campaign Send
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => alert('Sending test preview email to team@posieatelier.com...')}>
-                Send Test Preview
-              </Button>
-            </div>
-          )}
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+            ℹ️ <em>Promotional discounts cannot be combined with existing service packages. Owner margin floor ($50.00) enforced.</em>
+          </div>
         </Card>
       </section>
 
-      {/* F050: Fair Review Requests (Anti-Gating Compliant) */}
+      {/* F053: Approved Document Repository & Governance */}
       <section style={{ marginBottom: '36px' }}>
-        <Card style={{ borderLeft: '4px solid var(--color-tertiary)' }}>
+        <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Star size={18} color="var(--color-tertiary)" />
+              <FileCheck2 size={18} color="var(--color-secondary)" />
               <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 050: Fair Review Request (Anti-Gating Compliant)
+                Feature 053: Approved Document Repository & Governance
               </strong>
             </div>
-            <Badge variant="sage">FTC Compliant • No Review Gating</Badge>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Clinician Reviewed</Badge>
+              <Badge variant="muted">Version 1 (Locked)</Badge>
+            </div>
           </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            We invite honest reviews directly. The public Google review link is never hidden or conditional on giving a 5-star private rating.
+            Governed clause repository. Legal and clinical consent terms require named specialist review before catalog publication.
           </p>
 
-          <div style={{ background: '#FAF8F5', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-            <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', color: 'var(--color-primary)' }}>
-              How was your Hydra-Dew Facial with Chloe V.?
-            </h4>
-            <p style={{ margin: '0 0 14px 0', fontSize: '0.83rem', color: 'var(--color-text-muted)' }}>
-              Whether raving praise or constructive feedback, our direct Google review page is open to everyone:
-            </p>
-
-            <div style={{ marginBottom: '16px' }}>
-              <a
-                href="https://g.page/r/posie-austin/review"
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'var(--color-primary)',
-                  color: '#FAF8F5',
-                  padding: '9px 16px',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-              >
-                <Star size={14} color="var(--color-tertiary)" /> Leave an Honest Review on Google
-              </a>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                Optional Private Studio Rating (For Internal Improvement Only):
+          <div style={{ background: '#FAF8F5', borderRadius: '8px', padding: '14px', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)' }}>
+                TCA Chemical Peel Informed Consent & Contraindication Waiver
+              </strong>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                Reviewed by Dr. Evelyn Reed, MD (Clinical Advisor)
               </span>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => {
-                      setSelectedRating(star);
-                      setReviewFeedbackSubmitted(true);
-                    }}
-                    style={{
-                      background: selectedRating && selectedRating >= star ? 'var(--color-tertiary)' : '#FFF',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      cursor: 'pointer',
-                      fontSize: '0.82rem',
-                    }}
-                  >
-                    ★ {star}
-                  </button>
-                ))}
-                {reviewFeedbackSubmitted && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-secondary)', marginLeft: '8px' }}>
-                    ✓ Private feedback recorded. Google link remains active above.
-                  </span>
-                )}
-              </div>
+            </div>
+            <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem', color: 'var(--color-text)', lineHeight: 1.5 }}>
+              "I understand that Level 2 TCA peels cause epidermal flaking for 5–7 days. I attest I have not used oral Accutane in the last 6 months or topical tretinoin in the last 5 days..."
+            </p>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Mapped automatically to: <strong>Level 2 Chemical Peel</strong> & <strong>Glass Glow Facial with Peel Add-On</strong>
             </div>
           </div>
         </Card>
@@ -402,7 +314,18 @@ export default function PosieStudioPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: '20px' }}>
             <span style={{ color: 'var(--color-text-muted)' }}>Selected Treatment:</span>
-            <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
+            <span>
+              {promoApplied ? (
+                <>
+                  <span style={{ textDecoration: 'line-through', color: 'var(--color-text-muted)', marginRight: '8px' }}>
+                    ${activeServiceObj.price}
+                  </span>
+                  <strong style={{ color: 'var(--color-primary)', fontSize: '1.15rem' }}>${finalPrice}</strong>
+                </>
+              ) : (
+                <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
+              )}
+            </span>
           </div>
 
           {bookingConfirmed ? (

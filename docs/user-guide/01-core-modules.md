@@ -286,3 +286,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F050 — Fair Review Requests (Anti-Gating Compliant)
 * **What it is:** Automated, post-visit review invitations connecting clients directly to public platforms like Google Maps.
 * **Key Invariant (WB F44, U11):** **Strictly anti-gating (FTC compliant).** All completed clients receive the unrestricted public review link upfront. Private satisfaction ratings are collected for internal improvement only and never suppress or condition access to public review platforms.
+
+
+---
+
+## F051 — Client Referral Tracking & Completed-Visit Attribution
+* **What it is:** Word-of-mouth referral program generating attributable client referral codes (`SARAH-GLOW`) and share links.
+* **Key Invariant (WB F45):** Referral credits ($20 credit) disburse **only after the referred client completes their first qualifying visit**. Self-referrals (matching email, phone, or client ID), duplicate claims, and canceled visits are strictly prevented from generating rewards.
+
+---
+
+## F052 — Promotion Controls & Margin Safeguards
+* **What it is:** Promotional discount engine managing coupon codes with date windows, service applicability, minimum order subtotals, and maximum discount caps.
+* **Key Invariant (WB F47):** Mutually exclusive discounts **never stack silently**. Stacking is rejected unless both promotions explicitly permit it. Enforces owner margin floors so discounts can never push prices below the baseline operational cost.
+
+---
+
+## F053 — Approved Document Repository & Governance
+* **What it is:** Governed policy and consent clause repository mapping versioned legal and clinical disclosures directly to salon service catalogs.
+* **Key Invariant (DR01, DR02):** Editing clinical or informed consent clauses requires **named specialist review** (differentiating business-supplied, counsel-reviewed, and clinician-reviewed content) prior to publication, without misleading blanket "compliant" stamps.

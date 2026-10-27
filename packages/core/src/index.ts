@@ -48,3 +48,6 @@ export * from './purchasing';
 export * from './segments';
 export * from './campaigns';
 export * from './reviews';
+export * from './referrals';
+export * from './promotions';
+export * from './governance';

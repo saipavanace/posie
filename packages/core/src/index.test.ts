@@ -50,6 +50,15 @@ import {
   createFairReviewInvitation,
   formatFairReviewMessage,
   recordPrivateFeedback,
+  generateClientReferralProfile,
+  claimReferralOnBooking,
+  settleReferralOnVisitOutcome,
+  createPromotionCoupon,
+  applyPromotionCode,
+  importDocumentClause,
+  recordClauseReview,
+  publishDocumentClause,
+  getApprovedClausesForService,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -1159,5 +1168,194 @@ describe('Posie Core Logic - F050 (Fair Review Requests & Anti-Gating)', () => {
         lastReviewRequestSentAt: new Date().toISOString(), // sent today
       })
     ).toThrow(/received a review request recently/);
+  });
+});
+
+
+describe('Posie Core Logic - F051 (Referral Tracking & Completed-Visit Attribution)', () => {
+  const referrer = generateClientReferralProfile({
+    clientId: '11111111-1111-1111-1111-111111111111',
+    clientName: 'Sarah Jenkins',
+    clientEmail: 'sarah@example.com',
+    clientPhone: '+1-555-0101',
+    customSlug: 'SARAH-GLOW',
+  });
+
+  it('rejects self-referrals and prevents duplicate referral abuse', () => {
+    expect(referrer.referralCode).toBe('SARAH-GLOW');
+
+    // Self-referral attempt
+    const selfClaim = claimReferralOnBooking({
+      referrerProfile: referrer,
+      referredClient: {
+        id: '11111111-1111-1111-1111-111111111111', // same ID
+        name: 'Sarah Jenkins',
+        email: 'sarah@example.com',
+        phone: '+1-555-0101',
+      },
+      appointmentId: '22222222-2222-2222-2222-222222222222',
+    });
+
+    expect(selfClaim.status).toBe('rejected_self_referral');
+
+    // Valid referral claim
+    const validClaim = claimReferralOnBooking({
+      referrerProfile: referrer,
+      referredClient: {
+        id: '33333333-3333-3333-3333-333333333333',
+        name: 'Jessica Day',
+        email: 'jessica@example.com',
+        phone: '+1-555-0202',
+      },
+      appointmentId: '44444444-4444-4444-4444-444444444444',
+    });
+
+    expect(validClaim.status).toBe('pending_first_visit');
+
+    // Duplicate referral claim on same client
+    const duplicateClaim = claimReferralOnBooking({
+      referrerProfile: referrer,
+      referredClient: {
+        id: '33333333-3333-3333-3333-333333333333',
+        name: 'Jessica Day',
+        email: 'jessica@example.com',
+        phone: '+1-555-0202',
+      },
+      appointmentId: '55555555-5555-5555-5555-555555555555',
+      existingClaimsForReferredClient: [validClaim],
+    });
+
+    expect(duplicateClaim.status).toBe('rejected_already_referred');
+  });
+
+  it('credits referrer only upon visit completion and voids reward on cancellation', () => {
+    const claim = claimReferralOnBooking({
+      referrerProfile: referrer,
+      referredClient: {
+        id: '66666666-6666-6666-6666-666666666666',
+        name: 'Cece Parekh',
+        email: 'cece@example.com',
+        phone: '+1-555-0303',
+      },
+      appointmentId: '77777777-7777-7777-7777-777777777777',
+    });
+
+    // Cancellation voids reward
+    const canceledResult = settleReferralOnVisitOutcome({
+      claim,
+      referrerProfile: referrer,
+      visitOutcome: 'canceled',
+    });
+    expect(canceledResult.updatedClaim.status).toBe('voided_canceled_visit');
+    expect(canceledResult.updatedReferrerProfile.availableCreditsCents).toBe(0);
+
+    // Completed visit credits $20.00 (2000 cents)
+    const completedResult = settleReferralOnVisitOutcome({
+      claim,
+      referrerProfile: referrer,
+      visitOutcome: 'completed',
+    });
+    expect(completedResult.updatedClaim.status).toBe('qualified_credited');
+    expect(completedResult.updatedReferrerProfile.availableCreditsCents).toBe(2000);
+  });
+});
+
+describe('Posie Core Logic - F052 (Promotion Controls & Margin Safeguards)', () => {
+  const promo = createPromotionCoupon({
+    code: 'SPRING20',
+    title: 'Spring 20% Off Facials',
+    discountType: 'percentage',
+    discountValue: 20,
+    minSubtotalCents: 10000, // $100 min
+    maxDiscountCents: 3000, // max $30 cap
+    validDaysDuration: 14,
+    canStackWithOtherCoupons: false,
+  });
+
+  it('calculates discount within caps, enforces minimums, and blocks silent stacking', () => {
+    expect(promo.code).toBe('SPRING20');
+
+    // 1. Below minimum spend ($80 < $100) -> rejected
+    const belowMin = applyPromotionCode({
+      coupon: promo,
+      serviceId: '11111111-1111-1111-1111-111111111111',
+      subtotalCents: 8000,
+    });
+    expect(belowMin.isApplied).toBe(false);
+    expect(belowMin.rejectionReason).toContain('below minimum requirement');
+
+    // 2. Qualifying spend ($200 facial) -> 20% would be $40, but capped at $30
+    const valid = applyPromotionCode({
+      coupon: promo,
+      serviceId: '11111111-1111-1111-1111-111111111111',
+      subtotalCents: 20000,
+      ownerMarginFloorCents: 10000,
+    });
+    expect(valid.isApplied).toBe(true);
+    expect(valid.discountCents).toBe(3000); // capped at 3000 cents ($30)
+    expect(valid.finalPriceCents).toBe(17000);
+
+    // 3. Stacking rejection: attempting to stack with an existing non-stackable promo
+    const secondPromo = createPromotionCoupon({
+      code: 'EXTRA10',
+      title: 'Extra $10 Off',
+      discountType: 'fixed_cents',
+      discountValue: 1000,
+      canStackWithOtherCoupons: false,
+    });
+
+    const stackAttempt = applyPromotionCode({
+      coupon: secondPromo,
+      serviceId: '11111111-1111-1111-1111-111111111111',
+      subtotalCents: 20000,
+      currentlyAppliedCoupons: [promo], // promo does not allow stacking
+    });
+
+    expect(stackAttempt.isApplied).toBe(false);
+    expect(stackAttempt.rejectionReason).toContain('cannot be combined');
+  });
+});
+
+describe('Posie Core Logic - F053 (Approved Document Repository & Governance)', () => {
+  const servicePeelId = '22222222-2222-2222-2222-222222222222';
+
+  const clauseDraft = importDocumentClause({
+    title: 'TCA Chemical Peel Informed Consent',
+    category: 'informed_consent',
+    contentMarkdown: 'I understand that Level 2 TCA peels cause epidermal peeling for 5-7 days...',
+    applicableServiceIds: [servicePeelId],
+  });
+
+  it('enforces specialist review before publication and maps to service catalogs', () => {
+    expect(clauseDraft.isPublished).toBe(false);
+
+    // Attempting to publish without named reviewer throws
+    expect(() => publishDocumentClause(clauseDraft)).toThrow(
+      /require a named reviewer before publication/
+    );
+
+    // Conduct named clinician review
+    const reviewed = recordClauseReview(clauseDraft, {
+      reviewerStaffId: '99999999-9999-9999-9999-999999999999',
+      reviewerName: 'Dr. Evelyn Reed, MD (Clinical Advisor)',
+      reviewType: 'clinician_reviewed',
+      reviewNotes: 'Verified contraindication disclosures against latest dermatology standards.',
+    });
+
+    expect(reviewed.reviewType).toBe('clinician_reviewed');
+    expect(reviewed.reviewerName).toContain('Dr. Evelyn Reed');
+
+    // Publishing now succeeds
+    const published = publishDocumentClause(reviewed);
+    expect(published.isPublished).toBe(true);
+
+    // Service catalog mapping retrieval
+    const mapped = getApprovedClausesForService([published], servicePeelId);
+    expect(mapped.length).toBe(1);
+    expect(mapped[0].title).toBe('TCA Chemical Peel Informed Consent');
+
+    // Unrelated service gets empty list
+    const unrelated = getApprovedClausesForService([published], '88888888-8888-8888-8888-888888888888');
+    expect(unrelated.length).toBe(0);
   });
 });
