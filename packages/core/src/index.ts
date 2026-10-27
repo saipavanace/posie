@@ -11,3 +11,6 @@ export * from './modules';
 export * from './onboarding';
 export * from './demo';
 export * from './preferences';
+export * from './accessibility';
+export * from './tasks';
+export * from './imports';

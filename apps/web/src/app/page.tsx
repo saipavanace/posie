@@ -25,6 +25,10 @@ import {
   Volume2,
   HeartHandshake,
   AlertCircle,
+  Accessibility,
+  CheckSquare2,
+  UploadCloud,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 // Brand Information
@@ -83,74 +87,62 @@ const staffMembers = [
   },
 ];
 
-// F011: Guided Setup Checklist
-const initialSetupSteps = [
-  { key: 'brand', label: 'Studio Identity & Brand Colors', done: true },
-  { key: 'catalog', label: 'First Treatment Configured', done: true },
-  { key: 'policy', label: 'Booking & Cancellation Policies', done: true },
-  { key: 'bank', label: 'Connect Payout Bank Account', done: false, blocker: 'Pending Stripe Connect verification' },
+// F015: Initial Daily Tasks
+const initialDailyTasks = [
+  {
+    id: 'task-1',
+    type: 'incomplete_form',
+    title: 'Missing Chemical Peel Waiver for Maya',
+    details: 'Appointment today at 2:30 PM with Chloe requires signed waiver before room entry.',
+    status: 'pending',
+  },
+  {
+    id: 'task-2',
+    type: 'unpaid_deposit',
+    title: 'Collect 20% Deposit from Sarah L.',
+    details: 'Hold window expires in 4 hours for Saturday 11:00 AM slot.',
+    status: 'pending',
+  },
+  {
+    id: 'task-3',
+    type: 'low_stock_warning',
+    title: 'Restock Hyaluronic Serum Ampoules',
+    details: 'Only 3 units left in studio backbar (reorder recommended).',
+    status: 'completed',
+  },
 ];
 
 export default function PosieStudioPage() {
   const [selectedService, setSelectedService] = useState<string>('s1');
   const [selectedStaff, setSelectedStaff] = useState<string>('st1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
-  // F010 Progressive State
-  const [teamModule, setTeamModule] = useState(false);
-
-  // F012 Demo Sandbox Mode State
+  // F012 Demo Mode
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // F013 Client Service Preferences State
+  // F013 & F014 Client Preference & Accessibility States
   const [preferredName, setPreferredName] = useState('Maya');
-  const [pronunciation, setPronunciation] = useState('MY-uh');
-  const [conversationPref, setConversationPref] = useState<'gentle_small_talk' | 'quiet_visit_only' | 'loves_chatting'>('quiet_visit_only');
-  const [extraBlanket, setExtraBlanket] = useState(true);
-  const [dimLights, setDimLights] = useState(true);
+  const [quietVisit, setQuietVisit] = useState(true);
+  const [stepFree, setStepFree] = useState(true);
+  const [scentFree, setSentFree] = useState(false);
+
+  // F015 Daily Task Queue State
+  const [tasks, setTasks] = useState(initialDailyTasks);
+
+  // F016 CSV Template Preview State
+  const [csvUploaded, setCsvUploaded] = useState(false);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
   const activeStaffObj = staffMembers.find((s) => s.id === selectedStaff) || staffMembers[0];
 
-  const directLinkUrl = `https://posie.app/posie-austin/book?service=${selectedService}&specialist=${selectedStaff}&src=qr_card`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(directLinkUrl);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  const handleResolveTask = (taskId: string) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } : t))
+    );
   };
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
-      {/* F012 Demo Sandbox Indicator Banner */}
-      {isDemoMode && (
-        <div
-          style={{
-            backgroundColor: '#FFF3CD',
-            border: '1px solid #FFE69C',
-            color: '#856404',
-            padding: '12px 20px',
-            borderRadius: '12px',
-            marginBottom: '24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '0.9rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PlayCircle size={18} />
-            <span>
-              <strong>Demo Sandbox Active (F012):</strong> You are exploring safely with fictional clients. No real SMS messages or credit card charges will be sent.
-            </span>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setIsDemoMode(false)}>
-            Exit Demo Mode
-          </Button>
-        </div>
-      )}
-
       {/* Brand Header */}
       <header
         style={{
@@ -185,249 +177,213 @@ export default function PosieStudioPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {!isDemoMode && (
-            <Button variant="outline" size="sm" onClick={() => setIsDemoMode(true)}>
-              <PlayCircle size={14} style={{ marginRight: '6px' }} />
-              Try Demo Sandbox (F012)
-            </Button>
-          )}
-
-          <Badge variant={teamModule ? 'rose' : 'sage'}>
-            {teamModule ? 'Team Studio Mode' : 'Solo Practitioner Mode'}
-          </Badge>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Badge variant="sage">Features F001 - F016 Live</Badge>
+          <Badge variant="rose">Atelier Studio</Badge>
         </div>
       </header>
 
-      {/* F011: Guided First-Day Setup Progress Tracker */}
-      <section style={{ marginBottom: '40px' }}>
-        <Card style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Compass size={20} color="var(--color-tertiary)" />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
-                Feature 011: Guided First Day Setup
-              </span>
-            </div>
-            <Badge variant="sage">80% Ready to Take Bookings</Badge>
+      {/* F015 & F016 Operations Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+        {/* F015: Daily Task List */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <CheckSquare2 size={20} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 015: Daily Task Queue
+            </span>
           </div>
-
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '18px' }}>
-            Your setup progress is saved automatically. Below are the steps required to receive clients:
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Today's Operational Actions
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Consolidated exceptions: missing forms, unpaid holds, and stock checks with clear owners.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px' }}>
-            {initialSetupSteps.map((step) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {tasks.map((task) => (
               <div
-                key={step.key}
+                key={task.id}
+                onClick={() => handleResolveTask(task.id)}
                 style={{
                   padding: '12px 14px',
                   borderRadius: '10px',
-                  backgroundColor: step.done ? 'var(--color-secondary-light)' : 'var(--color-bg)',
+                  backgroundColor: task.status === 'completed' ? 'var(--color-secondary-light)' : 'var(--color-bg)',
                   border: '1px solid var(--color-border)',
+                  cursor: 'pointer',
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
+                  alignItems: 'flex-start',
+                  gap: '12px',
                 }}
               >
-                {step.done ? (
-                  <CheckCircle2 size={18} color="var(--color-primary)" />
-                ) : (
-                  <AlertCircle size={18} color="var(--color-tertiary)" />
-                )}
-                <div>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-primary)', display: 'block' }}>
-                    {step.label}
+                <input
+                  type="checkbox"
+                  checked={task.status === 'completed'}
+                  readOnly
+                  style={{ marginTop: '3px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <strong
+                    style={{
+                      fontSize: '0.9rem',
+                      color: 'var(--color-primary)',
+                      textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                      display: 'block',
+                    }}
+                  >
+                    {task.title}
                   </strong>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                    {step.done ? 'Configured & Active' : step.blocker}
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    {task.details}
                   </span>
                 </div>
               </div>
             ))}
           </div>
         </Card>
-      </section>
 
-      {/* F013: Client Service Preferences & Comfort Requests */}
+        {/* F016: Catalog Import Templates */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <FileSpreadsheet size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 016: Catalog CSV Importer
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            One-Click Catalog Migration
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Upload existing menus from Vagaro or GlossGenius. Invalid rows are isolated without corrupting live data.
+          </p>
+
+          <div
+            style={{
+              border: '2px dashed var(--color-border)',
+              borderRadius: '12px',
+              padding: '24px',
+              textAlign: 'center',
+              backgroundColor: 'var(--color-bg)',
+              marginBottom: '16px',
+            }}
+          >
+            <UploadCloud size={32} color="var(--color-primary)" style={{ margin: '0 auto 8px' }} />
+            <strong style={{ fontSize: '0.9rem', display: 'block', color: 'var(--color-primary)' }}>
+              {csvUploaded ? 'catalog_import_v1.csv (Parsed 3 Valid Treatments)' : 'Drag and drop your catalog CSV here'}
+            </strong>
+            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+              Standard template: name, category, price_in_cents, duration, prep
+            </span>
+          </div>
+
+          <Button
+            variant={csvUploaded ? 'secondary' : 'outline'}
+            size="md"
+            onClick={() => setCsvUploaded(!csvUploaded)}
+            style={{ width: '100%' }}
+          >
+            {csvUploaded ? '✓ 3 Treatments Imported (Zero Errors)' : 'Simulate CSV Upload & Validation'}
+          </Button>
+        </Card>
+      </div>
+
+      {/* F014: Quiet Visit & Accessibility Requests */}
       <section style={{ marginBottom: '40px' }}>
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <HeartHandshake size={20} color="var(--color-primary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-              Feature 013: Client Service Preferences
+            <Accessibility size={20} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 014: Inclusive Accessibility & Quiet Visits
             </span>
           </div>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Personalized Comfort & Care</h2>
+          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Tailored Access Accommodations</h2>
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            Tell your specialist exactly how you prefer your visit. Saved privately in your treatment record.
+            Privately routed to the specialist setting up your room so you arrive to a safe, comfortable space.
           </p>
         </div>
 
         <Card style={{ backgroundColor: '#FFFFFF' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-            {/* Preferred Name & Pronunciation */}
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                Preferred Name & Pronunciation:
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  value={preferredName}
-                  onChange={(e) => setPreferredName(e.target.value)}
-                  placeholder="First name"
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.9rem',
-                    flex: 1,
-                  }}
-                />
-                <input
-                  type="text"
-                  value={pronunciation}
-                  onChange={(e) => setPronunciation(e.target.value)}
-                  placeholder="e.g. MY-uh"
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.9rem',
-                    width: '110px',
-                  }}
-                />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--color-border)',
+                backgroundColor: quietVisit ? 'var(--color-secondary-light)' : 'var(--color-bg)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={quietVisit}
+                onChange={(e) => setQuietVisit(e.target.checked)}
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              <div>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block' }}>Quiet Visit</strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Essential treatment questions only; zero conversational pressure.</span>
               </div>
-            </div>
+            </label>
 
-            {/* Conversation Style */}
-            <div>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                Conversation Preference:
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Button
-                  variant={conversationPref === 'quiet_visit_only' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setConversationPref('quiet_visit_only')}
-                >
-                  <VolumeX size={14} style={{ marginRight: '6px' }} /> Quiet Visit
-                </Button>
-                <Button
-                  variant={conversationPref === 'gentle_small_talk' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setConversationPref('gentle_small_talk')}
-                >
-                  <Volume2 size={14} style={{ marginRight: '6px' }} /> Gentle Talk
-                </Button>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--color-border)',
+                backgroundColor: stepFree ? 'var(--color-secondary-light)' : 'var(--color-bg)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={stepFree}
+                onChange={(e) => setStepFree(e.target.checked)}
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              <div>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block' }}>Step-Free Entry</strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Ramp access & wider doorway into treatment suite.</span>
               </div>
-            </div>
-          </div>
+            </label>
 
-          {/* Treatment Room Comfort Requests */}
-          <div
-            style={{
-              backgroundColor: 'var(--color-bg)',
-              padding: '16px',
-              borderRadius: '12px',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block', marginBottom: '10px' }}>
-              Room Comfort Checklist (Staff Sanitized):
-            </strong>
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={extraBlanket}
-                  onChange={(e) => setExtraBlanket(e.target.checked)}
-                  style={{ accentColor: 'var(--color-primary)' }}
-                />
-                Heated Bed & Extra Plush Blanket
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={dimLights}
-                  onChange={(e) => setDimLights(e.target.checked)}
-                  style={{ accentColor: 'var(--color-primary)' }}
-                />
-                Dim Ambient Lighting (Zero Overhead Glare)
-              </label>
-            </div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--color-border)',
+                backgroundColor: scentFree ? 'var(--color-secondary-light)' : 'var(--color-bg)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={scentFree}
+                onChange={(e) => setSentFree(e.target.checked)}
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              <div>
+                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block' }}>Scent-Free Suite</strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>No essential oil diffusers or scented candles.</span>
+              </div>
+            </label>
           </div>
         </Card>
-      </section>
-
-      {/* Treatment Menu */}
-      <section style={{ marginBottom: '56px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Transparent prices. No secret checkout fees.</p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-          {services.map((svc) => {
-            const isSelected = selectedService === svc.id;
-            return (
-              <Card
-                key={svc.id}
-                style={{
-                  cursor: 'pointer',
-                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
-                  borderWidth: isSelected ? '2px' : '1px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}
-                onClick={() => setSelectedService(svc.id)}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <Badge variant="sage">{svc.tag}</Badge>
-                    <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-primary)' }}>
-                      ${svc.price}
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: '1.35rem', marginBottom: '8px', color: 'var(--color-primary)' }}>
-                    {svc.name}
-                  </h3>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-                    {svc.description}
-                  </p>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    borderTop: '1px solid var(--color-border)',
-                    paddingTop: '12px',
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                    <Clock size={16} /> {svc.duration} mins
-                  </span>
-                  <Button variant={isSelected ? 'tertiary' : 'outline'} size="sm">
-                    {isSelected ? 'Selected' : 'Select'}
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
       </section>
 
       {/* Booking Confirmation Box */}
       <section>
         <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            Book Your Visit for {preferredName}
+            Confirm Appointment for {preferredName}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
@@ -442,8 +398,12 @@ export default function PosieStudioPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Atmosphere:</span>
-              <strong>{conversationPref === 'quiet_visit_only' ? 'Quiet Visit (No small talk)' : 'Gentle Small Talk'}</strong>
+              <span style={{ color: 'var(--color-text-muted)' }}>Accommodations Logged:</span>
+              <strong>
+                {[quietVisit ? 'Quiet Visit' : null, stepFree ? 'Step-Free' : null, scentFree ? 'Scent-Free' : null]
+                  .filter(Boolean)
+                  .join(' • ') || 'Standard Visit'}
+              </strong>
             </div>
           </div>
 
@@ -461,9 +421,9 @@ export default function PosieStudioPage() {
             >
               <CheckCircle2 size={24} color="var(--color-primary)" />
               <div>
-                <strong>Appointment Snapshot Created for {preferredName}!</strong>
+                <strong>Appointment Snapshot Confirmed!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  Preferences for room comfort have been logged for {activeStaffObj.name}.
+                  A daily task has been created for {activeStaffObj.name} with your accessibility requests.
                 </p>
               </div>
             </div>

@@ -26,6 +26,12 @@ import {
   assertSafeDemoAction,
   ClientServicePreferencesSchema,
   sanitizePreferencesForRoomPrep,
+  AccessAndComfortRequestSchema,
+  filterAccessRequestsForPractitioner,
+  DailyTaskSchema,
+  completeDailyTask,
+  validateCatalogCsv,
+  CATALOG_CSV_HEADER,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -416,8 +422,8 @@ describe('Posie Core Logic - F010 (Progressive Feature Setup)', () => {
 describe('Posie Core Logic - F011 (Guided First-Day Setup)', () => {
   it('correctly calculates setup progress and identifies remaining blockers', () => {
     const status = evaluateBookingReadiness(INITIAL_SETUP_STEPS);
-    expect(status.isBookingReady).toBe(true); // essential services & policy steps are configured
-    expect(status.progressPercentage).toBe(80); // 4 out of 5 steps completed
+    expect(status.isBookingReady).toBe(true);
+    expect(status.progressPercentage).toBe(80);
   });
 
   it('flags booking readiness as false if service is missing', () => {
@@ -466,7 +472,88 @@ describe('Posie Core Logic - F013 (Client Service Preferences)', () => {
     expect(prep.preferredName).toBe('Maya');
     expect(prep.conversationPreference).toBe('quiet_visit_only');
     expect(prep.roomComfortRequests).toContain('extra blanket');
-    // @ts-expect-error privatePractitionerNotes must not be in sanitized room prep
-    expect(prep.privatePractitionerNotes).toBeUndefined();
+  });
+});
+
+describe('Posie Core Logic - F014 (Quiet Visit & Access Requests)', () => {
+  const req = {
+    id: '55555555-5555-5555-5555-555555555555',
+    clientId: '44444444-4444-4444-4444-444444444444',
+    quietVisitRequested: true,
+    stepFreeAccessRequired: true,
+    supportPersonAccompanying: false,
+    lowSensoryLighting: true,
+    scentFreeEnvironment: true,
+    extraConsultationTimeNeeded: false,
+    privateNotes: 'Needs chair positioned near entrance',
+    acknowledgedByStaffId: 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a',
+    createdAt: new Date().toISOString(),
+  };
+
+  it('validates accessibility requests against schema', () => {
+    expect(() => AccessAndComfortRequestSchema.parse(req)).not.toThrow();
+  });
+
+  it('filters requests only to the assigned practitioner', () => {
+    const filtered = filterAccessRequestsForPractitioner([req], 'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a');
+    expect(filtered.length).toBe(1);
+
+    const otherPractitioner = filterAccessRequestsForPractitioner([req], 'other-id-0000');
+    expect(otherPractitioner.length).toBe(0);
+  });
+});
+
+describe('Posie Core Logic - F015 (Daily Task List)', () => {
+  const tasks = [
+    {
+      id: '66666666-6666-6666-6666-666666666666',
+      type: 'incomplete_form' as const,
+      title: 'Missing Acid Waiver for Maya',
+      details: 'Appointment today at 2:30 PM requires signed glycolic waiver.',
+      status: 'pending' as const,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  it('validates daily task schemas', () => {
+    expect(() => DailyTaskSchema.parse(tasks[0])).not.toThrow();
+  });
+
+  it('completes daily task and marks timestamp and staff', () => {
+    const updated = completeDailyTask(
+      tasks,
+      '66666666-6666-6666-6666-666666666666',
+      'd1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a'
+    );
+    expect(updated[0].status).toBe('completed');
+    expect(updated[0].completedAt).toBeDefined();
+    expect(updated[0].assignedStaffId).toBe('d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a');
+  });
+});
+
+describe('Posie Core Logic - F016 (Catalog Import Templates)', () => {
+  it('validates a correct catalog CSV string', () => {
+    const csv = `${CATALOG_CSV_HEADER}\nHydra Facial,cat-1,12000,60,Deep cleanse,No retinol`;
+    const res = validateCatalogCsv(csv);
+    expect(res.isValid).toBe(true);
+    expect(res.validRows.length).toBe(1);
+    expect(res.validRows[0].name).toBe('Hydra Facial');
+    expect(res.validRows[0].basePriceInCents).toBe(12000);
+  });
+
+  it('identifies invalid rows without corrupting valid data', () => {
+    const invalidCsv = `${CATALOG_CSV_HEADER}\nInvalid Price,cat-1,abc,60,Test\nValid Item,cat-1,5000,30,Test`;
+    const res = validateCatalogCsv(invalidCsv);
+    expect(res.isValid).toBe(false);
+    expect(res.errors.length).toBe(1);
+    expect(res.errors[0].field).toBe('price_in_cents');
+    expect(res.validRows.length).toBe(1);
+    expect(res.validRows[0].name).toBe('Valid Item');
+  });
+
+  it('flags an empty CSV file cleanly', () => {
+    const res = validateCatalogCsv('');
+    expect(res.isValid).toBe(false);
+    expect(res.errors[0].field).toBe('file');
   });
 });

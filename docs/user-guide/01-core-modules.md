@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F013)
+# Posie App User Guide: Core Modules (F001 - F016)
 
-Welcome to **Posie**! This guide details features **F001 through F013** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F016** active across the platform.
 
 ---
 
@@ -58,14 +58,12 @@ Welcome to **Posie**! This guide details features **F001 through F013** active a
 
 ## F008 — Document Content Library
 * **What it is:** A version-controlled library of approved clauses for service plans, consent waivers, and policies.
-* **How it works:** Every content block records the author/reviewer, review type (business owner, legal counsel, licensed esthetician), and review timestamp.
 * **Key Invariant (DR02):** Revisions create a new version while issued client documents preserve their exact signed text.
 
 ---
 
 ## F009 — Staff SOPs and Checklists
 * **What it is:** Standard operating procedure checklists for morning opening, evening closing, and autoclave sanitization.
-* **How it works:** Checkpoints can be marked complete with staff member attribution.
 * **Key Invariant:** Updating an SOP checklist increments the version and resets acknowledgment tracking so all staff review the new version.
 
 ---
@@ -73,13 +71,11 @@ Welcome to **Posie**! This guide details features **F001 through F013** active a
 ## F010 — Progressive Feature Setup
 * **What it is:** A modular workspace switcher that keeps daily operations clean.
 * **How it works:** Solo practitioners start in an uncluttered view (schedule, clients, services, settings). Extra modules like team management and retail inventory remain hidden until explicitly enabled.
-* **Key Invariant:** A new solo practitioner can take bookings without ever having to configure unrelated team or inventory settings.
 
 ---
 
 ## F011 — Guided First-Day Setup
 * **What it is:** A resumable setup progress tracker that walks studio owners through configuring essential features.
-* **How it works:** Tracks business identity, operating hours, initial treatment catalog, and cancellation policies.
 * **Key Invariant:** Evaluates readiness to take bookings and shows the exact unresolved blockers (e.g., missing services or policies) without ambiguity.
 
 ---
@@ -92,5 +88,22 @@ Welcome to **Posie**! This guide details features **F001 through F013** active a
 
 ## F013 — Client Service Preferences
 * **What it is:** Client-centered comfort preferences captured during booking or consultation.
-* **How it works:** Stores preferred names, pronunciation guides, conversation styles (`quiet_visit_only`, `gentle_small_talk`), and treatment room comfort requests (heated blankets, low ambient lighting).
 * **Key Invariant:** Private practitioner care notes remain isolated to the treatment staff and are never exported to public or marketing audiences.
+
+---
+
+## F014 — Quiet Visit & Inclusive Access Requests
+* **What it is:** Discrete requests for step-free access, support persons, scent-free treatment rooms, or a silent visit.
+* **Key Invariant:** Only the practitioner preparing the room sees these private requests; they are never converted into public marketing tags.
+
+---
+
+## F015 — Daily Task Queue
+* **What it is:** A single consolidated daily action list covering incomplete forms, callback requests, low-stock alerts, and room preparation.
+* **Key Invariant:** Completing a task marks staff attribution and resolves duplicate alerts across the studio.
+
+---
+
+## F016 — Catalog Import Templates
+* **What it is:** Guided CSV templates to import treatments and services from previous platforms (Vagaro, GlossGenius).
+* **Key Invariant:** Invalid rows are isolated and reported with line numbers without corrupting valid live records.
