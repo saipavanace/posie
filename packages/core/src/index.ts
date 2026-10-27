@@ -38,3 +38,6 @@ export * from './aftercare';
 export * from './charting';
 export * from './annotations';
 export * from './homecare';
+export * from './intake_delta';
+export * from './patch_tests';
+export * from './form_bundles';

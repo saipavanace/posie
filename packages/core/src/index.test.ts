@@ -25,6 +25,14 @@ import {
   createHomeCarePlan,
   reviseHomeCarePlan,
   formatHomeCarePrintableCard,
+  getPreviousIntakeAnswersForReview,
+  processRepeatIntakeReview,
+  createPatchTestApplication,
+  recordPatchTestEvaluation,
+  checkServicePatchTestReadiness,
+  compileAppointmentFormRequirements,
+  evaluateAppointmentFormReadiness,
+  reevaluateOnServiceChange,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -526,5 +534,224 @@ describe('Posie Core Logic - F040 (Home-Care Regimen Plans)', () => {
     expect(revised.version).toBe(2);
     expect(revised.changeSummaryFromPreviousVersion).toContain('Version 1 -> 2');
     expect(revised.routineSteps.length).toBe(4);
+  });
+});
+
+
+describe('Posie Core Logic - F041 (Changes Since Last Visit & Intake Delta Review)', () => {
+  const formTemplate = {
+    id: '55555555-5555-5555-5555-555555555555',
+    title: 'Facial & Chemical Peel Intake',
+    version: 1,
+    questions: [
+      {
+        id: 'q_meds',
+        label: 'Current prescription medications or topical acids?',
+        type: 'text' as const,
+        required: true,
+      },
+      {
+        id: 'q_skin_goals',
+        label: 'What is your primary skin goal today?',
+        type: 'text' as const,
+        required: true,
+      },
+    ],
+  };
+
+  const baselineSubmission = saveIntakeSubmission({
+    id: '11111111-2222-3333-4444-555555555555',
+    template: formTemplate,
+    clientId: '66666666-6666-6666-6666-666666666666',
+    responses: {
+      q_meds: 'None',
+      q_skin_goals: 'Hydration',
+    },
+    markCompleted: true,
+  });
+
+  it('allows fast confirmation with zero changes preserving baseline', () => {
+    const review = processRepeatIntakeReview({
+      template: formTemplate,
+      clientId: '66666666-6666-6666-6666-666666666666',
+      appointmentId: '77777777-8888-9999-0000-111111111111',
+      baselineSubmission,
+      confirmationType: 'confirmed_no_changes',
+    });
+
+    expect(review.confirmationType).toBe('confirmed_no_changes');
+    expect(review.changesReported.length).toBe(0);
+    expect(review.requiresPractitionerTriage).toBe(false);
+    expect(review.finalResponses.q_meds).toBe('None');
+    // Baseline submission is unchanged
+    expect(baselineSubmission.responses.q_meds).toBe('None');
+  });
+
+  it('detects changes in sensitive questions and flags practitioner triage', () => {
+    const review = processRepeatIntakeReview({
+      template: formTemplate,
+      clientId: '66666666-6666-6666-6666-666666666666',
+      appointmentId: '77777777-8888-9999-0000-111111111111',
+      baselineSubmission,
+      confirmationType: 'updated_with_changes',
+      updatedResponses: {
+        q_meds: 'Started Spironolactone 50mg daily',
+        q_skin_goals: 'Hormonal breakout prevention',
+      },
+      sensitiveQuestionIds: ['q_meds'],
+    });
+
+    expect(review.confirmationType).toBe('updated_with_changes');
+    expect(review.changesReported.length).toBe(2);
+    expect(review.requiresPractitionerTriage).toBe(true);
+    expect(review.triageReason).toContain('Current prescription medications');
+    expect(review.finalResponses.q_meds).toContain('Spironolactone');
+  });
+});
+
+describe('Posie Core Logic - F042 (Patch Test Record & Readiness Tracking)', () => {
+  const application = createPatchTestApplication({
+    clientId: '66666666-6666-6666-6666-666666666666',
+    productName: 'Ultra-Hold Lash Adhesive Cyanoacrylate',
+    brand: 'Posie Pro Lash',
+    lotNumber: 'LOT-9821',
+    patchLocation: 'Behind right ear',
+    appliedByStaffId: '99999999-9999-9999-9999-999999999999',
+    validityDays: 180,
+  });
+
+  it('manages evaluation lifecycle, contraindications, and expiry checks', () => {
+    expect(application.readinessStatus).toBe('pending_evaluation');
+
+    // Check service readiness when evaluation is still pending
+    const pendingCheck = checkServicePatchTestReadiness({
+      serviceRequiresPatchTest: true,
+      appointmentDate: new Date().toISOString(),
+      patchTestRecord: application,
+    });
+    expect(pendingCheck.isCleared).toBe(false);
+    expect(pendingCheck.readinessStatus).toBe('pending_evaluation');
+
+    // Professional records negative evaluation
+    const clearedRecord = recordPatchTestEvaluation(application, {
+      evaluatedByStaffId: '99999999-9999-9999-9999-999999999999',
+      result: 'negative_no_reaction',
+      observationsNote: 'Zero erythema or pruritus observed at 48 hours.',
+    });
+    expect(clearedRecord.readinessStatus).toBe('cleared_for_service');
+
+    // Service readiness check succeeds for date within 180 days
+    const validCheck = checkServicePatchTestReadiness({
+      serviceRequiresPatchTest: true,
+      appointmentDate: new Date().toISOString(),
+      patchTestRecord: clearedRecord,
+    });
+    expect(validCheck.isCleared).toBe(true);
+    expect(validCheck.readinessStatus).toBe('cleared_for_service');
+
+    // Service readiness check fails if appointment is after validity window (181 days later)
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 200);
+
+    const expiredCheck = checkServicePatchTestReadiness({
+      serviceRequiresPatchTest: true,
+      appointmentDate: futureDate.toISOString(),
+      patchTestRecord: clearedRecord,
+    });
+    expect(expiredCheck.isCleared).toBe(false);
+    expect(expiredCheck.readinessStatus).toBe('expired_test_record');
+  });
+
+  it('flags contraindications when an adverse reaction is recorded', () => {
+    const adverseRecord = recordPatchTestEvaluation(application, {
+      evaluatedByStaffId: '99999999-9999-9999-9999-999999999999',
+      result: 'moderate_reaction',
+      observationsNote: 'Raised erythematous papules observed at 24 hours.',
+    });
+
+    expect(adverseRecord.readinessStatus).toBe('contraindicated');
+
+    const check = checkServicePatchTestReadiness({
+      serviceRequiresPatchTest: true,
+      appointmentDate: new Date().toISOString(),
+      patchTestRecord: adverseRecord,
+    });
+    expect(check.isCleared).toBe(false);
+    expect(check.readinessStatus).toBe('contraindicated');
+  });
+});
+
+describe('Posie Core Logic - F043 (Forms Matched to Appointment & Re-Evaluation)', () => {
+  const serviceFacialId = '11111111-1111-1111-1111-111111111111';
+  const servicePeelId = '22222222-2222-2222-2222-222222222222';
+  const formGeneralIntakeId = '33333333-3333-3333-3333-333333333333';
+  const formPeelConsentId = '44444444-4444-4444-4444-444444444444';
+
+  const rules = [
+    {
+      serviceId: serviceFacialId,
+      serviceName: 'Hydra-Dew Facial',
+      formId: formGeneralIntakeId,
+      formTitle: 'General Skin Health Questionnaire',
+      formType: 'intake' as const,
+      reasonRequired: 'Standard baseline health screening',
+    },
+    {
+      serviceId: servicePeelId,
+      serviceName: 'Level 2 Chemical Peel',
+      formId: formGeneralIntakeId,
+      formTitle: 'General Skin Health Questionnaire',
+      formType: 'intake' as const,
+      reasonRequired: 'Standard baseline health screening',
+    },
+    {
+      serviceId: servicePeelId,
+      serviceName: 'Level 2 Chemical Peel',
+      formId: formPeelConsentId,
+      formTitle: 'Chemical Peel Informed Consent & Release',
+      formType: 'consent' as const,
+      reasonRequired: 'Required legal consent for clinical-grade acid exfoliation',
+    },
+  ];
+
+  it('compiles and deduplicates required forms for multi-service visit', () => {
+    const bundle = compileAppointmentFormRequirements(
+      [serviceFacialId, servicePeelId],
+      rules
+    );
+
+    // General intake is shared across both services, so total required must be 2, not 3
+    expect(bundle.length).toBe(2);
+    const intakeEntry = bundle.find((b) => b.formId === formGeneralIntakeId);
+    expect(intakeEntry?.serviceNames).toContain('Hydra-Dew Facial');
+    expect(intakeEntry?.serviceNames).toContain('Level 2 Chemical Peel');
+  });
+
+  it('evaluates readiness and re-evaluates when services are changed', () => {
+    // Client only has completed General Intake
+    const status = evaluateAppointmentFormReadiness({
+      appointmentId: '88888888-8888-8888-8888-888888888888',
+      serviceIds: [serviceFacialId, servicePeelId],
+      catalogRules: rules,
+      clientCompletedFormIds: [formGeneralIntakeId],
+    });
+
+    expect(status.isReady).toBe(false);
+    expect(status.completedCount).toBe(1);
+    expect(status.outstandingForms.length).toBe(1);
+    expect(status.outstandingForms[0].formId).toBe(formPeelConsentId);
+
+    // Re-evaluating if client changes from Facial only to adding Peel
+    const reeval = reevaluateOnServiceChange({
+      appointmentId: '88888888-8888-8888-8888-888888888888',
+      previousServiceIds: [serviceFacialId],
+      newServiceIds: [serviceFacialId, servicePeelId],
+      catalogRules: rules,
+      clientCompletedFormIds: [formGeneralIntakeId],
+    });
+
+    expect(reeval.newlyRequiredForms.length).toBe(1);
+    expect(reeval.newlyRequiredForms[0].formId).toBe(formPeelConsentId);
+    expect(reeval.newlyRequiredForms[0].formTitle).toContain('Chemical Peel');
   });
 });

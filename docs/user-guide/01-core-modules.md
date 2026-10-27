@@ -223,3 +223,22 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F040 — Home-Care Regimen Plans
 * **What it is:** Practitioner-approved daily skincare routines (AM/PM/weekly) personalized to client skin goals, honoring client preferences (e.g., fragrance-free, minimalist under 3 steps), with printable bathroom mirror compliance guides.
 * **Key Invariant (WB F29):** Revisions generate incremental version numbers (e.g., v1 -> v2) alongside an automated change summary so clients always retain access to the exact routine prescribed during each visit.
+
+
+---
+
+## F041 — Changes Since Last Visit (Repeat Intake Delta Review)
+* **What it is:** Fast repeat intake that presents clients with their previously verified answers from prior visits, enabling 1-click confirmation or delta updates.
+* **Key Invariant (WB F21):** Confirmations **never** overwrite baseline historical submissions. A separate review record is created with delta tracking. Changes to sensitive health items (medications, contraindications) automatically alert the practitioner prior to service.
+
+---
+
+## F042 — Patch Test Record & Service Readiness Tracking
+* **What it is:** Professional documentation of patch test applications (product, lot number, test site) and results evaluated by qualified practitioners.
+* **Key Invariant (WB F28, Doc D09):** Readiness is determined by professional evaluation and salon validity policies (e.g. 180 days for lash adhesive). Missing evidence or adverse reactions automatically flag readiness without guessing universal medical intervals.
+
+---
+
+## F043 — Forms Matched to Appointment & Dynamic Re-Evaluation
+* **What it is:** Automated bundling of required intake, informed consent, and preparation documents tailored to the exact booked service package.
+* **Key Invariant (WB U21):** Deduplicates shared questionnaires so multi-service appointments never prompt duplicate forms. When services change or add-ons are included, requirements are dynamically re-evaluated while preserving previously completed documents.

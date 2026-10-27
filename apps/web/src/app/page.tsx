@@ -27,6 +27,8 @@ import {
   MapPin,
   Pencil,
   Eye,
+  CalendarCheck,
+  BadgeCheck,
 } from 'lucide-react';
 
 // Brand Information
@@ -79,6 +81,13 @@ export default function PosieStudioPage() {
   // F039 Photo Markup State
   const [activeZone, setActiveZone] = useState<string>('T-Zone');
   const [permissionScope, setPermissionScope] = useState<'internal' | 'marketing'>('internal');
+
+  // F041 Repeat Intake Delta State
+  const [repeatReviewMode, setRepeatReviewMode] = useState<'review' | 'confirmed_same' | 'reported_changes'>('review');
+  const [newMedication, setNewMedication] = useState('Started Spironolactone 50mg daily');
+
+  // F043 Bundle Service Selection State
+  const [selectedAddon, setSelectedAddon] = useState<boolean>(false);
 
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
@@ -184,6 +193,194 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
+      {/* F041: Changes Since Last Visit (Repeat Intake Delta) */}
+      <section style={{ marginBottom: '36px' }}>
+        <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarCheck size={18} color="var(--color-primary)" />
+              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                Feature 041: Changes Since Last Visit (Quick Review)
+              </strong>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Repeat Client Visit</Badge>
+              <Badge variant="muted">Last Visit: Oct 12</Badge>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Repeat clients review their previous verified answers. Confirm in 1-click or update only what changed—past health records are never overwritten.
+          </p>
+
+          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', marginBottom: '14px' }}>
+            <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
+              <strong>Verified Answers on File:</strong>
+            </div>
+            <div style={{ fontSize: '0.83rem', color: 'var(--color-text)', lineHeight: 1.6 }}>
+              • <strong>Medications:</strong> None reported on Oct 12<br />
+              • <strong>Allergies:</strong> No known cosmetic allergies<br />
+              • <strong>Primary Skin Goal:</strong> Barrier hydration
+            </div>
+          </div>
+
+          {repeatReviewMode === 'review' && (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setRepeatReviewMode('confirmed_same')}
+              >
+                ✓ Everything is still the same (1-Click Confirm)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRepeatReviewMode('reported_changes')}
+              >
+                ✏️ I have updates to report
+              </Button>
+            </div>
+          )}
+
+          {repeatReviewMode === 'confirmed_same' && (
+            <div style={{ background: 'var(--color-secondary-light)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CheckCircle2 size={18} color="var(--color-primary)" />
+              <span>
+                <strong>Quick Confirmation Saved!</strong> Baseline intake verified for today's visit with zero duplicate entry.
+              </span>
+            </div>
+          )}
+
+          {repeatReviewMode === 'reported_changes' && (
+            <div style={{ background: '#FFF7F5', border: '1px solid #C67D6E', padding: '14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#B36B5C', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>
+                <AlertCircle size={15} />
+                <span>Delta Detected: Practitioner Triage Triggered</span>
+              </div>
+              <label style={{ display: 'block', fontSize: '0.82rem', marginBottom: '6px', fontWeight: 600 }}>
+                Update Prescription Medications / New Products:
+              </label>
+              <input
+                type="text"
+                value={newMedication}
+                onChange={(e) => setNewMedication(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem', marginBottom: '10px' }}
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => alert('New medication delta recorded! Chloe alerted to review Spironolactone before treatment.')}
+              >
+                Save Updates & Alert Practitioner
+              </Button>
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* F042: Patch Test Record & Service Readiness */}
+      <section style={{ marginBottom: '36px' }}>
+        <Card style={{ backgroundColor: '#FAF8F5' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={18} color="var(--color-secondary)" />
+              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                Feature 042: Patch Test & Safety Clearance Record
+              </strong>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant="sage">Cleared for Service</Badge>
+              <Badge variant="muted">Evaluated at 48h</Badge>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Professional-evaluated patch test tracking. Missing evidence or adverse reactions automatically flag readiness without guessing universal medical intervals.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '12px' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Product & Lot</span>
+              <strong style={{ fontSize: '0.85rem' }}>Lash Adhesive LOT-9821</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Test Location</span>
+              <strong style={{ fontSize: '0.85rem' }}>Behind Right Ear</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Observed Result</span>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--color-secondary)' }}>Negative (No Erythema)</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Salon Validity Window</span>
+              <strong style={{ fontSize: '0.85rem' }}>180 Days (Expires Apr 2027)</strong>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+            <span>Evaluated by: Chloe V., Licensed Aesthetician</span>
+            <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>✓ Appointment Pre-Check: Safety Verified</span>
+          </div>
+        </Card>
+      </section>
+
+      {/* F043: Appointment-Matched Form Bundling & Dynamic Re-Evaluation */}
+      <section style={{ marginBottom: '36px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BadgeCheck size={18} color="var(--color-primary)" />
+              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                Feature 043: Smart Appointment Form Bundle
+              </strong>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={selectedAddon ? 'rose' : 'sage'}>
+                {selectedAddon ? '1 Form Outstanding' : 'All Required Forms Completed'}
+              </Badge>
+            </div>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Bundles intake, consent, and prep documents specific to booked treatments. Adding or changing a service re-evaluates requirements instantly without losing completed work.
+          </p>
+
+          <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>
+                Booked Services: {activeServiceObj.name} {selectedAddon && '+ Level 2 Chemical Peel Add-On'}
+              </strong>
+              <label style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedAddon}
+                  onChange={(e) => setSelectedAddon(e.target.checked)}
+                />
+                <span>Simulate Adding Chemical Peel</span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', background: '#FFF', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}>
+                <div>
+                  <strong>1. General Health & Skin Questionnaire</strong>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Required for all facial treatments</p>
+                </div>
+                <Badge variant="sage">✓ Completed on File</Badge>
+              </div>
+
+              {selectedAddon && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: '#FFF7F5', padding: '10px 14px', borderRadius: '6px', border: '1px solid #C67D6E', fontSize: '0.85rem' }}>
+                  <div>
+                    <strong style={{ color: '#B36B5C' }}>2. Level 2 Chemical Peel Informed Consent</strong>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Newly required because Chemical Peel was added to appointment</p>
+                  </div>
+                  <Badge variant="rose">⚠️ Signature Required</Badge>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      </section>
+
       {/* F038: Structured Treatment Notes & SOAP Charting */}
       <section style={{ marginBottom: '36px' }}>
         <Card style={{ borderLeft: '4px solid var(--color-primary)' }}>
@@ -247,271 +444,6 @@ export default function PosieStudioPage() {
               />
               <Button variant="outline" size="sm" type="submit">
                 <Pencil size={12} style={{ marginRight: '4px' }} /> Append Amendment
-              </Button>
-            </form>
-          )}
-        </Card>
-      </section>
-
-      {/* F039: Image Annotation Tools & Treatment Zone Mapping */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin size={18} color="var(--color-secondary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 039: Non-Destructive Face Mapping & Annotations
-              </strong>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant={permissionScope === 'marketing' ? 'rose' : 'muted'}>
-                {permissionScope === 'marketing' ? 'Marketing Consented' : 'Internal Clinical Only'}
-              </Badge>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-            Original client photos are preserved immutably. Markup overlays store clinical notes by treatment zone.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', alignItems: 'center' }}>
-            {/* Visual Zone Grid */}
-            <div
-              style={{
-                height: '180px',
-                backgroundColor: '#FAF8F5',
-                border: '2px dashed var(--color-secondary)',
-                borderRadius: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                position: 'relative',
-              }}
-            >
-              <div style={{ textAlign: 'center' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>Interactive Face Map</span>
-                <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  Selected Zone: <strong>{activeZone}</strong>
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
-                {['Forehead', 'T-Zone', 'Cheeks', 'Chin'].map((z) => (
-                  <button
-                    key={z}
-                    onClick={() => setActiveZone(z)}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      borderRadius: '4px',
-                      border: '1px solid var(--color-border)',
-                      background: activeZone === z ? 'var(--color-secondary)' : '#FFF',
-                      color: activeZone === z ? '#FFF' : 'var(--color-primary)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {z}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Zone Details */}
-            <div style={{ background: '#FAF8F5', padding: '14px', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>
-                  Zone Notes: {activeZone}
-                </strong>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Layer: Peel Contraindications</span>
-              </div>
-              <p style={{ fontSize: '0.85rem', margin: 0, color: 'var(--color-text)' }}>
-                {activeZone === 'T-Zone' && 'Mild redness reported. Use 1 layer of glycolic peel; do not perform double pass.'}
-                {activeZone === 'Forehead' && 'Healthy skin barrier. Full 2-minute peel contact time.'}
-                {activeZone === 'Cheeks' && 'Hydration target: apply ultra-quenching hyaluronic serum with cold globe roll.'}
-                {activeZone === 'Chin' && 'Ultrasonic pore sweep performed. Extra botanical calming balm applied.'}
-              </p>
-              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button
-                  onClick={() => setPermissionScope(permissionScope === 'internal' ? 'marketing' : 'internal')}
-                  style={{
-                    fontSize: '0.78rem',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-secondary)',
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {permissionScope === 'internal' ? 'Enable Client Marketing Consent' : 'Revoke Marketing Consent'}
-                </button>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>SHA-256 Base Image Verified</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </section>
-
-      {/* F040: Home-Care Regimen Plan */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card style={{ backgroundColor: '#FAF8F5' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sun size={18} color="var(--color-tertiary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 040: Home-Care Regimen & Bathroom Guide
-              </strong>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge variant="sage">Prescribed v1</Badge>
-              <Badge variant="muted">Fragrance-Free</Badge>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Practitioner-approved daily routine aligned with client preferences. Versioned so clients can track routine evolution.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-            <div style={{ background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--color-primary)' }}>
-                <Sun size={15} color="var(--color-tertiary)" />
-                <strong style={{ fontSize: '0.9rem' }}>Morning (AM) Routine</strong>
-              </div>
-              <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.83rem', lineHeight: '1.5' }}>
-                <li><strong>Step 1:</strong> Milky Oat Cleanser (Cleanse gently with lukewarm water)</li>
-                <li><strong>Step 2:</strong> Mineral Barrier Zinc SPF 50 (Apply 2 finger lengths)</li>
-              </ul>
-            </div>
-            <div style={{ background: '#FFF', padding: '14px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: 'var(--color-primary)' }}>
-                <Moon size={15} color="var(--color-secondary)" />
-                <strong style={{ fontSize: '0.9rem' }}>Evening (PM) Routine</strong>
-              </div>
-              <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.83rem', lineHeight: '1.5' }}>
-                <li><strong>Step 1:</strong> Double Cleanse with Calming Camellia Oil</li>
-                <li><strong>Step 2:</strong> Lipid Repair Night Balm (Press pea-sized amount into skin)</li>
-              </ul>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-              Honored Preferences: Fragrance-Free Only • Minimalist (2 Steps AM / PM)
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => alert('Printing bathroom mirror daily compliance card...')}
-            >
-              <Printer size={13} style={{ marginRight: '6px' }} /> Print Bathroom Mirror Card
-            </Button>
-          </div>
-        </Card>
-      </section>
-
-      {/* F035: Conditional Intake Forms */}
-      <section style={{ marginBottom: '36px' }}>
-        <Card style={{ borderLeft: '4px solid var(--color-secondary)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileCheck2 size={18} color="var(--color-secondary)" />
-              <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                Feature 035: Smart Conditional Intake Form
-              </strong>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-secondary)' }}>
-              Autosaved Draft • WCAG Compliant
-            </span>
-          </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-            Branching questions only appear when relevant. Hidden questions are never marked as missing required fields!
-          </p>
-
-          {intakeCompleted ? (
-            <div
-              style={{
-                backgroundColor: 'var(--color-secondary-light)',
-                padding: '16px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <CheckCircle2 size={24} color="var(--color-primary)" />
-              <div>
-                <strong style={{ color: 'var(--color-primary)' }}>Intake Form Validated & Saved!</strong>
-                <p style={{ fontSize: '0.85rem', margin: '2px 0 0', color: 'var(--color-text)' }}>
-                  Your answers are privately linked to your appointment snapshot. Chloe can review sensitive contraindications safely.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleCompleteIntake}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.92rem', marginBottom: '6px' }}>
-                  Are you currently taking Accutane or using prescribed retinoids?
-                </label>
-                <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="retinoid"
-                      checked={hasRetinoids === true}
-                      onChange={() => setHasRetinoids(true)}
-                    />
-                    <span>Yes, I do</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="retinoid"
-                      checked={hasRetinoids === false}
-                      onChange={() => setHasRetinoids(false)}
-                    />
-                    <span>No</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Branching Question */}
-              {hasRetinoids && (
-                <div
-                  style={{
-                    backgroundColor: '#FAF8F5',
-                    padding: '14px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border)',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-secondary)', fontSize: '0.82rem', marginBottom: '6px' }}>
-                    <AlertCircle size={14} />
-                    <strong>Why we ask:</strong> Accutane & retinoids thin the stratum corneum. We modify chemical exfoliation to prevent barrier damage.
-                  </div>
-                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, marginBottom: '6px' }}>
-                    Please share your retinoid name, percentage, or recent dosage date:
-                  </label>
-                  <input
-                    type="text"
-                    value={retinoidDetails}
-                    onChange={(e) => setRetinoidDetails(e.target.value)}
-                    placeholder="e.g. Tretinoin 0.05% every other night; last applied 2 days ago"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.88rem',
-                    }}
-                  />
-                </div>
-              )}
-
-              {intakeError && (
-                <p style={{ color: '#C67D6E', fontSize: '0.85rem', marginBottom: '12px' }}>{intakeError}</p>
-              )}
-
-              <Button variant="primary" size="md" type="submit">
-                Complete & Validate Intake
               </Button>
             </form>
           )}
