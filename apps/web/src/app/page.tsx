@@ -9,13 +9,12 @@ import {
   CheckCircle2,
   Calendar,
   AlertCircle,
-  Repeat,
-  ExternalLink,
-  KeyRound,
-  RotateCcw,
-  Check,
-  X,
-  FileText,
+  Globe,
+  Search,
+  MessageCircleQuestion,
+  Send,
+  Upload,
+  ArrowRight,
 } from 'lucide-react';
 
 // Brand Information
@@ -24,44 +23,44 @@ const brandData = {
   tagline: 'Glow up without the headache.',
 };
 
-// Sample Active Service
-const activeService = {
-  name: 'Hydra-Dew Glass Glow Facial',
-  price: 120,
-  duration: 60,
-  specialist: 'Chloe Martinez',
-};
-
-// F029 Recurring Occurrences
-const initialRecurringOccurrences = [
-  { date: 'Thursday, Nov 12 at 2:30 PM', status: 'Confirmed' },
-  { date: 'Thursday, Dec 10 at 2:30 PM (in 4 weeks)', status: 'Tentative' },
-  { date: 'Thursday, Jan 07 at 2:30 PM (in 8 weeks)', status: 'Tentative' },
+// Services
+const services = [
+  {
+    id: 's1',
+    name: 'Hydra-Dew Glass Glow Facial',
+    tag: 'Fan Favorite',
+    price: 120,
+    duration: 60,
+    description: 'Double cleanse, fruit enzyme sweep, and ultra-drenching hyaluronic infusion.',
+  },
+  {
+    id: 's2',
+    name: 'Fluff & Define Brow Sculpt',
+    tag: 'Quick Refresh',
+    price: 55,
+    duration: 35,
+    description: 'Custom tinting and precision shaping that makes your natural arches pop.',
+  },
 ];
 
 export default function PosieStudioPage() {
+  const [selectedService, setSelectedService] = useState<string>('s1');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
-  // F029: Recurring Proposal Toggle
-  const [enableRecurring, setEnableRecurring] = useState(false);
-  const [recurringInterval, setRecurringInterval] = useState<'4w' | '6w'>('4w');
+  // F032 Custom Website Theme State
+  const [websiteTheme, setWebsiteTheme] = useState<'editorial_atelier' | 'calm_minimal'>('editorial_atelier');
+  const [customDomainActive, setCustomDomainActive] = useState(true);
 
-  // F030: Self-Service Action Simulation State
-  const [selfServiceMessage, setSelfServiceMessage] = useState<string | null>(null);
+  // F034 Consultation Inquiry State
+  const [inquiryText, setInquiryText] = useState('');
+  const [inquirySubmitted, setInquirySubmitted] = useState(false);
 
-  // F031: Passwordless Portal State
-  const [showPortal, setShowPortal] = useState(false);
+  const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
-  const handleSimulateCancel = (isLate: boolean) => {
-    if (isLate) {
-      setSelfServiceMessage(
-        'Self-service cancel requested 3 hours prior. Notice given under the 24-hr window: a late fee of $12.00 applies to deposit.'
-      );
-    } else {
-      setSelfServiceMessage(
-        'Self-service cancel requested 48 hours prior. 100% of your $24.00 deposit has been refunded to your card.'
-      );
-    }
+  const handleSendInquiry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inquiryText) return;
+    setInquirySubmitted(true);
   };
 
   return (
@@ -101,169 +100,173 @@ export default function PosieStudioPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Button
-            variant={showPortal ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setShowPortal(!showPortal)}
-          >
-            <KeyRound size={14} style={{ marginRight: '6px' }} />
-            {showPortal ? 'Close Client Portal' : 'Open Passwordless Portal (F031)'}
-          </Button>
-          <Badge variant="sage">Features F001 - F031 Live</Badge>
+          <Badge variant="sage">Features F001 - F034 Live</Badge>
+          <Badge variant="rose">Atelier Studio</Badge>
         </div>
       </header>
 
-      {/* F031: Passwordless Client Portal Experience */}
-      {showPortal && (
-        <section style={{ marginBottom: '40px' }}>
-          <Card style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--color-primary)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <KeyRound size={20} color="var(--color-primary)" />
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
-                  Feature 031: Maya's Private Client Portal (Magic Link Session)
-                </span>
-              </div>
-              <Badge variant="rose">No App Download Required</Badge>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-              <div style={{ backgroundColor: 'var(--color-bg)', padding: '16px', borderRadius: '12px' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Upcoming Appointment</span>
-                <strong style={{ fontSize: '1.1rem', color: 'var(--color-primary)', display: 'block', margin: '4px 0' }}>
-                  Hydra-Dew Glass Glow Facial
-                </strong>
-                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  Thursday, Nov 12 at 2:30 PM with Chloe • $24 deposit paid ($96 remaining)
-                </p>
-
-                {/* F030 Self Service Action Buttons */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                  <Button variant="outline" size="sm" onClick={() => handleTestReschedule()}>
-                    Reschedule
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSimulateCancel(false)}>
-                    Cancel (On-Time)
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSimulateCancel(true)}>
-                    Cancel (Late)
-                  </Button>
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: 'var(--color-bg)', padding: '16px', borderRadius: '12px' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Your Saved Preferences</span>
-                <div style={{ marginTop: '8px', fontSize: '0.88rem', color: 'var(--color-primary)' }}>
-                  <p>• Preferred name: <strong>Maya (MY-uh)</strong></p>
-                  <p>• Atmosphere: <strong>Quiet Visit (Silent recharge)</strong></p>
-                  <p>• Room comfort: <strong>Extra heated blanket, low lights</strong></p>
-                </div>
-              </div>
-            </div>
-
-            {/* F030 Action Feedback Message */}
-            {selfServiceMessage && (
-              <div
-                style={{
-                  backgroundColor: 'var(--color-secondary-light)',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  color: 'var(--color-primary)',
-                  fontSize: '0.88rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                }}
-              >
-                <CheckCircle2 size={18} />
-                <span>{selfServiceMessage}</span>
-              </div>
-            )}
-          </Card>
-        </section>
-      )}
-
-      {/* Booking Form with F029 Recurring Proposals */}
-      <section style={{ marginBottom: '40px' }}>
-        <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
-          <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            Book Your Treatment: {activeService.name}
+      {/* F032 & F033 Showcase Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+        {/* F032: Brandable Website Studio */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Globe size={20} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 032: Brandable Booking Site
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Custom Domain & Styling
           </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Published with zero platform badges. Mobile preview always matches live production output.
+          </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Treatment & Specialist:</span>
-              <strong>{activeService.name} (${activeService.price}) with {activeService.specialist}</strong>
-            </div>
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              padding: '12px 14px',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '14px',
+            }}
+          >
+            <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', color: 'var(--color-primary)' }}>
+              https://glow.posieatelier.com
+            </span>
+            <Badge variant="sage">Active SSL</Badge>
+          </div>
 
-            {/* F029 Recurring Frequency Selector */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              variant={websiteTheme === 'editorial_atelier' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setWebsiteTheme('editorial_atelier')}
+            >
+              Editorial Atelier
+            </Button>
+            <Button
+              variant={websiteTheme === 'calm_minimal' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setWebsiteTheme('calm_minimal')}
+            >
+              Calm Minimal
+            </Button>
+          </div>
+        </Card>
+
+        {/* F033: Search & Local Discovery */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Search size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 033: Local Google Discovery
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Verified Schema.org Metadata
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Auto-generates Google Local JSON-LD structured data with live menus, prices, and coordinates.
+          </p>
+
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              padding: '14px',
+              borderRadius: '10px',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', display: 'block', marginBottom: '4px' }}>
+              Posie Flagship Atelier — Austin, TX
+            </strong>
+            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+              "BeautySalon" schema • Verified 1204 S Congress Ave • Ranked for local Austin skincare searches.
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      {/* F034: Inquiry & Consultation Request Queue */}
+      <section style={{ marginBottom: '40px' }}>
+        <Card style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--color-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <MessageCircleQuestion size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 034: Treatment Question or Consultation Request
+            </span>
+          </div>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Ask a Specialist Before You Book
+          </h2>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '18px' }}>
+            Have sensitive skin or unsure if a treatment is right for you? Submit a photo or question; our team replies within 24 hours.
+          </p>
+
+          {inquirySubmitted ? (
             <div
               style={{
-                backgroundColor: 'var(--color-bg)',
+                backgroundColor: 'var(--color-secondary-light)',
                 padding: '16px',
                 borderRadius: '12px',
-                border: '1px solid var(--color-border)',
+                color: 'var(--color-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: enableRecurring ? '12px' : '0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={enableRecurring}
-                    onChange={(e) => setEnableRecurring(e.target.checked)}
-                    style={{ accentColor: 'var(--color-primary)' }}
-                  />
-                  <span>
-                    <Repeat size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                    <strong>Lock My Skincare Cadence:</strong> Schedule recurring visits (Feature 029)
-                  </span>
-                </label>
+              <CheckCircle2 size={24} />
+              <div>
+                <strong>Inquiry Sent to Chloe (Response SLA: 24h)!</strong>
+                <p style={{ fontSize: '0.85rem' }}>
+                  We'll review your notes and text you personalized guidance before booking.
+                </p>
               </div>
-
-              {enableRecurring && (
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                    <Button
-                      variant={recurringInterval === '4w' ? 'primary' : 'outline'}
-                      size="sm"
-                      onClick={() => setRecurringInterval('4w')}
-                    >
-                      Every 4 Weeks (Optimal Barrier Cadence)
-                    </Button>
-                    <Button
-                      variant={recurringInterval === '6w' ? 'primary' : 'outline'}
-                      size="sm"
-                      onClick={() => setRecurringInterval('6w')}
-                    >
-                      Every 6 Weeks
-                    </Button>
-                  </div>
-
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                    Proposed Recurring Dates (Overlapping dates flagged as tentative until approved):
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {initialRecurringOccurrences.map((occ, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#FFFFFF',
-                          fontSize: '0.82rem',
-                          border: '1px solid var(--color-border)',
-                        }}
-                      >
-                        <span>{occ.date}</span>
-                        <Badge variant={occ.status === 'Confirmed' ? 'sage' : 'muted'}>{occ.status}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
+          ) : (
+            <form onSubmit={handleSendInquiry}>
+              <textarea
+                value={inquiryText}
+                onChange={(e) => setInquiryText(e.target.value)}
+                placeholder="e.g. I recently started tretinoin and want to know which facial is safe for my skin barrier..."
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.9rem',
+                  fontFamily: 'inherit',
+                  marginBottom: '14px',
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Upload size={14} /> Optional: Inspiration photos can be uploaded after submission
+                </span>
+                <Button variant="primary" size="md" type="submit">
+                  <Send size={14} style={{ marginRight: '6px' }} /> Submit Consultation Inquiry
+                </Button>
+              </div>
+            </form>
+          )}
+        </Card>
+      </section>
+
+      {/* Booking Box */}
+      <section>
+        <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
+          <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
+            Ready to Reserve Your Visit?
+          </h3>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: '20px' }}>
+            <span style={{ color: 'var(--color-text-muted)' }}>Selected Treatment:</span>
+            <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
           </div>
 
           {bookingConfirmed ? (
@@ -282,7 +285,7 @@ export default function PosieStudioPage() {
               <div>
                 <strong>Appointment Snapshot Confirmed!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  A secure self-service link (F030) has been generated and added to your passwordless portal (F031).
+                  Reserved directly on {brandData.name}'s verified domain.
                 </p>
               </div>
             </div>
@@ -299,8 +302,4 @@ export default function PosieStudioPage() {
       </section>
     </main>
   );
-}
-
-function handleTestReschedule() {
-  alert('Self-Service Reschedule (F030): Choose a new slot from available calendar times.');
 }

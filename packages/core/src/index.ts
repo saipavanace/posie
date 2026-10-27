@@ -29,3 +29,6 @@ export * from './reminders';
 export * from './recurring';
 export * from './selfservice';
 export * from './portal';
+export * from './sites';
+export * from './discovery';
+export * from './inquiries';

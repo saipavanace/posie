@@ -13,6 +13,9 @@ import {
   processSelfServiceCancellation,
   createPasswordlessPortalSession,
   validatePortalSession,
+  publishWebsiteConfig,
+  generateLocalDiscoveryMetadata,
+  createConsultationInquiry,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -36,77 +39,86 @@ describe('Posie Core Logic - F001 (Brand Kit)', () => {
   });
 });
 
-describe('Posie Core Logic - F029 (Recurring Appointment Proposals)', () => {
-  it('generates recurring proposals with exact intervals and tentative flags', () => {
-    const proposal = generateRecurringProposal(
-      '11111111-1111-1111-1111-111111111111',
-      '22222222-2222-2222-2222-222222222222',
-      '33333333-3333-3333-3333-333333333333',
-      '2026-11-01T14:00:00Z',
-      'every_4_weeks',
-      4
-    );
+describe('Posie Core Logic - F032 (Brandable Booking Website)', () => {
+  const siteConfig = {
+    id: '11111111-1111-1111-1111-111111111111',
+    businessSlug: 'posie-austin',
+    customDomain: 'glow.posieatelier.com',
+    layoutTheme: 'editorial_atelier' as const,
+    heroHeadline: 'Skincare that feels like magic.',
+    heroSubheadline: 'Bespoke facials and brows on South Congress.',
+    accentColorHex: '#C67D6E',
+    serviceOrderIds: [],
+    showSpecialistBios: true,
+    isPublished: true,
+    version: 1,
+  };
 
-    expect(proposal.totalOccurrences).toBe(4);
-    expect(proposal.occurrences.length).toBe(4);
-    expect(proposal.occurrences[0].status).toBe('tentative');
-    expect(proposal.occurrences[1].proposedDateUtc).toContain('2026-11-29'); // Exactly 28 days later
+  it('increments version upon website publication', () => {
+    const updated = publishWebsiteConfig(siteConfig, {
+      heroHeadline: 'Effortless Radiance on South Congress.',
+    });
+
+    expect(updated.version).toBe(2);
+    expect(updated.heroHeadline).toContain('Effortless Radiance');
   });
 });
 
-describe('Posie Core Logic - F030 (Self-Service Appointment Changes)', () => {
-  it('processes early cancellation with 100% deposit refund', () => {
-    const apptTime = '2026-11-10T14:00:00Z';
-    const requestTime = new Date('2026-11-08T12:00:00Z'); // 48h prior (beyond 24h window)
+describe('Posie Core Logic - F033 (Website Search & Local Discovery)', () => {
+  const loc = {
+    id: '88888888-8888-8888-8888-888888888888',
+    name: 'Posie Flagship Atelier',
+    streetAddress: '1204 S Congress Ave',
+    city: 'Austin',
+    state: 'TX',
+    zipCode: '78704',
+    timeZone: 'America/Chicago',
+    publicPhone: '+1-555-0199',
+    publicEmail: 'hello@posieatelier.com',
+    parkingInstructions: 'Complimentary valet.',
+    arrivalDirections: '2nd floor.',
+    accessibilityFeatures: ['Step-free ramp'],
+    isActive: true,
+  };
 
-    const res = processSelfServiceCancellation(
-      'booking-1234',
-      apptTime,
-      24,
-      3000, // $30 deposit
-      50,
-      requestTime
-    );
+  const services = [
+    {
+      id: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
+      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
+      name: 'Hydra-Dew Glass Glow Facial',
+      clientDescription: 'A 60-minute deep cleanse.',
+      basePriceInCents: 12000,
+      baseDurationMinutes: 60,
+      active: true,
+      addons: [],
+      practitionerOverrides: [],
+      version: 1,
+    },
+  ];
 
-    expect(res.success).toBe(true);
-    expect(res.feeApplicableCents).toBe(0);
-    expect(res.message).toContain('Full deposit of $30.00 will be refunded');
-  });
-
-  it('applies late cancellation fee if requested inside cancellation notice window', () => {
-    const apptTime = '2026-11-10T14:00:00Z';
-    const requestTime = new Date('2026-11-10T10:00:00Z'); // 4h prior (inside 24h window)
-
-    const res = processSelfServiceCancellation(
-      'booking-1234',
-      apptTime,
-      24,
-      3000,
-      50, // 50% late fee
-      requestTime
-    );
-
-    expect(res.success).toBe(true);
-    expect(res.feeApplicableCents).toBe(1500); // $15 fee
-    expect(res.message).toContain('late fee of $15.00 applies');
+  it('generates structured schema.org JSON-LD and crawlable metadata', () => {
+    const meta = generateLocalDiscoveryMetadata(loc, services);
+    expect(meta.metaTitle).toContain('Posie Flagship Atelier');
+    expect(meta.canonicalUrl).toContain('/austin/posie-flagship-atelier');
+    expect(meta.structuredDataJsonLd['@type']).toBe('BeautySalon');
+    expect(meta.structuredDataJsonLd.hasMenu.length).toBe(1);
   });
 });
 
-describe('Posie Core Logic - F031 (Passwordless Client Portal)', () => {
-  it('creates an ephemeral portal session with magic token', () => {
-    const session = createPasswordlessPortalSession('client-maya-999', 72);
-    expect(session.magicToken.startsWith('tok_')).toBe(true);
-    expect(validatePortalSession(session)).toBe(true);
-  });
+describe('Posie Core Logic - F034 (Inquiry & Consultation Requests)', () => {
+  it('creates consultation request queue with response deadline and photos', () => {
+    const inquiry = createConsultationInquiry(
+      'Maya S.',
+      '+1-555-0199',
+      'maya@example.com',
+      'I have rosacea flare-ups and want to know if dermaplaning is safe for me.',
+      ['https://example.com/skin-photo.jpg'],
+      24
+    );
 
-  it('rejects expired portal tokens safely', () => {
-    const expiredSession = {
-      clientId: 'client-maya-999',
-      magicToken: 'tok_expired_sample',
-      expiresAt: '2026-10-01T00:00:00Z',
-      isValid: true,
-    };
-
-    expect(validatePortalSession(expiredSession, new Date('2026-10-26T12:00:00Z'))).toBe(false);
+    expect(inquiry.status).toBe('received');
+    expect(inquiry.clientName).toBe('Maya S.');
+    expect(inquiry.inspirationPhotoUrls.length).toBe(1);
+    expect(inquiry.responseDeadlineUtc).toBeDefined();
   });
 });

@@ -1,6 +1,6 @@
-# Posie App User Guide: Core Modules (F001 - F031)
+# Posie App User Guide: Core Modules (F001 - F034)
 
-Welcome to **Posie**! This guide details features **F001 through F031** active across the platform.
+Welcome to **Posie**! This guide details features **F001 through F034** active across the platform.
 
 ---
 
@@ -157,16 +157,31 @@ Welcome to **Posie**! This guide details features **F001 through F031** active a
 
 ## F029 — Recurring Appointment Proposals
 * **What it is:** Automated recurring appointment proposals based on regular treatment cadences (every 2, 4, or 6 weeks).
-* **Key Invariant:** Proposed future occurrences with calendar conflicts remain flagged as tentative and require explicit owner review rather than silently double-booking.
 
 ---
 
 ## F030 — Self-Service Appointment Changes
 * **What it is:** Direct links allowing clients to confirm, reschedule, or cancel their bookings without calling the front desk.
-* **Key Invariant (WB F50):** Accurately computes cancellation fees or deposit refunds based on notice window policies before committing. Actions are idempotent against repeated clicks.
 
 ---
 
 ## F031 — Passwordless Client Portal
 * **What it is:** Direct access to appointments, signed waivers, saved preferences, and itemized receipts via secure magic links.
-* **Key Invariant (WB F6):** Eliminates app downloads and passwords. Ephemeral magic links grant instant, secure access with automatic session expiration.
+
+---
+
+## F032 — Brandable Booking Website
+* **What it is:** Custom-branded web themes and custom domain mapping (`glow.posieatelier.com`).
+* **Key Invariant (WB F13):** Mobile previews match production output 1:1, and failed publishes leave the active site completely intact with zero downtime.
+
+---
+
+## F033 — Website Search & Local Discovery
+* **What it is:** Automated Google Local and Schema.org `BeautySalon` structured data generation.
+* **Key Invariant:** Produces valid JSON-LD metadata for search engines with exact location coordinates, verified opening hours, and active menu items.
+
+---
+
+## F034 — Inquiry & Consultation Requests
+* **What it is:** A triage queue for client treatment questions, skin concerns, and inspiration photo submissions prior to booking.
+* **Key Invariant:** Assigns an accountable practitioner owner and response deadline (e.g. 24-hr SLA) without prematurely locking tentative slots on the public schedule.
