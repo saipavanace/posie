@@ -8,6 +8,11 @@ import {
   StaffProfileSchema,
   createPolicySnapshot,
   BookingPolicySchema,
+  generateDirectBookingUrl,
+  generateQrCodeSvg,
+  generatePrintableMenu,
+  renderPrintableMenuHtml,
+  compileMessage,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -133,7 +138,7 @@ describe('Posie Core Logic - F003 (Staff Profiles)', () => {
       displayName: 'Alex',
       role: 'Apprentice',
       bio: 'In training.',
-      isPublic: false, // Private
+      isPublic: false,
       active: true,
       languages: ['English'],
       skills: [],
@@ -188,5 +193,120 @@ describe('Posie Core Logic - F004 (Booking Policies)', () => {
     expect(snapshot.snapshotTerms).toContain('Cancellations: Must be made at least 24 hours');
     expect(snapshot.snapshotTerms).toContain('access@posieatelier.com');
     expect(snapshot.clientAcknowledged).toBe(true);
+  });
+});
+
+describe('Posie Core Logic - F005 (Direct Booking Links & QR Codes)', () => {
+  it('generates a direct booking URL with all query parameters intact', () => {
+    const url = generateDirectBookingUrl('https://posie.app', {
+      businessSlug: 'posie-austin',
+      serviceId: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
+      practitionerId: 'b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c',
+      campaignSource: 'instagram',
+      customUtm: 'bio_link_spring',
+    });
+
+    expect(url).toBe(
+      'https://posie.app/posie-austin/book?service=c8172c3d-d6a9-4519-9e8c-8f24c30c33ef&specialist=b3f5d8e2-1a4c-4e89-9b12-5c8e9f2a3b4c&src=instagram&utm=bio_link_spring'
+    );
+  });
+
+  it('generates an SVG QR code matching the chosen color', () => {
+    const svg = generateQrCodeSvg('https://posie.app/posie-austin/book', '#2C3E30');
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('#2C3E30');
+    expect(svg).toContain('fill="#FAF8F5"');
+  });
+});
+
+describe('Posie Core Logic - F006 (Printable Branded Materials)', () => {
+  const brand = {
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    businessName: 'Posie Beauty Atelier',
+    contactEmail: 'hello@posieatelier.com',
+    contactPhone: '+1-555-0199',
+    logoSvg: '<svg></svg>',
+    accentColor: '#C67D6E',
+    toneOfVoice: 'quirky-playful' as const,
+    version: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const services = [
+    {
+      id: 'c8172c3d-d6a9-4519-9e8c-8f24c30c33ef',
+      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
+      name: 'Hydra-Dew Glow Facial',
+      clientDescription: 'A 60-minute deep cleanse.',
+      preparationInstructions: 'Stop retinol 48h prior.',
+      basePriceInCents: 12000,
+      baseDurationMinutes: 60,
+      active: true,
+      addons: [],
+      practitionerOverrides: [],
+      version: 1,
+    },
+    {
+      id: 'd9283e4f-e7b0-5620-af9d-9f35d41d44fa',
+      categoryId: 'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
+      name: 'Arch Sculpt',
+      clientDescription: 'Crisp brow tint.',
+      basePriceInCents: 5000,
+      baseDurationMinutes: 30,
+      active: false, // inactive, must be excluded
+      addons: [],
+      practitionerOverrides: [],
+      version: 1,
+    },
+  ];
+
+  it('creates a printable price menu matching active catalog items', () => {
+    const menu = generatePrintableMenu(brand, services);
+    expect(menu.businessName).toBe('Posie Beauty Atelier');
+    expect(menu.items.length).toBe(1);
+    expect(menu.items[0].priceFormatted).toBe('$120.00');
+  });
+
+  it('renders valid printable HTML with print CSS styles', () => {
+    const menu = generatePrintableMenu(brand, services);
+    const html = renderPrintableMenuHtml(menu);
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('Posie Beauty Atelier');
+    expect(html).toContain('$120.00');
+  });
+});
+
+describe('Posie Core Logic - F007 (Message Template Library)', () => {
+  const vars = {
+    clientFirstName: 'Maya',
+    serviceName: 'Hydra-Dew Glow Facial',
+    appointmentDateFormatted: 'Thursday, Nov 12',
+    appointmentTimeFormatted: '2:30 PM',
+    specialistName: 'Chloe',
+    depositPaidFormatted: '$24.00',
+    remainingBalanceFormatted: '$96.00',
+    prepSummary: 'Stop retinol 48 hours prior.',
+    portalLink: 'https://posie.app/portal/visit-123',
+    businessName: 'Posie',
+    businessPhone: '+1-555-0199',
+  };
+
+  it('compiles a confirmation message in the quirky/playful tone without unresolved tokens', () => {
+    const message = compileMessage('confirmation', vars);
+    expect(message.compiledText).toContain('Hey Maya! ✨');
+    expect(message.compiledText).toContain('Hydra-Dew Glow Facial');
+    expect(message.compiledText).toContain('deposit of $24.00 is locked in');
+    expect(message.compiledText).not.toContain('{{');
+  });
+
+  it('compiles a reschedule message correctly', () => {
+    const message = compileMessage('reschedule', vars);
+    expect(message.compiledText).toContain("shifted your Hydra-Dew Glow Facial");
+  });
+
+  it('throws a validation error when required variables are missing', () => {
+    // @ts-expect-error deliberately missing variables
+    expect(() => compileMessage('confirmation', { clientFirstName: 'Maya' })).toThrow();
   });
 });

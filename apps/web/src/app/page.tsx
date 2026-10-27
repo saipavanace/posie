@@ -6,22 +6,23 @@ import {
   Sparkles,
   Clock,
   ShieldCheck,
-  Calendar,
-  Heart,
-  ChevronRight,
-  Info,
+  QrCode,
+  Printer,
+  MessageSquare,
+  Copy,
+  Check,
   CheckCircle2,
+  Info,
+  Share2,
 } from 'lucide-react';
 
-// F001 Brand State
+// Brand Information
 const brandData = {
   name: 'Posie',
   tagline: 'Glow up without the headache.',
-  toneDescription:
-    'Quirky, authoritative, playful — like your smart, fun older sister who knows all the skincare secrets and never talks down to you.',
 };
 
-// F002 Service Catalog Sample Data
+// Services
 const services = [
   {
     id: 's1',
@@ -55,7 +56,7 @@ const services = [
   },
 ];
 
-// F003 Staff Profiles
+// Specialists
 const staffMembers = [
   {
     id: 'st1',
@@ -63,7 +64,6 @@ const staffMembers = [
     role: 'Licensed Master Esthetician',
     bio: 'Obsessed with barrier repair, scalp massages, and making sure extractions never feel like torture.',
     skills: ['Hydra-Facials', 'Dermaplaning', 'Sensitive Skin'],
-    isPublic: true,
   },
   {
     id: 'st2',
@@ -71,11 +71,10 @@ const staffMembers = [
     role: 'Brow & Lash Specialist',
     bio: 'Queen of natural, fluffy brows. Believes your brows are sisters, not twins, but they should still hang out together.',
     skills: ['Brow Mapping', 'Lash Lift & Tint'],
-    isPublic: true,
   },
 ];
 
-// F004 Policies
+// Policies
 const bookingPolicies = [
   {
     title: 'Hold Your Spot (Deposit)',
@@ -92,26 +91,46 @@ const bookingPolicies = [
 ];
 
 export default function PosieStudioPage() {
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [selectedStaff, setSelectedStaff] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string>('s1');
+  const [selectedStaff, setSelectedStaff] = useState<string>('st1');
   const [quietVisit, setQuietVisit] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [messagePreviewType, setMessagePreviewType] = useState<'confirmation' | 'reschedule' | 'aftercare'>('confirmation');
+
+  const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
+  const activeStaffObj = staffMembers.find((s) => s.id === selectedStaff) || staffMembers[0];
+
+  // F005: Direct Link
+  const directLinkUrl = `https://posie.app/posie-austin/book?service=${selectedService}&specialist=${selectedStaff}&src=qr_card`;
+
+  // F007: Compiled Messages
+  const messagePreviews = {
+    confirmation: `Hey Maya! ✨ You're all set for ${activeServiceObj.name} on Thursday, Nov 12 at 2:30 PM with ${activeStaffObj.name}. Your deposit of $24.00 is locked in. Reminder: ${activeServiceObj.prep} See your visit details or adjust anytime: https://posie.app/portal/visit-123 Can't wait to see you! — Posie`,
+    reschedule: `Hey Maya! We've successfully shifted your ${activeServiceObj.name} to Friday, Nov 13 at 11:00 AM with ${activeStaffObj.name}. View your updated details here: https://posie.app/portal/visit-123 — Posie`,
+    aftercare: `Hey Maya! How are you glowing after your ${activeServiceObj.name} today? Remember to keep your skin hydrated and avoid direct sun today. Any questions? Text us at +1-555-0199! — Posie`,
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(directLinkUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px 80px' }}>
-      {/* F001: Brand Header */}
+      {/* Brand Header */}
       <header
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '50px',
+          marginBottom: '40px',
           borderBottom: '1px solid var(--color-border)',
-          paddingBottom: '24px',
+          paddingBottom: '20px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {/* Logo SVG */}
           <div
             style={{
               width: '44px',
@@ -142,43 +161,174 @@ export default function PosieStudioPage() {
         </div>
       </header>
 
-      {/* Hero Announcement (F001 Tone Showcase) */}
-      <section
-        style={{
-          backgroundColor: 'var(--color-secondary-light)',
-          borderRadius: '20px',
-          padding: '30px',
-          marginBottom: '48px',
-          border: '1px solid var(--color-secondary)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ maxWidth: '650px' }}>
-          <h2 style={{ fontSize: '1.75rem', color: 'var(--color-primary)', marginBottom: '10px' }}>
-            No complicated jargon. Just treatments that actually work.
-          </h2>
-          <p style={{ color: '#2C3E30', fontSize: '1rem', lineHeight: 1.5 }}>
-            Pick a treatment, choose your favorite specialist, and book in less than 60 seconds without creating
-            yet another annoying login account.
+      {/* F005 & F006 Showcase Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+        {/* F005: Direct Booking Link & QR Code */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <QrCode size={20} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 005
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Direct Booking Link & QR Code
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Pre-configures the exact treatment and specialist for Instagram bio, referral cards, or window signs.
+          </p>
+
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
+            {/* SVG QR Code */}
+            <svg width="100" height="100" viewBox="0 0 140 140" fill="none" style={{ borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+              <rect width="140" height="140" rx="12" fill="#FAF8F5" />
+              <rect x="14" y="14" width="32" height="32" rx="6" fill="#2C3E30" />
+              <rect x="20" y="20" width="20" height="20" rx="3" fill="#FAF8F5" />
+              <rect x="24" y="24" width="12" height="12" rx="2" fill="#2C3E30" />
+              <rect x="94" y="14" width="32" height="32" rx="6" fill="#2C3E30" />
+              <rect x="100" y="20" width="20" height="20" rx="3" fill="#FAF8F5" />
+              <rect x="104" y="24" width="12" height="12" rx="2" fill="#2C3E30" />
+              <rect x="14" y="94" width="32" height="32" rx="6" fill="#2C3E30" />
+              <rect x="20" y="100" width="20" height="20" rx="3" fill="#FAF8F5" />
+              <rect x="24" y="104" width="12" height="12" rx="2" fill="#2C3E30" />
+              <rect x="56" y="24" width="8" height="12" rx="2" fill="#2C3E30" />
+              <rect x="74" y="16" width="10" height="8" rx="2" fill="#2C3E30" />
+              <rect x="56" y="44" width="28" height="8" rx="2" fill="#2C3E30" />
+              <rect x="46" y="60" width="16" height="16" rx="3" fill="#2C3E30" />
+              <rect x="72" y="62" width="20" height="8" rx="2" fill="#2C3E30" />
+              <rect x="102" y="56" width="16" height="24" rx="2" fill="#2C3E30" />
+              <rect x="56" y="86" width="24" height="12" rx="2" fill="#2C3E30" />
+            </svg>
+
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  backgroundColor: 'var(--color-bg)',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.8rem',
+                  fontFamily: 'monospace',
+                  wordBreak: 'break-all',
+                  marginBottom: '10px',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                {directLinkUrl}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleCopy}>
+                {copiedLink ? <><Check size={14} style={{ marginRight: '6px' }} /> Copied!</> : <><Copy size={14} style={{ marginRight: '6px' }} /> Copy Link</>}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* F006: Printable Branded Materials */}
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Printer size={20} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>
+              Feature 006
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+            Printable Price Menus & Collateral
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+            Auto-compiles print-ready sheets for physical studio reception or customer takeaway bags.
+          </p>
+
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid var(--color-border)',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '0.9rem' }}>Posie Studio Menu (v1.3)</strong>
+              <Badge variant="sage">Letter / Print Ready</Badge>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+              3 Active treatments • Generated with live pricing & preparation guides.
+            </p>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => window.print()}
+            style={{ width: '100%' }}
+          >
+            <Printer size={16} style={{ marginRight: '8px' }} /> Print Treatment Menu
+          </Button>
+        </Card>
+      </div>
+
+      {/* F007: Message Template Library */}
+      <section style={{ marginBottom: '48px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <MessageSquare size={20} color="var(--color-tertiary)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase' }}>
+              Feature 007
+            </span>
+          </div>
+          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Message Template Library</h2>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+            Quirky, warm, authoritative communication sent to your clients automatically without missing variables.
           </p>
         </div>
-        <Button variant="primary" size="lg">
-          Book Appointment
-        </Button>
+
+        <Card style={{ backgroundColor: '#FFFFFF' }}>
+          {/* Template Tabs */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--color-border)', paddingBottom: '14px' }}>
+            <Button
+              variant={messagePreviewType === 'confirmation' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setMessagePreviewType('confirmation')}
+            >
+              Booking Confirmation
+            </Button>
+            <Button
+              variant={messagePreviewType === 'reschedule' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setMessagePreviewType('reschedule')}
+            >
+              Reschedule Notice
+            </Button>
+            <Button
+              variant={messagePreviewType === 'aftercare' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setMessagePreviewType('aftercare')}
+            >
+              Post-Visit Aftercare
+            </Button>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: 'var(--color-bg)',
+              borderRadius: '12px',
+              padding: '20px',
+              border: '1px solid var(--color-border)',
+              fontSize: '0.95rem',
+              lineHeight: 1.6,
+              color: 'var(--color-primary)',
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            {messagePreviews[messagePreviewType]}
+          </div>
+        </Card>
       </section>
 
-      {/* F002: Service Catalog */}
+      {/* Treatment Menu Selection */}
       <section style={{ marginBottom: '56px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
-          <div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Feature 002
-            </span>
-            <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
-          </div>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Transparent prices. No secret fees.</p>
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>The Treatment Menu</h2>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Select a treatment to update your direct link and message preview.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
@@ -191,7 +341,6 @@ export default function PosieStudioPage() {
                   cursor: 'pointer',
                   borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
                   borderWidth: isSelected ? '2px' : '1px',
-                  position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -212,23 +361,6 @@ export default function PosieStudioPage() {
                   <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
                     {svc.description}
                   </p>
-
-                  <div
-                    style={{
-                      backgroundColor: 'var(--color-bg)',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.82rem',
-                      color: 'var(--color-text)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    <Info size={16} color="var(--color-tertiary)" />
-                    <span><strong>Prep:</strong> {svc.prep}</span>
-                  </div>
                 </div>
 
                 <div
@@ -238,7 +370,6 @@ export default function PosieStudioPage() {
                     alignItems: 'center',
                     borderTop: '1px solid var(--color-border)',
                     paddingTop: '12px',
-                    marginTop: 'auto',
                   }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
@@ -254,12 +385,9 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* F003: Staff Profiles */}
+      {/* Specialists */}
       <section style={{ marginBottom: '56px' }}>
         <div style={{ marginBottom: '24px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Feature 003
-          </span>
           <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Meet Your Specialists</h2>
         </div>
 
@@ -300,16 +428,7 @@ export default function PosieStudioPage() {
                     <p style={{ fontSize: '0.85rem', color: 'var(--color-tertiary)', fontWeight: 600, marginBottom: '8px' }}>
                       {staff.role}
                     </p>
-                    <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginBottom: '12px' }}>
-                      {staff.bio}
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {staff.skills.map((s) => (
-                        <Badge key={s} variant="muted">
-                          {s}
-                        </Badge>
-                      ))}
-                    </div>
+                    <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>{staff.bio}</p>
                   </div>
                 </div>
               </Card>
@@ -318,12 +437,9 @@ export default function PosieStudioPage() {
         </div>
       </section>
 
-      {/* F004: Policies & Booking Confirmation */}
-      <section style={{ marginBottom: '40px' }}>
+      {/* Booking Policies & Confirmation */}
+      <section>
         <div style={{ marginBottom: '24px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Feature 004
-          </span>
           <h2 style={{ fontSize: '1.9rem', color: 'var(--color-primary)' }}>Honest, Plain-Language Policies</h2>
         </div>
 
@@ -339,21 +455,20 @@ export default function PosieStudioPage() {
           ))}
         </div>
 
-        {/* Interactive Booking Summary Card */}
         <Card style={{ border: '2px solid var(--color-primary)', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ fontSize: '1.4rem', color: 'var(--color-primary)', marginBottom: '16px' }}>
-            Ready to confirm your appointment?
+            Book Your Visit Now
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Selected Treatment:</span>
-              <strong>{services.find((s) => s.id === selectedService)?.name || 'Please select a treatment above'}</strong>
+              <span style={{ color: 'var(--color-text-muted)' }}>Treatment:</span>
+              <strong>{activeServiceObj.name} (${activeServiceObj.price})</strong>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
               <span style={{ color: 'var(--color-text-muted)' }}>Specialist:</span>
-              <strong>{staffMembers.find((s) => s.id === selectedStaff)?.name || 'Any Available Specialist'}</strong>
+              <strong>{activeStaffObj.name}</strong>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
@@ -386,7 +501,7 @@ export default function PosieStudioPage() {
               <div>
                 <strong>Appointment Snapshot Created!</strong>
                 <p style={{ fontSize: '0.85rem' }}>
-                  A link has been simulated. Your terms are locked to Policy Version 1.0 without account creation.
+                  Confirmation sent using the Message Template Library (F007).
                 </p>
               </div>
             </div>
@@ -394,11 +509,9 @@ export default function PosieStudioPage() {
             <Button
               variant="primary"
               size="lg"
-              disabled={!selectedService}
               onClick={() => setBookingConfirmed(true)}
-              style={{ opacity: selectedService ? 1 : 0.6 }}
             >
-              {selectedService ? 'Confirm & Lock Slot (No Account Needed)' : 'Select a Treatment to Continue'}
+              Confirm & Lock Slot (No Account Needed)
             </Button>
           )}
         </Card>
