@@ -168,4 +168,9 @@ export * from './country_operations';
 export * from './bridal_event_workspace';
 export * from './safe_bulk_changes';
 export * from './late_running_recovery';
+export * from './shared_facility_rentals';
+export * from './continuity_handover';
+export * from './actionable_analytics';
+export * from './electronic_prescribing';
+export * from './telehealth_network';
 

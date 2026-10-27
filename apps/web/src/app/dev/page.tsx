@@ -526,6 +526,26 @@ export default function PosieStudioPage() {
   const [lateRunningDelayMinutes, setLateRunningDelayMinutes] = useState<number>(20);
   const [arrivalUpdateDispatched, setArrivalUpdateDispatched] = useState<boolean>(false);
 
+  // F171 Shared Room & Equipment Rentals State
+  const [facilityReservationCheckedIn, setFacilityReservationCheckedIn] = useState<boolean>(true);
+  const [facilityDamageDetected, setFacilityDamageDetected] = useState<boolean>(false);
+
+  // F172 Business Continuity Handover State
+  const [continuityPackActivated, setContinuityPackActivated] = useState<boolean>(false);
+  const [continuityResourceQueried, setContinuityResourceQueried] = useState<'client_contacts' | 'banking_payouts'>('client_contacts');
+
+  // F173 Action Based Analytics State
+  const [analyticsProposalExecuted, setAnalyticsProposalExecuted] = useState<boolean>(false);
+  const [dismissalSimulated, setDismissalSimulated] = useState<boolean>(false);
+
+  // F174 Electronic Prescribing State
+  const [prescribingAllergyConflict, setPrescribingAllergyConflict] = useState<boolean>(false);
+  const [prescriptionTransmitted, setPrescriptionTransmitted] = useState<boolean>(true);
+
+  // F175 Clinical Telehealth Network State
+  const [telehealthMatchedState, setTelehealthMatchedState] = useState<'US-NY' | 'US-CA'>('US-NY');
+  const [telehealthAcuteContraindication, setTelehealthAcuteContraindication] = useState<boolean>(false);
+
   const activeServiceObj = services.find((s) => s.id === selectedService) || services[0];
 
   return (
@@ -546,7 +566,7 @@ export default function PosieStudioPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '1.2rem' }}>🧪</span>
-          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F170)</strong>
+          <strong>Posie Developer Feature Lab &amp; Regression Matrix (F001 – F175)</strong>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <a
@@ -9482,6 +9502,332 @@ export default function PosieStudioPage() {
               onClick={() => setLateRunningDelayMinutes(lateRunningDelayMinutes === 20 ? 30 : 20)}
             >
               Adjust Overrun ({lateRunningDelayMinutes === 20 ? 'Set to +30m' : 'Set to +20m'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F171: Shared Room and Equipment Rentals */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Package size={18} color="var(--color-primary)" />
+                Shared Facility &amp; Suite Rentals (F171)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Short-term suite and equipment reservations, practitioner insurance verification, and damage escrows.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={facilityDamageDetected ? 'rose' : (facilityReservationCheckedIn ? 'sage' : 'muted')}>
+                {facilityDamageDetected ? 'Damage Assessed ($150 Withheld)' : (facilityReservationCheckedIn ? 'Checked In (Suite C Laser Room)' : 'Booked & Escrowed')}
+              </Badge>
+              <Badge variant="muted">WB F171 / Rule F171</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Facility Resource:</div>
+              <strong>Laser &amp; Aesthetics Suite C</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Renter Operator:</div>
+              <strong>Chloe Bennett, LE (Verified NY License &amp; Insurance)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Segregated Security Deposit:</div>
+              <strong style={{ color: '#2B5329' }}>$250.00 Held on Segregated Escrow</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Inspection Status:</div>
+              <strong style={{ color: facilityDamageDetected ? '#A65B32' : '#2B5329' }}>
+                {facilityDamageDetected ? 'Damage: Cracked Handpiece ($150 fee, $100 refund)' : 'Check-in photos recorded, all units functional'}
+              </strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🏢 <strong>WB F171 Invariant:</strong> Verifies practitioner eligibility &amp; insurance; keeps security deposits strictly segregated from rent; enforces check-in/check-out photo condition inspections and damage reporting.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={facilityReservationCheckedIn ? 'outline' : 'primary'}
+              onClick={() => setFacilityReservationCheckedIn(!facilityReservationCheckedIn)}
+            >
+              {facilityReservationCheckedIn ? 'Reset to Booked' : 'Check In Suite (Record Photo Checklist)'}
+            </Button>
+            <Button
+              size="sm"
+              variant={facilityDamageDetected ? 'outline' : 'primary'}
+              onClick={() => setFacilityDamageDetected(!facilityDamageDetected)}
+            >
+              {facilityDamageDetected ? 'Resolve Damage Assessment' : 'Assess Checkout Damage ($150 Withheld)'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F172: Business Continuity Handover */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={18} color="var(--color-primary)" />
+                Emergency Business Continuity Handover (F172)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Temporary emergency delegation for medical leave, scoped client contacts, and banking firewalls.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={continuityPackActivated ? 'sage' : 'muted'}>
+                {continuityPackActivated ? 'Emergency Pack: Activated' : 'Pack: Dormant / Configured'}
+              </Badge>
+              <Badge variant="muted">WB F172 / Rule F172</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Designated Cover Proxy:</div>
+              <strong>Elena Rostova (14-Day Authorized Window)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Passphrase Auth Status:</div>
+              <strong style={{ color: continuityPackActivated ? '#2B5329' : '#666' }}>
+                {continuityPackActivated ? 'Verified: Token Authenticated' : 'Armed (Awaiting Emergency Trigger)'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Scoped Resource Query:</div>
+              <strong style={{ color: continuityResourceQueried === 'client_contacts' ? '#2B5329' : '#A65B32' }}>
+                {continuityResourceQueried === 'client_contacts' ? 'Permitted: Urgent Client Schedule' : 'BLOCKED: Banking & Equity Firewalled'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Access Audit Log:</div>
+              <strong>{continuityPackActivated ? '4 Logged Events (Tamper-Evident)' : '0 Events (Dormant)'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🛡️ <strong>WB F172 Invariant:</strong> Prepares authorized emergency cover packs; owner controls activation; designated proxy gets scoped appointment access while banking credentials and equity remain strictly firewalled.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={continuityPackActivated ? 'outline' : 'primary'}
+              onClick={() => setContinuityPackActivated(!continuityPackActivated)}
+            >
+              {continuityPackActivated ? 'Deactivate Emergency Pack' : 'Activate Continuity Pack (Passphrase Verified)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setContinuityResourceQueried(continuityResourceQueried === 'client_contacts' ? 'banking_payouts' : 'client_contacts')}
+            >
+              Simulate Resource Query ({continuityResourceQueried === 'client_contacts' ? 'Attempt Banking Access' : 'View Urgent Clients'})
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F173: Action Based Analytics Workspace */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} color="var(--color-primary)" />
+                Action-Based Analytics &amp; Truthful Outcomes (F173)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Analytics-to-action engine converting metric findings into previewable proposals with truthful benefit reporting.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={analyticsProposalExecuted ? 'sage' : 'muted'}>
+                {analyticsProposalExecuted ? 'Proposal Executed (Schedule Compression)' : 'Preview Ready'}
+              </Badge>
+              <Badge variant="muted">WB F173 / Rule F173</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Validated Metric Finding:</div>
+              <strong>Thursday Afternoon Occupancy (38% vs 75% Baseline)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Action Proposal:</div>
+              <strong>Schedule Block Compression (Eliminates Midweek Gaps)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Verified Incremental Revenue:</div>
+              <strong style={{ color: '#2B5329' }}>{analyticsProposalExecuted ? '+$900.00 Realized (vs Baseline)' : '$0.00 (Pre-intervention)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Speculative Time Saved:</div>
+              <strong style={{ color: '#A65B32' }}>8.5 Hours (Reported Separately)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            📊 <strong>WB F173 Invariant:</strong> Turns findings into previewable action proposals; reports observed actual financial outcomes strictly separately from speculative time saved; claims benefits only against valid baselines.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={analyticsProposalExecuted ? 'outline' : 'primary'}
+              onClick={() => setAnalyticsProposalExecuted(!analyticsProposalExecuted)}
+            >
+              {analyticsProposalExecuted ? 'Reset Proposal Execution' : 'Execute Proposal (Owner Authorized)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDismissalSimulated(!dismissalSimulated)}
+            >
+              {dismissalSimulated ? 'Restore Proposal' : 'Simulate Dismissal Option'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F174: Electronic Prescribing */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <HeartPulse size={18} color="var(--color-primary)" />
+                Electronic Prescribing &amp; Allergy Safety Gates (F174)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                Prescriber NPI/DEA verification, aesthetic medication formulations, and allergy contraindication gates.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={prescribingAllergyConflict ? 'rose' : (prescriptionTransmitted ? 'sage' : 'muted')}>
+                {prescribingAllergyConflict ? 'Blocked: Severe Allergy Conflict' : (prescriptionTransmitted ? 'Transmitted to Compounding Pharmacy' : 'Prescription Verified')}
+              </Badge>
+              <Badge variant="muted">WB F174 / Rule F174</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Licensed Prescriber:</div>
+              <strong>Dr. Sarah Vance, MD (NPI: 1982736450 • DEA: BV1982734)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Aesthetic Formulation:</div>
+              <strong>{prescribingAllergyConflict ? 'BLT Topical Cream (Benzocaine 20%, Lidocaine 6%)' : 'Valacyclovir 500mg Tablet (Prophylactic)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Allergy Safety Cross-Check:</div>
+              <strong style={{ color: prescribingAllergyConflict ? '#A65B32' : '#2B5329' }}>
+                {prescribingAllergyConflict ? 'SEVERE CONFLICT: Patient Lidocaine Allergy' : 'Clean: No Documented Drug Allergies'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Certified Pharmacy Target:</div>
+              <strong>Atelier Compounding NYC (NCPDP: 992144)</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            💊 <strong>WB F174 Invariant:</strong> Integrates certified prescribers within validated medical scope; verifies NPI, DEA, and license; cross-references patient allergies and blocks transmission on contraindications.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant={prescribingAllergyConflict ? 'outline' : 'primary'}
+              onClick={() => setPrescribingAllergyConflict(!prescribingAllergyConflict)}
+            >
+              {prescribingAllergyConflict ? 'Switch to Safe Medication (Valacyclovir)' : 'Simulate Allergy Conflict (BLT Cream on Lidocaine Patient)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={prescribingAllergyConflict}
+              onClick={() => setPrescriptionTransmitted(!prescriptionTransmitted)}
+            >
+              {prescriptionTransmitted ? 'Transmission Confirmed' : 'Transmit eRx to Pharmacy'}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {/* F175: Clinical Telehealth Network */}
+      <section style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Globe size={18} color="var(--color-primary)" />
+                Clinical Telehealth Network &amp; Good Faith Exams (F175)
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                State-specific clinician matching, good-faith medical clearance exams, and acute clinical escalation packets.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Badge variant={telehealthAcuteContraindication ? 'rose' : 'sage'}>
+                {telehealthAcuteContraindication ? 'Escalated: In-Person Urgent Referral' : `Cleared (365-Day Exam • ${telehealthMatchedState})`}
+              </Badge>
+              <Badge variant="muted">WB F175 / Rule F175</Badge>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '0.85rem', marginBottom: '16px' }}>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Patient State Location:</div>
+              <strong>{telehealthMatchedState} (Matched exclusively with state license)</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Evaluating Clinician:</div>
+              <strong>{telehealthMatchedState === 'US-NY' ? 'Dr. Sarah Vance, MD (NY / NJ Licensed)' : 'Dr. Kevin Zhao, MD (CA Licensed)'}</strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Exam Clearance Outcome:</div>
+              <strong style={{ color: telehealthAcuteContraindication ? '#A65B32' : '#2B5329' }}>
+                {telehealthAcuteContraindication ? 'Active Facial Infection: Deferral + Urgent Packet' : 'Good-Faith Exam Complete: Cleared for Neuromodulators'}
+              </strong>
+            </div>
+            <div style={{ background: '#FFF', padding: '10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+              <div style={{ color: '#666', fontSize: '0.75rem' }}>Escalation Protocol:</div>
+              <strong>{telehealthAcuteContraindication ? 'Structured In-Person Referral Dispatched' : 'Standard Routine Monitoring'}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '8px 12px', borderRadius: '4px', fontSize: '0.74rem', color: '#666', marginBottom: '16px' }}>
+            🩺 <strong>WB F175 Invariant:</strong> Matches patients strictly with clinicians licensed in the patient&apos;s physical state; evaluates good-faith exams; acute contraindications halt clearance and trigger immediate in-person escalation.
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTelehealthMatchedState(telehealthMatchedState === 'US-NY' ? 'US-CA' : 'US-NY')}
+            >
+              Toggle Patient State ({telehealthMatchedState === 'US-NY' ? 'Switch to California (US-CA)' : 'Switch to New York (US-NY)'})
+            </Button>
+            <Button
+              size="sm"
+              variant={telehealthAcuteContraindication ? 'outline' : 'primary'}
+              onClick={() => setTelehealthAcuteContraindication(!telehealthAcuteContraindication)}
+            >
+              {telehealthAcuteContraindication ? 'Clear Acute Contraindication' : 'Simulate Acute Skin Infection (Trigger Escalation)'}
             </Button>
           </div>
         </Card>

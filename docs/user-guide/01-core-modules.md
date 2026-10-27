@@ -1014,6 +1014,37 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Real-time appointment overrun mitigation and guest recovery suite calculating downstream schedule impact, absorbing buffer intervals, and dispatching staff-approved realistic arrival updates.
 * **Key Invariant (Basis: Expansion (X); DATA MSG, WB F170, Rule F170, Table 90):** **Buffer Absorption & Staff-Approved Transparent Updates.** "When a visit overruns, suggest limited schedule changes and send approved, realistic arrival updates; staff approve changes and clients can request alternatives." Automatically calculates net downstream delays while absorbing available buffer intervals. Arrival notices require staff signoff, offering guests clear options: accept adjusted time, reschedule with late fee waived, or switch to an available peer provider.
 
+---
+
+## F171 — Shared Room and Equipment Rentals (WB F171, Table 90, Table 105)
+* **What it is:** Capacity sharing and short-term facility rental suite allowing verified independent practitioners to reserve treatment rooms, laser suites, and styling stations.
+* **Key Invariant (Basis: Expansion (X); NET LEG PAY, WB F171, Rule F171, Table 90):** **Practitioner Eligibility & Segregated Damage Escrows.** "Allow approved businesses to reserve available facilities with eligibility, deposits and damage reporting; resource calendar, contracts and independent merchant model; every booking has a responsible operator." Verifies professional licenses and active liability insurance before booking. Security deposits remain strictly segregated from rental fees on distinct ledgers, with mandatory check-in/check-out photo condition checklists and deposit withholding for verified damage.
+
+---
+
+## F172 — Business Continuity Handover (WB F172, Table 90)
+* **What it is:** Emergency contingency handover manager preparing authorized temporary cover packs for solo practitioners or studio owners during sudden medical leave or emergencies.
+* **Key Invariant (Basis: Expansion (X); OPS LEG SEC, WB F172, Rule F172, Table 90):** **Role-Limited Temporary Delegation & Banking Firewalls.** "Prepare an authorized temporary cover pack for illness or emergency, including clients to contact and unresolved work; role-limited access and contingency contacts; the owner controls activation and records every access." The designated proxy receives temporary, emergency access strictly limited to imminent appointments, client contacts, and open work. Banking credentials, merchant payout accounts, and business equity remain strictly firewalled.
+
+---
+
+## F173 — Action Based Analytics Workspace (WB F173, Table 90, Table 108/109)
+* **What it is:** Analytics-to-action engine transforming observed metric deviations into previewable schedule consolidation, rebooking outreach, or operational proposals.
+* **Key Invariant (Basis: Growth (G); DATA AI, WB F173, Rule F173, Table 90):** **Truthful Outcome Reporting & Explicit Action Dismissal.** "Turn a validated finding into a previewable task, campaign or schedule proposal; report observed outcomes separately from estimated time saved; claim incremental benefit only with a valid comparison." Each recommendation displays underlying metric evidence, estimated operational costs, and an explicit dismissal option. Verified actual financial gains are strictly separated from speculative "time saved" estimates.
+
+---
+
+## F174 — Electronic Prescribing (WB F174, Table 91, Table 108)
+* **What it is:** Regulated electronic prescription suite for aesthetic medical treatments (e.g. compounded topical BLT anesthetics, post-procedure prophylactics) integrating prescriber credential verification and pharmacy transmission.
+* **Key Invariant (Basis: Expansion (X); CLIN LEG PART SEC, WB F174, Rule F174, Table 91):** **Prescriber Verification & Allergy Contraindication Gates.** "Integrate a certified prescribing provider with prescriber verification and the required medical workflow; operate only within validated clinical scope." Validates prescriber NPI, DEA, and state medical licenses. Automatically cross-references patient allergy profiles before routing orders to certified compounding pharmacies; software never substitutes for independent medical judgment.
+
+---
+
+## F175 — Clinical Telehealth Network (WB F175, Table 91, Table 105)
+* **What it is:** Telemedicine clinician network and good-faith medical clearance consultation suite for elective aesthetic and wellness procedures.
+* **Key Invariant (Basis: Expansion (X); NET CLIN LEG OPS, WB F175, Rule F175, Table 91):** **Strict State Licensure Matching & Immediate Clinical Escalation.** "Recruit and credential clinicians for permitted consultations with clear responsibility and escalation; availability and coverage are verified before sale." Matches patients exclusively with clinicians credentialed and licensed in the patient's physical state. Contraindications or acute red flags (e.g. active infection, pregnancy) trigger immediate clearance deferrals or structured escalation packets to in-person emergency care.
+
+
 
 
 

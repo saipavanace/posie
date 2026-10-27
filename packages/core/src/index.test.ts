@@ -398,6 +398,25 @@ import {
   type CatalogItem,
   type ActiveBookingItem,
   type DownstreamAppointment,
+  createFacilityReservation,
+  checkInFacilityRental,
+  checkOutFacilityRental,
+  type RenterEligibilityCredentials,
+  type FacilityRentalListing,
+  configureEmergencyHandoverPack,
+  activateEmergencyHandover,
+  verifyHandoverResourceAccess,
+  generateActionProposalFromFinding,
+  executeActionProposal,
+  reportActionOutcomes,
+  verifyPrescriberCredentials,
+  createElectronicPrescription,
+  transmitPrescriptionToPharmacy,
+  type PrescriberCredentials,
+  matchTelehealthClinician,
+  conductTelehealthConsultation,
+  escalateUrgentClinicalCase,
+  type TelehealthClinician,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -9254,6 +9273,369 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       const reschedResolution = recordClientDelayResolution(notifications[1], 'reschedule_complimentary');
       expect(reschedResolution.resolutionStatus).toBe('rescheduled');
       expect(reschedResolution.resolutionSummary).toContain('late-fee penalty waived');
+    });
+  });
+
+  describe('Posie Core Logic - F171 (Shared Room and Equipment Rentals)', () => {
+    const validRenter: RenterEligibilityCredentials = {
+      renterBusinessName: 'Radiance Skin Studio LLC',
+      responsibleOperatorName: 'Chloe Bennett, LE',
+      professionalLicenseNumber: 'LE-NY-88291',
+      licenseJurisdiction: 'US-NY',
+      insurancePolicyNumber: 'POL-HISC-992144',
+      insuranceExpiryDate: '2027-12-31', // Active
+      isVerified: true,
+    };
+
+    const listing: FacilityRentalListing = {
+      facilityId: 'suite_medspa_3',
+      facilityName: 'Laser & Aesthetics Suite C',
+      resourceType: 'medspa_laser_suite',
+      hourlyRentalRate: 75.0,
+      dailyRentalRate: 450.0,
+      requiredSecurityDeposit: 250.0,
+      includedEquipment: ['Lumenis M22 IPL', 'HydraFacial Elite MD'],
+    };
+
+    it('validates credentials, manages segregated deposits, and executes check-in/check-out damage reporting', () => {
+      // 1. Rejects unverified renter
+      expect(() =>
+        createFacilityReservation({
+          reservationId: 'res_101',
+          listing,
+          renter: { ...validRenter, isVerified: false },
+          startTime: '2026-11-20T09:00:00Z',
+          endTime: '2026-11-20T13:00:00Z',
+        })
+      ).toThrow('identity and professional license must be verified');
+
+      // 2. Creates valid reservation with 4 hours @ $75 = $300 fee + $250 deposit
+      const res = createFacilityReservation({
+        reservationId: 'res_101',
+        listing,
+        renter: validRenter,
+        startTime: '2026-11-20T09:00:00Z',
+        endTime: '2026-11-20T13:00:00Z',
+        currentDateStr: '2026-11-10',
+      });
+
+      expect(res.rentalDurationHours).toBe(4);
+      expect(res.rentalFeeTotal).toBe(300.0);
+      expect(res.securityDepositHeld).toBe(250.0);
+      expect(res.status).toBe('booked');
+
+      // 3. Check-in inspection
+      const checkedIn = checkInFacilityRental(res, {
+        surfacesClean: true,
+        equipmentFunctional: true,
+        wasteProperlyDisposed: true,
+        photoUrls: ['https://storage.posie.com/inspections/suite_c_in.jpg'],
+      });
+      expect(checkedIn.status).toBe('checked_in');
+
+      // 4. Damage triage at check-out (Handpiece crack: $150 damage assessed)
+      const checkedOut = checkOutFacilityRental(
+        checkedIn,
+        {
+          surfacesClean: true,
+          equipmentFunctional: false,
+          wasteProperlyDisposed: true,
+          notes: 'Handpiece outer casing cracked during use.',
+          photoUrls: ['https://storage.posie.com/inspections/suite_c_out_damage.jpg'],
+        },
+        {
+          damageDescription: 'Handpiece outer casing cracked',
+          repairCost: 150.0,
+        }
+      );
+
+      expect(checkedOut.status).toBe('damage_flagged');
+      expect(checkedOut.damageReport?.depositWithheld).toBe(150.0);
+      expect(checkedOut.damageReport?.refundedDeposit).toBe(100.0);
+    });
+  });
+
+  describe('Posie Core Logic - F172 (Business Continuity Handover)', () => {
+    it('activates emergency cover with passphrase, grants scoped client access, and strictly firewalls banking and equity', () => {
+      // 1. Configure emergency handover pack
+      const pack = configureEmergencyHandoverPack({
+        packId: 'pack_continuity_maya',
+        ownerPractitionerId: 'prac_maya_lin',
+        ownerPractitionerName: 'Maya Lin',
+        businessName: 'Atelier Maya SoHo',
+        designatedProxy: {
+          proxyId: 'proxy_elena',
+          fullName: 'Elena Rostova',
+          relationship: 'colleague',
+          phone: '+1-212-555-0199',
+          email: 'elena@atelierposie.com',
+          authorizedWindowDays: 14,
+        },
+        passphraseHash: 'EMERGENCY_COVER_TOKEN_2026',
+        urgentClientContacts: [
+          {
+            appointmentId: 'appt_991',
+            clientId: 'cl_charlotte',
+            clientName: 'Charlotte Miller',
+            clientPhone: '+1-212-555-0211',
+            scheduledTime: '2026-11-15T10:00:00Z',
+            serviceName: 'Balayage Blonde',
+            actionRequired: 'reschedule_requested',
+          },
+        ],
+        unresolvedWorkSummary: 'Color inventory shipment arriving Tuesday; notify Charlotte Miller about appointment delay.',
+      });
+
+      expect(pack.status).toBe('dormant_configured');
+
+      // 2. Reject incorrect passphrase
+      expect(() =>
+        activateEmergencyHandover(pack, {
+          activatedBy: 'Elena Rostova',
+          emergencyPassphrase: 'WRONG_PASSPHRASE',
+          reason: 'Maya hospitalized with acute appendicitis',
+        })
+      ).toThrow('Invalid emergency handover passphrase');
+
+      // 3. Activate valid emergency session
+      const { updatedPack, session } = activateEmergencyHandover(pack, {
+        activatedBy: 'Elena Rostova',
+        emergencyPassphrase: 'EMERGENCY_COVER_TOKEN_2026',
+        reason: 'Maya hospitalized with acute appendicitis',
+      });
+
+      expect(updatedPack.status).toBe('activated_in_progress');
+      expect(session.active).toBe(true);
+
+      // 4. Invariant: Scoped access permits urgent client communication
+      const clientAccess = verifyHandoverResourceAccess(updatedPack, session, 'urgent_client_contacts');
+      expect(clientAccess.permitted).toBe(true);
+
+      // 5. Invariant: Banking credentials & equity documents are strictly firewalled
+      const bankingAccess = verifyHandoverResourceAccess(updatedPack, session, 'financial_banking_payouts');
+      expect(bankingAccess.permitted).toBe(false);
+      expect(bankingAccess.reason).toContain('strictly firewalled from emergency continuity proxies');
+
+      const equityAccess = verifyHandoverResourceAccess(updatedPack, session, 'equity_and_tax_docs');
+      expect(equityAccess.permitted).toBe(false);
+
+      expect(updatedPack.accessLog).toHaveLength(4); // Activation + 3 resource checks
+    });
+  });
+
+  describe('Posie Core Logic - F173 (Action Based Analytics Workspace)', () => {
+    it('turns metric findings into previewable action proposals, requires owner signoff, and separates real revenue from speculative time saved', () => {
+      // 1. Metric finding: Thursday afternoon occupancy drop
+      const proposal = generateActionProposalFromFinding({
+        findingId: 'finding_occ_thu',
+        metricKey: 'thursday_afternoon_occupancy',
+        metricTitle: 'Thursday Afternoon Station Occupancy',
+        observedValue: 38,
+        targetBaselineValue: 75,
+        unit: '%',
+        evidenceSummary: 'Thursday 13:00-17:00 shows 38% booking rate across 4 consecutive weeks.',
+      });
+
+      expect(proposal.proposalType).toBe('schedule_block_consolidation');
+      expect(proposal.dismissalOptionAvailable).toBe(true);
+      expect(proposal.status).toBe('preview_ready');
+
+      // 2. Execute requires owner approval
+      expect(() =>
+        executeActionProposal(proposal, {
+          approved: false,
+          ownerName: 'Maya Lin',
+          baselineRevenue: 4200.0,
+        })
+      ).toThrow('verified owner approval');
+
+      const execution = executeActionProposal(proposal, {
+        approved: true,
+        ownerName: 'Maya Lin',
+        baselineRevenue: 4200.0,
+      });
+      expect(execution.status).toBe('active_monitoring');
+
+      // 3. Post-action outcome: Truthful reporting
+      const report = reportActionOutcomes(execution, 5100.0, 8.5);
+      expect(report.trueIncrementalBenefit).toBe(900.0); // $5100 - $4200 baseline
+      expect(report.speculativeTimeSavedHoursReportedSeparately).toBe(8.5); // Never added to revenue dollars!
+      expect(report.claimValid).toBe(true);
+    });
+  });
+
+  describe('Posie Core Logic - F174 (Electronic Prescribing)', () => {
+    const licensedPrescriber: PrescriberCredentials = {
+      prescriberId: 'presc_md_vance',
+      fullName: 'Dr. Sarah Vance, MD',
+      professionalRole: 'MD',
+      stateLicenseNumber: 'MD-CA-402911',
+      licenseJurisdiction: 'US-CA',
+      npiNumber: '1982736450',
+      deaRegistrationNumber: 'BV1982734',
+      prescribingAuthorityActive: true,
+    };
+
+    it('validates prescriber credentials, cross-references allergies, blocks conflicts, and transmits clean prescriptions', () => {
+      // 1. Validate prescriber
+      const check = verifyPrescriberCredentials(licensedPrescriber);
+      expect(check.verified).toBe(true);
+
+      // 2. Patient with documented lidocaine allergy attempting to receive BLT cream
+      const conflictedRx = createElectronicPrescription({
+        prescriptionId: 'rx_blt_101',
+        clientId: 'cl_sophia',
+        clientName: 'Sophia Miller',
+        clientDob: '1992-04-12',
+        clientAllergies: ['Lidocaine', 'Sulfa'],
+        prescriber: licensedPrescriber,
+        medication: {
+          medicationName: 'BLT Topical Cream (Benzocaine 20%, Lidocaine 6%, Tetracaine 4%)',
+          dosageForm: 'Topical Ointment',
+          strength: '20/6/4%',
+          directionsSig: 'Apply thin layer 30 min before procedure',
+          quantityDispense: 30,
+          quantityUnit: 'grams',
+          refillsAllowed: 0,
+        },
+        diagnosisCodeICD10: 'L70.0',
+      });
+
+      expect(conflictedRx.status).toBe('rejected_allergy_conflict');
+      expect(conflictedRx.allergyWarning).toContain('Severe contraindication');
+
+      // 3. Block transmission of conflicted prescription
+      expect(() =>
+        transmitPrescriptionToPharmacy(conflictedRx, {
+          ncpdpId: 'NCPDP_992144',
+          pharmacyName: 'Atelier Compounding Pharmacy NYC',
+          address: '450 Lexington Ave, NY',
+          phone: '+1-212-555-0811',
+        })
+      ).toThrow('Cannot transmit prescription in status "rejected_allergy_conflict"');
+
+      // 4. Clean prescription: Prophylactic Valacyclovir for Laser Resurfacing (Allergy-free)
+      const cleanRx = createElectronicPrescription({
+        prescriptionId: 'rx_val_102',
+        clientId: 'cl_eva',
+        clientName: 'Eva Green',
+        clientDob: '1988-08-20',
+        clientAllergies: ['Penicillin'],
+        prescriber: licensedPrescriber,
+        medication: {
+          medicationName: 'Valacyclovir 500mg Tablet',
+          dosageForm: 'Oral Tablet',
+          strength: '500mg',
+          directionsSig: 'Take 1 tablet twice daily starting 1 day prior to laser',
+          quantityDispense: 10,
+          quantityUnit: 'tablets',
+          refillsAllowed: 0,
+        },
+        diagnosisCodeICD10: 'B00.9',
+      });
+
+      expect(cleanRx.status).toBe('verified_ready');
+
+      const txRecord = transmitPrescriptionToPharmacy(cleanRx, {
+        ncpdpId: 'NCPDP_992144',
+        pharmacyName: 'Atelier Compounding Pharmacy NYC',
+        address: '450 Lexington Ave, NY',
+        phone: '+1-212-555-0811',
+      });
+
+      expect(txRecord.deliveryConfirmationStatus).toBe('delivered');
+      expect(txRecord.prescriberDigitalSignature).toContain('Dr. Sarah Vance, MD');
+    });
+  });
+
+  describe('Posie Core Logic - F175 (Clinical Telehealth Network)', () => {
+    const clinicianRoster: TelehealthClinician[] = [
+      {
+        clinicianId: 'doc_ny_sarah',
+        fullName: 'Dr. Sarah Vance, MD',
+        title: 'MD',
+        licensedStates: ['US-NY', 'US-NJ'],
+        npiNumber: '1982736450',
+        telehealthCertified: true,
+        activeStatus: 'available',
+      },
+      {
+        clinicianId: 'doc_ca_kevin',
+        fullName: 'Dr. Kevin Zhao, MD',
+        title: 'MD',
+        licensedStates: ['US-CA'],
+        npiNumber: '1827364590',
+        telehealthCertified: true,
+        activeStatus: 'available',
+      },
+    ];
+
+    it('matches clinicians strictly by client physical state, conducts good faith exams, and escalates acute contraindications', () => {
+      // 1. Match clinician for NY patient
+      const nyMatch = matchTelehealthClinician('US-NY', clinicianRoster);
+      expect(nyMatch?.clinicianId).toBe('doc_ny_sarah');
+
+      // 2. Reject cross-state consultation if clinician is not licensed in patient state
+      expect(() =>
+        conductTelehealthConsultation({
+          consultationId: 'tele_101',
+          clientId: 'cl_california_guest',
+          clientName: 'Chloe California',
+          clientPhysicalState: 'US-CA',
+          clinician: clinicianRoster[0], // Licensed only in NY & NJ
+          primaryConcernOrServiceRequested: 'Good Faith Exam for Dermal Fillers',
+          reportedMedicalHistory: {
+            allergies: [],
+            medications: [],
+            pregnantOrNursing: false,
+            activeSkinInfections: false,
+          },
+        })
+      ).toThrow('is not licensed in client state US-CA');
+
+      // 3. Clear consultation for eligible patient
+      const clearedConsult = conductTelehealthConsultation({
+        consultationId: 'tele_102',
+        clientId: 'cl_ny_guest',
+        clientName: 'Olivia Wilde',
+        clientPhysicalState: 'US-NY',
+        clinician: clinicianRoster[0],
+        primaryConcernOrServiceRequested: 'Good Faith Exam for Dysport',
+        reportedMedicalHistory: {
+          allergies: [],
+          medications: [],
+          pregnantOrNursing: false,
+          activeSkinInfections: false,
+        },
+      });
+
+      expect(clearedConsult.clearanceOutcome).toBe('cleared_for_treatment');
+      expect(clearedConsult.validityWindowDays).toBe(365);
+
+      // 4. Acute contraindication triggers escalation to in-person urgent care
+      const infectedConsult = conductTelehealthConsultation({
+        consultationId: 'tele_103',
+        clientId: 'cl_ny_guest_2',
+        clientName: 'Rachel Green',
+        clientPhysicalState: 'US-NY',
+        clinician: clinicianRoster[0],
+        primaryConcernOrServiceRequested: 'Good Faith Exam for Microneedling',
+        reportedMedicalHistory: {
+          allergies: [],
+          medications: [],
+          pregnantOrNursing: false,
+          activeSkinInfections: true, // Red flag!
+        },
+      });
+
+      expect(infectedConsult.clearanceOutcome).toBe('escalated_urgent_care');
+
+      const escalationPacket = escalateUrgentClinicalCase(
+        infectedConsult,
+        'Suspected active bacterial impetigo or viral flare on mid-face.'
+      );
+      expect(escalationPacket.escalationSeverity).toBe('urgent_referral');
+      expect(escalationPacket.recommendedCareSetting).toBe('in_person_dermatologist');
     });
   });
 
