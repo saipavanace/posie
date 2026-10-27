@@ -1,0 +1,45 @@
+:root {
+  --color-primary: #2C3E30;
+  --color-primary-hover: #223126;
+  --color-primary-light: #465F4C;
+  
+  --color-secondary: #8A9A86;
+  --color-secondary-hover: #788774;
+  --color-secondary-light: #D8DFD6;
+  
+  --color-tertiary: #C67D6E;
+  --color-tertiary-hover: #B36B5C;
+  --color-tertiary-light: #F5E3DF;
+  
+  --color-bg: #FAF8F5;
+  --color-card: #FFFFFF;
+  --color-muted: #F0ECE6;
+  --color-border: #E5E0D8;
+  --color-text: #1E2620;
+  --color-text-muted: #68736B;
+
+  --color-error: #B83A38;
+  --color-success: #2D6A4F;
+  --color-warning: #D48B38;
+
+  --font-headline: 'Newsreader', Georgia, serif;
+  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, .font-headline {
+  font-family: var(--font-headline);
+}

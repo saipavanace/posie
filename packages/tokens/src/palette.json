@@ -1,0 +1,59 @@
+{
+  "name": "Posie Atelier",
+  "version": "1.0.0",
+  "colors": {
+    "primary": {
+      "default": "#2C3E30",
+      "hover": "#223126",
+      "light": "#465F4C",
+      "description": "Deep Forest Sage - grounding, authoritative, elegant"
+    },
+    "secondary": {
+      "default": "#8A9A86",
+      "hover": "#788774",
+      "light": "#D8DFD6",
+      "description": "Muted Linen Sage - soft, balancing, refreshing"
+    },
+    "tertiary": {
+      "default": "#C67D6E",
+      "hover": "#B36B5C",
+      "light": "#F5E3DF",
+      "description": "Warm Terracotta Rose - playful, feminine, vibrant accent"
+    },
+    "neutral": {
+      "background": "#FAF8F5",
+      "card": "#FFFFFF",
+      "muted": "#F0ECE6",
+      "border": "#E5E0D8",
+      "text": "#1E2620",
+      "textMuted": "#68736B",
+      "description": "Linen Off-White - airy, calm, accessible canvas"
+    },
+    "feedback": {
+      "error": "#B83A38",
+      "success": "#2D6A4F",
+      "warning": "#D48B38"
+    }
+  },
+  "typography": {
+    "headline": {
+      "family": "Newsreader, Georgia, serif",
+      "weights": ["400", "500", "600"],
+      "description": "Editorial, literary, feminine sophistication"
+    },
+    "body": {
+      "family": "Manrope, -apple-system, BlinkMacSystemFont, sans-serif",
+      "weights": ["400", "500", "600", "700"],
+      "description": "Modern, crisp, high-legibility geometric sans-serif"
+    }
+  },
+  "voiceAndTone": {
+    "persona": "The effortlessly chic older sister who knows all the beauty secrets and never speaks in confusing jargon.",
+    "attributes": [
+      "Quirky: witty, relatable, conversational, never stuffy",
+      "Authoritative: deeply knowledgeable about technique and ingredients without being pedantic",
+      "Playful: joyful, welcoming, encouraging confidence",
+      "Accessible: simple, plain-English instructions; no masters degree needed to understand your skin or hair care"
+    ]
+  }
+}
