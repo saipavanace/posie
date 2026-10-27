@@ -98,4 +98,6 @@ export * from './commission_calculation';
 export * from './timeoff_coverage';
 export * from './accounting_sync';
 export * from './electronic_signatures';
+export * from './chart_records';
+export * from './clinical_photos';
 

@@ -44,6 +44,15 @@ export default function PosieStudioAdminPage() {
   const [enteredPin, setEnteredPin] = useState<string>('');
   const [pickupVerified, setPickupVerified] = useState<boolean>(false);
 
+  // F101 Chart Amendment & Role Access State
+  const [chartAmendmentAdded, setChartAmendmentAdded] = useState<boolean>(false);
+  const [viewingRole, setViewingRole] = useState<'practitioner' | 'marketing'>('practitioner');
+  const [accessDeniedWarning, setAccessDeniedWarning] = useState<boolean>(false);
+
+  // F102 Before/After Photos State
+  const [marketingPermissionGranted, setMarketingPermissionGranted] = useState<boolean>(true);
+  const [marketingRevocationReason, setMarketingRevocationReason] = useState<string | null>(null);
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8F6F2' }}>
       {/* Top Admin Bar */}
@@ -538,15 +547,167 @@ export default function PosieStudioAdminPage() {
                   </div>
                 </div>
 
-                <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px' }}>
-                  <strong style={{ fontSize: '0.96rem', color: 'var(--color-primary)', display: 'block', marginBottom: '10px' }}>
-                    SOAP Clinical Treatment Note — Oct 20, 2026 (Signed by Maya Lin)
-                  </strong>
-                  <div style={{ fontSize: '0.84rem', color: '#555', lineHeight: 1.6 }}>
+                <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <strong style={{ fontSize: '0.96rem', color: 'var(--color-primary)' }}>
+                      SOAP Clinical Treatment Note — Oct 20, 2026 (Signed by Maya Lin)
+                    </strong>
+                    <Badge variant={chartAmendmentAdded ? 'rose' : 'sage'}>
+                      {chartAmendmentAdded ? 'Amended Note (Rule DR04)' : 'Signed & Locked (Statutory 7-Yr Retention: 2033)'}
+                    </Badge>
+                  </div>
+
+                  <div style={{ fontSize: '0.84rem', color: '#555', lineHeight: 1.6, marginBottom: '12px' }}>
                     <div><strong>Subjective:</strong> Client reports mild dryness around nasal folds following transcontinental flight. No sensitivity to citrus enzymes.</div>
                     <div><strong>Objective:</strong> Mild erythema on T-zone; stratum corneum slightly dehydrated. Pores clear on cheek apex.</div>
                     <div><strong>Assessment:</strong> Dehydrated combination skin with resilient barrier. Tolerates fruit enzyme exfoliation well.</div>
                     <div><strong>Plan:</strong> Prescribed Barrier Gentle Cleanser + Hyaluronic Serum nightly. Avoid AHAs for 48 hours.</div>
+                  </div>
+
+                  {chartAmendmentAdded && (
+                    <div style={{ background: '#FFF9F7', border: '1px solid #E5C3B8', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '12px' }}>
+                      <strong style={{ color: '#8F4A3E', display: 'block', marginBottom: '4px' }}>
+                        ✓ Addendum AMD-01 Appended (Oct 20, 2026, 4:30 PM UTC — Author: Maya Lin)
+                      </strong>
+                      <div style={{ color: '#555' }}>
+                        <strong>Reason:</strong> Late entry: Client phoned 2h post-treatment reporting mild cheek apex erythema.<br />
+                        <strong>Observation:</strong> Advised client to apply chilled ceramide compress; flush completely resolved within 20 minutes. Original signed note preserved verbatim.
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {!chartAmendmentAdded ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (viewingRole === 'marketing') {
+                            setAccessDeniedWarning(true);
+                          } else {
+                            setChartAmendmentAdded(true);
+                            setAccessDeniedWarning(false);
+                          }
+                        }}
+                      >
+                        Append Late Entry Addendum (F101)
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setChartAmendmentAdded(false)}
+                      >
+                        Reset Amendment
+                      </Button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        const next = viewingRole === 'practitioner' ? 'marketing' : 'practitioner';
+                        setViewingRole(next);
+                        setAccessDeniedWarning(false);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--color-border)',
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Simulate Role: <strong>{viewingRole === 'practitioner' ? 'Practitioner (Has Access)' : 'Marketing Intern (Blocked)'}</strong>
+                    </button>
+                  </div>
+
+                  {accessDeniedWarning && (
+                    <div style={{ marginTop: '10px', background: '#FFF7F5', border: '1px solid #C67D6E', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', color: '#8F4A3E' }}>
+                      ⚠ <strong>Access Denied (Rule DR07):</strong> Staff role &ldquo;marketing&rdquo; does not inherit clinical chart access. Only certified practitioners and clinical directors can view or append to treatment charts.
+                    </div>
+                  )}
+                </div>
+
+                {/* F102: Standardized Before & After Photos Widget */}
+                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div>
+                      <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                        Standardized Before & After Clinical Media (F102)
+                      </strong>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                        Document D12 Media Consent & Non-Destructive Raw Original Preservation
+                      </div>
+                    </div>
+                    <Badge variant={marketingPermissionGranted ? 'sage' : 'muted'}>
+                      {marketingPermissionGranted ? 'Marketing Consent: Active (Instagram / Web)' : 'Marketing Revoked (Internal Clinical Only)'}
+                    </Badge>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                    {/* Before Photo */}
+                    <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>Before Peel (Oct 20)</strong>
+                        <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Angle: Frontal 18&quot;</span>
+                      </div>
+                      <div style={{ background: '#F4F1EA', height: '110px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '0.8rem' }}>
+                        📷 Raw Capture (SHA-256 Verified)
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+                        Lighting: <strong>3200K (Warm Incandescent)</strong> • Unmodified Raw Media
+                      </div>
+                    </div>
+
+                    {/* After Photo */}
+                    <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>After Peel (Oct 27)</strong>
+                        <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Angle: Frontal 18&quot;</span>
+                      </div>
+                      <div style={{ background: '#F4F1EA', height: '110px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '0.8rem' }}>
+                        📷 Raw Capture (SHA-256 Verified)
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+                        Lighting: <strong>5000K (Daylight LED)</strong> • Non-destructive markup overlay
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Disclosure Notice */}
+                  <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.78rem', color: '#555', marginBottom: '12px' }}>
+                    ⚠ <strong>Capture Condition Difference Disclosed (F102 Invariant):</strong> Before photo was captured under 3200K warm tungsten vs After photo under 5000K daylight LED. Posie mandates transparent disclosure of lighting delta to eliminate deceptive aesthetic marketing claims.
+                  </div>
+
+                  {/* Dual-Tier Consent Controls */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EAE6DF', paddingTop: '10px' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#444' }}>
+                      <strong>Tier 1:</strong> Internal Clinical Progress (Covered) • <strong>Tier 2:</strong> Public Marketing ({marketingPermissionGranted ? 'Approved' : 'Revoked'})
+                    </div>
+                    {marketingPermissionGranted ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setMarketingPermissionGranted(false);
+                          setMarketingRevocationReason('Client requested withdrawal from social media');
+                        }}
+                      >
+                        Client Revokes Marketing Consent (Rule D12)
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setMarketingPermissionGranted(true);
+                          setMarketingRevocationReason(null);
+                        }}
+                      >
+                        Re-grant Document D12 Marketing Consent
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>

@@ -594,6 +594,19 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 * **What it is:** Compliant e-signature suite for intake questionnaires, treatment consents, photographic media releases, estimate approvals, and cancellation policy acknowledgments.
 * **Key Invariant (Basis: B; WB F22, Rules BR05, DR04, DR05, DR10):** **Cryptographic hash binding & consent-payment separation.** Signatures are mathematically bound to a SHA-256 digest of the exact document text; altering a single character triggers a tamper alert. In accordance with Rule DR05, signing an informed consent or intake questionnaire explicitly does NOT authorize a payment card charge. Per Rule DR04, once signed, historical document artifacts remain immutable. Amendments supersede the original document and spawn a linked Version 2 draft requiring fresh client signature acceptance. Audit evidence records permanently capture UTC timestamps, client IP addresses, browser user agents, and signature vectors.
 
+---
+
+## F101 — Private Records & Chart Amendments (Rules DR04, DR07, D08)
+* **What it is:** Clinical and esthetic charting suite managing treatment notes, SOAP documentation, role-based privacy firewalls, append-only amendments, and statutory retention tracking.
+* **Key Invariant (Basis: B; WB F23, F27; Rules DR04, DR07, D08):** **Append-only addenda & role-restricted privacy.** Draft notes can be refined by the practitioner, but once signed, the record is permanently locked against direct editing. Any subsequent correction or late entry must be appended as an immutable addendum that preserves the original signed note verbatim, stamps the UTC timestamp, and identifies author justification. In compliance with Rule DR07, marketing and general front-desk roles cannot inherit clinical chart access. Tracks a 7-year statutory retention lifecycle and compiles complete audit-stamped client record timeline exports.
+
+---
+
+## F102 — Standardized Before and After Photos (Document D12, Rules F039, F064)
+* **What it is:** Standardized photographic clinical documentation suite tracking aesthetic progress across treatment courses with capture guidance, raw media preservation, and dual-tier consent management.
+* **Key Invariant (Basis: B; WB F24, U17; Document D12):** **Capture disparity disclosure & two-tier marketing firewall.** Guides camera angles (Frontal, Left/Right 45°, Macro) and metadata (distance in inches, ambient lighting Kelvin). Side-by-side comparison progress reports must explicitly disclose significant differences in lighting (>500K) or distance (>3") to eliminate deceptive before-and-after claims. Face mapping and markup layers (F039) are stored non-destructively, permanently preserving the raw camera capture with a SHA-256 fingerprint. Enforces a strict two-tier permission firewall: treatment consent covers private internal clinical evaluations, while public social media or marketing sharing requires explicit Document D12 authorization that can be revoked by the client at any time without compromising clinical history.
+
+
 
 
 

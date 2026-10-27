@@ -202,6 +202,17 @@ import {
   applyElectronicSignature,
   verifySignatureIntegrity,
   createAmendedDocument,
+  assertChartAccessPrivilege,
+  createChartDraft,
+  updateChartDraft,
+  signAndLockChart,
+  appendChartAmendment,
+  exportClientRecordTimeline,
+  registerClinicalPhoto,
+  addPhotoAnnotation,
+  compareBeforeAndAfter,
+  grantMediaPermissionD12,
+  revokeMediaPermissionD12,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -4918,6 +4929,191 @@ describe('Posie Core Logic - F096 (Online Retail Storefront & Unified Stock Ledg
       expect(newVersionDraft.status).toBe('draft');
       expect(newVersionDraft.documentId).toBe('DOC-CONSENT-992');
       expect(newVersionDraft.signatureEvidence).toBeUndefined();
+    });
+  });
+
+  // F101: Private Records and Chart Amendments (Rules DR04, DR07, D08)
+  describe('Posie Core Logic - F101 (Private Records and Chart Amendments - Rules DR04, DR07, D08)', () => {
+    it('enforces role-based privacy, locks signed notes, and preserves original entries on amendment', () => {
+      // 1. Invariant DR07: Front-desk and marketing staff cannot access clinical charts
+      expect(() => {
+        assertChartAccessPrivilege('marketing');
+      }).toThrow(/Access Denied \(Rule DR07\)/);
+
+      expect(() => {
+        assertChartAccessPrivilege('front_desk');
+      }).toThrow(/Access Denied \(Rule DR07\)/);
+
+      expect(assertChartAccessPrivilege('practitioner')).toBe(true);
+
+      // 2. Create draft treatment chart
+      const chartDraft = createChartDraft({
+        chartId: 'CHART-2026-001',
+        clientId: 'client_zendaya',
+        clientName: 'Zendaya Coleman',
+        practitionerId: 'staff_maya',
+        practitionerName: 'Maya Lin',
+        serviceId: 'srv_peel',
+        serviceName: 'Clinical Radiance Chemical Peel',
+        visitDate: '2026-10-27',
+        soap: {
+          subjective: 'Client reports mild dryness around nasal folds.',
+          objective: 'Fitzpatrick type IV; intact stratum corneum; no active dermatitis.',
+          assessment: 'Tolerates 20% lactic acid fruit enzyme prep well.',
+          plan: 'Maintain barrier gentle cleanser; apply SPF 50 daily; return in 4 weeks.',
+          productsUsed: [{ name: 'Lactic 20% Solution', lotNumber: 'LOT-9921', durationMinutes: 5 }],
+        },
+      });
+
+      expect(chartDraft.status).toBe('draft');
+      // 7-year statutory retention calculation
+      expect(chartDraft.retentionUntilDate).toBe('2033-10-27');
+
+      // 3. Draft update is permitted
+      const updatedDraft = updateChartDraft({
+        chart: chartDraft,
+        updatedSoap: {
+          objective: 'Fitzpatrick IV; intact barrier; mild T-zone congestion resolved with enzyme.',
+        },
+      });
+      expect(updatedDraft.soap.objective).toContain('mild T-zone congestion');
+
+      // 4. Sign and lock chart note
+      const signedChart = signAndLockChart({
+        chart: updatedDraft,
+        practitionerName: 'Maya Lin, Lead Esthetician',
+      });
+      expect(signedChart.status).toBe('signed_locked');
+      expect(signedChart.signedBy).toBe('Maya Lin, Lead Esthetician');
+
+      // Invariant: Direct edits to signed chart are rejected
+      expect(() => {
+        updateChartDraft({
+          chart: signedChart,
+          updatedSoap: { subjective: 'Tampered note text' },
+        });
+      }).toThrow(/Cannot directly edit chart/);
+
+      // 5. Append amendment (Rule DR04): preserves original signed entry
+      const amendedChart = appendChartAmendment({
+        chart: signedChart,
+        authorId: 'staff_maya',
+        authorName: 'Maya Lin',
+        authorRole: 'practitioner',
+        reason: 'Late entry: Client phoned 2h post-treatment regarding mild flush on cheek apex',
+        content: 'Advised client to apply chilled ceramide compress; erythema resolved in 20 mins.',
+      });
+
+      expect(amendedChart.status).toBe('amended');
+      expect(amendedChart.amendments.length).toBe(1);
+      expect(amendedChart.amendments[0].reason).toContain('Late entry');
+      // Original SOAP content is 100% preserved
+      expect(amendedChart.soap.subjective).toBe(signedChart.soap.subjective);
+
+      // 6. Client record export compilation
+      const recordExport = exportClientRecordTimeline({
+        charts: [amendedChart],
+        requestingParty: 'client',
+      });
+
+      expect(recordExport.totalRecords).toBe(1);
+      expect(recordExport.records[0].integrityVerified).toBe(true);
+      expect(recordExport.records[0].amendments.length).toBe(1);
+    });
+  });
+
+  // F102: Standardized Before and After Photos (Document D12, Rules F039, F064)
+  describe('Posie Core Logic - F102 (Standardized Before and After Photos - Document D12)', () => {
+    it('guides capture angles, discloses lighting differences, and firewalls internal vs marketing media', () => {
+      // 1. Register Before and After photos with raw digest
+      const beforePhoto = registerClinicalPhoto({
+        photoId: 'PH-BEFORE-01',
+        clientId: 'client_zendaya',
+        serviceId: 'srv_peel',
+        phase: 'before',
+        rawMediaUri: 'file:///secure/photos/zendaya_before_raw.jpg',
+        rawMediaContent: 'RAW_IMAGE_BYTES_BEFORE_12345',
+        metadata: {
+          angle: 'frontal',
+          distanceInches: 18,
+          lightingKelvin: 3200, // Warm incandescent
+          deviceModel: 'iPad Pro 11-inch',
+          capturedAt: '2026-10-27T14:00:00Z',
+        },
+      });
+
+      const afterPhoto = registerClinicalPhoto({
+        photoId: 'PH-AFTER-01',
+        clientId: 'client_zendaya',
+        serviceId: 'srv_peel',
+        phase: 'after',
+        rawMediaUri: 'file:///secure/photos/zendaya_after_raw.jpg',
+        rawMediaContent: 'RAW_IMAGE_BYTES_AFTER_67890',
+        metadata: {
+          angle: 'frontal',
+          distanceInches: 18,
+          lightingKelvin: 5000, // Cool daylight (>500K delta)
+          deviceModel: 'iPad Pro 11-inch',
+          capturedAt: '2026-10-27T15:15:00Z',
+        },
+      });
+
+      expect(beforePhoto.isRawOriginalPreserved).toBe(true);
+
+      // 2. Add non-destructive annotation (F039)
+      const annotatedBefore = addPhotoAnnotation({
+        photo: beforePhoto,
+        annotation: {
+          annotationId: 'ANN-01',
+          type: 'peel_depth_boundary',
+          coordinates: [
+            { x: 100, y: 150 },
+            { x: 200, y: 150 },
+          ],
+          note: 'Target zone for 20% lactic solution',
+        },
+      });
+      // Raw hash remains unchanged
+      expect(annotatedBefore.rawMediaSha256).toBe(beforePhoto.rawMediaSha256);
+      expect(annotatedBefore.annotations.length).toBe(1);
+
+      // 3. Document D12 Permission: Tier 1 (Internal) vs Tier 2 (Public Marketing)
+      const permission = grantMediaPermissionD12({
+        permissionId: 'PERM-D12-991',
+        clientId: 'client_zendaya',
+        publicMarketingAllowed: true,
+        allowedChannels: ['instagram', 'website_case_study'],
+      });
+
+      // 4. Comparison analysis: detects lighting delta and discloses difference
+      const comparison = compareBeforeAndAfter({
+        beforePhoto,
+        afterPhoto,
+        permission,
+      });
+
+      expect(comparison.angleMatched).toBe(true);
+      // Invariant: Discloses >500K lighting delta
+      expect(comparison.differingConditionsDisclosed).toBe(true);
+      expect(comparison.disclosureNotes).toContain('Lighting disparity: Before photo was captured at 3200K vs After at 5000K');
+      expect(comparison.marketingEligible).toBe(true);
+
+      // 5. Revoking marketing permission instantly blocks public marketing eligibility
+      const revokedPerm = revokeMediaPermissionD12({
+        permission,
+        reason: 'Client requested withdrawal of social media image sharing',
+      });
+
+      expect(revokedPerm.publicMarketingAllowed).toBe(false);
+      expect(revokedPerm.internalClinicalAllowed).toBe(true); // Internal progress remains accessible
+
+      const postRevocationComparison = compareBeforeAndAfter({
+        beforePhoto,
+        afterPhoto,
+        permission: revokedPerm,
+      });
+
+      expect(postRevocationComparison.marketingEligible).toBe(false);
     });
   });
 
