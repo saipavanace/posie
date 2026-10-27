@@ -261,3 +261,28 @@ Welcome to **Posie**! This guide details features **F001 through F034** active a
 ## F046 — Retail Inventory Basics & Traceable Stock Movements
 * **What it is:** Inventory management tracking SKUs, barcodes, sellable stock, reserved appointment inventory, and reorder thresholds.
 * **Key Invariant (WB F51):** Stock levels are **never silently overwritten**; all receipts, sales, client returns, professional backbar room dispensing, and shrinkage write-offs create traceable, immutable records in the stock movement ledger with staff attribution and timestamps.
+
+
+---
+
+## F047 — Purchase Orders & Receiving
+* **What it is:** Supplier ordering workflows that manage partial vendor shipments, record batch/lot tracking, and automatically reconcile received inventory into the stock ledger.
+* **Key Invariant (Doc D21):** Missing or substituted products remain visibly outstanding after partial delivery. Approval and vendor transmission are treated as distinct states; generating an order draft never automatically commits funds.
+
+---
+
+## F048 — Email Campaign Builder & Send-Time Consent
+* **What it is:** Brand-consistent email marketing builder featuring preview rendering, test sends, and targeted client segments.
+* **Key Invariant (WB F41):** Recipient marketing consent is strictly verified at **the exact moment of send**, not merely when the campaign was drafted. Clients who opted out between drafting and delivery are automatically excluded.
+
+---
+
+## F049 — Client Segments & Exclusion Inspector
+* **What it is:** Dynamic audience segmentation based on objective visit patterns (e.g., first visit completed, active package holders, lapsed return cadence, VIP lifetime spend).
+* **Key Invariant (WB F21):** Features a transparent exclusion inspector displaying both included clients and human-understandable exclusion reasons (e.g. "Excluded: repeat client with 4 completed visits; filter requires exactly 1").
+
+---
+
+## F050 — Fair Review Requests (Anti-Gating Compliant)
+* **What it is:** Automated, post-visit review invitations connecting clients directly to public platforms like Google Maps.
+* **Key Invariant (WB F44, U11):** **Strictly anti-gating (FTC compliant).** All completed clients receive the unrestricted public review link upfront. Private satisfaction ratings are collected for internal improvement only and never suppress or condition access to public review platforms.

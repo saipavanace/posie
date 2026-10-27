@@ -40,6 +40,16 @@ import {
   registerRetailProduct,
   recordStockMovement,
   reserveProductStock,
+  createPurchaseOrder,
+  approvePurchaseOrder,
+  receivePurchaseOrderShipment,
+  createEmailCampaignDraft,
+  renderEmailCampaignHtml,
+  executeCampaignSend,
+  evaluateClientSegment,
+  createFairReviewInvitation,
+  formatFairReviewMessage,
+  recordPrivateFeedback,
 } from './index';
 
 describe('Posie Core Logic - F001 (Brand Kit)', () => {
@@ -923,5 +933,231 @@ describe('Posie Core Logic - F046 (Retail Inventory Basics & Traceable Stock Mov
     const reservedProduct = reserveProductStock(saleResult.updatedProduct, 3);
     expect(reservedProduct.reservedQuantity).toBe(3);
     expect(reservedProduct.sellableQuantity).toBe(5);
+  });
+});
+
+
+describe('Posie Core Logic - F047 (Purchase Orders & Receiving)', () => {
+  const { product } = registerRetailProduct({
+    sku: 'POS-OAT-150ML',
+    productName: 'Soothing Oat Milk Cleanser',
+    retailPriceCents: 3200,
+    costPriceCents: 1200,
+    initialStock: 5,
+  });
+
+  const inventoryMap = new Map([['POS-OAT-150ML', product]]);
+
+  it('manages PO approval, partial receiving, and stock movement reconciliation', () => {
+    const po = createPurchaseOrder({
+      supplierName: 'Organic Botanical Labs',
+      supplierEmail: 'orders@botanicallabs.com',
+      buyerStaffId: '99999999-9999-9999-9999-999999999999',
+      items: [
+        { sku: 'POS-OAT-150ML', productName: 'Soothing Oat Milk Cleanser', quantityOrdered: 20, unitCostCents: 1200 },
+      ],
+    });
+
+    expect(po.status).toBe('draft');
+    expect(po.totalCostCents).toBe(24000);
+
+    const approved = approvePurchaseOrder(po, '99999999-9999-9999-9999-999999999999');
+    expect(approved.status).toBe('approved');
+
+    // Receive partial shipment of 15 units
+    const { updatedPurchaseOrder, stockMovements, updatedProducts } = receivePurchaseOrderShipment({
+      purchaseOrder: approved,
+      receiptItems: [
+        { sku: 'POS-OAT-150ML', quantityReceived: 15, lotNumber: 'LOT-BOT-2026' },
+      ],
+      inventoryProducts: inventoryMap,
+      receivingStaffId: '99999999-9999-9999-9999-999999999999',
+    });
+
+    expect(updatedPurchaseOrder.status).toBe('partially_received');
+    expect(updatedPurchaseOrder.lineItems[0].quantityReceived).toBe(15);
+    expect(updatedPurchaseOrder.lineItems[0].quantityOutstanding).toBe(5);
+
+    // Verifies stock ledger movement
+    expect(stockMovements.length).toBe(1);
+    expect(stockMovements[0].movementType).toBe('received_purchase');
+    expect(stockMovements[0].quantityDelta).toBe(15);
+
+    // Product on hand updated from 5 to 20
+    const updatedProd = updatedProducts.get('POS-OAT-150ML')!;
+    expect(updatedProd.onHandQuantity).toBe(20);
+  });
+});
+
+describe('Posie Core Logic - F048 (Email Campaign Builder & Send-Time Consent)', () => {
+  const campaign = createEmailCampaignDraft({
+    campaignName: 'Spring Skin Refresh Promo',
+    subjectLine: 'Wake up your glow this spring! 🌸',
+    previewText: 'Exclusive 15% off enzyme facial packages',
+    segmentId: '11111111-2222-3333-4444-555555555555',
+    bodyContent: 'Treat your winter-weary skin to our botanical papaya enzyme sweep.',
+    callToActionText: 'Claim Your Visit',
+    callToActionUrl: 'https://glow.posieatelier.com/book',
+  });
+
+  const candidates = [
+    {
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'Emma Watson',
+      email: 'emma@example.com',
+      completedVisitsCount: 2,
+      marketingConsent: 'opted_in' as const,
+      hasActivePackageBalance: false,
+      lifetimeSpendCents: 24000,
+    },
+    {
+      id: '22222222-2222-2222-2222-222222222222',
+      name: 'Olivia Wilde',
+      email: 'olivia@example.com',
+      completedVisitsCount: 1,
+      marketingConsent: 'opted_in' as const, // was opted in earlier
+      hasActivePackageBalance: false,
+      lifetimeSpendCents: 12000,
+    },
+  ];
+
+  it('renders test preview HTML and filters opted-out recipients at send time', () => {
+    const html = renderEmailCampaignHtml(campaign, { isTestSend: true });
+    expect(html).toContain('[TEST SEND]');
+    expect(html).toContain('Wake up your glow');
+
+    // At send time, Olivia opted out
+    const liveConsentLookup = new Map([
+      ['11111111-1111-1111-1111-111111111111', 'opted_in' as const],
+      ['22222222-2222-2222-2222-222222222222', 'opted_out' as const],
+    ]);
+
+    const { updatedCampaign, sendResult } = executeCampaignSend({
+      campaign,
+      targetedClients: candidates,
+      liveConsentLookup,
+    });
+
+    expect(updatedCampaign.status).toBe('sent');
+    expect(sendResult.deliveredCount).toBe(1);
+    expect(sendResult.sendTimeOptOutsExcludedCount).toBe(1);
+    expect(sendResult.deliveredEmails).toContain('emma@example.com');
+    expect(sendResult.skippedOptOutEmails).toContain('olivia@example.com');
+  });
+});
+
+describe('Posie Core Logic - F049 (Client Segments & Exclusion Inspector)', () => {
+  const clients = [
+    {
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'Newbie Client',
+      email: 'newbie@example.com',
+      completedVisitsCount: 1,
+      marketingConsent: 'opted_in' as const,
+      hasActivePackageBalance: false,
+      lifetimeSpendCents: 12000,
+    },
+    {
+      id: '22222222-2222-2222-2222-222222222222',
+      name: 'Regular VIP',
+      email: 'regular@example.com',
+      completedVisitsCount: 4,
+      marketingConsent: 'opted_in' as const,
+      hasActivePackageBalance: true,
+      lifetimeSpendCents: 65000,
+    },
+    {
+      id: '33333333-3333-3333-3333-333333333333',
+      name: 'Opted Out Client',
+      email: 'optout@example.com',
+      completedVisitsCount: 1,
+      marketingConsent: 'opted_out' as const,
+      hasActivePackageBalance: false,
+      lifetimeSpendCents: 12000,
+    },
+  ];
+
+  it('evaluates first visit segment and provides clear human-understandable exclusion reasons', () => {
+    const segment = {
+      id: '99999999-8888-7777-6666-555555555555',
+      title: 'First-Visit Completed Welcome Series',
+      ruleType: 'first_visit_completed' as const,
+      requireMarketingConsent: true,
+    };
+
+    const result = evaluateClientSegment(segment, clients);
+
+    expect(result.includedClients.length).toBe(1);
+    expect(result.includedClients[0].name).toBe('Newbie Client');
+
+    expect(result.excludedClients.length).toBe(2);
+    const regularExclusion = result.excludedClients.find((c) => c.clientName === 'Regular VIP');
+    expect(regularExclusion?.exclusionReason).toContain('Repeat client with 4 completed visits');
+
+    const optOutExclusion = result.excludedClients.find((c) => c.clientName === 'Opted Out Client');
+    expect(optOutExclusion?.exclusionReason).toContain('Opted out of marketing');
+  });
+});
+
+describe('Posie Core Logic - F050 (Fair Review Requests & Anti-Gating)', () => {
+  it('enforces appointment completion and rate limit cooldown', () => {
+    // Uncompleted visit throws
+    expect(() =>
+      createFairReviewInvitation({
+        appointmentId: '11111111-2222-3333-4444-555555555555',
+        clientId: '66666666-6666-6666-6666-666666666666',
+        clientName: 'Chloe Bennet',
+        recipientDestination: '+1-555-0123',
+        channel: 'sms',
+        serviceName: 'Hydra-Dew Facial',
+        practitionerName: 'Chloe V.',
+        publicReviewUrl: 'https://g.page/r/posie-austin/review',
+        appointmentCompleted: false,
+      })
+    ).toThrow(/only be dispatched after an appointment is completed/);
+
+    // Valid invitation creation
+    const invite = createFairReviewInvitation({
+      appointmentId: '11111111-2222-3333-4444-555555555555',
+      clientId: '66666666-6666-6666-6666-666666666666',
+      clientName: 'Chloe Bennet',
+      recipientDestination: '+1-555-0123',
+      channel: 'sms',
+      serviceName: 'Hydra-Dew Facial',
+      practitionerName: 'Chloe V.',
+      publicReviewUrl: 'https://g.page/r/posie-austin/review',
+      appointmentCompleted: true,
+    });
+
+    expect(invite.isPublicLinkAlwaysVisible).toBe(true);
+
+    const message = formatFairReviewMessage(invite);
+    expect(message).toContain('honest feedback on Google');
+    expect(message).toContain('https://g.page/r/posie-austin/review');
+
+    // Anti-Gating check: Recording a low 2-star private rating does NOT revoke the public review link
+    const updated = recordPrivateFeedback(invite, {
+      ratingStars: 2,
+      feedbackText: 'Treatment room was a little chilly.',
+    });
+    expect(updated.privateRatingStars).toBe(2);
+    expect(updated.isPublicLinkAlwaysVisible).toBe(true);
+    expect(updated.publicReviewUrl).toBe(invite.publicReviewUrl);
+
+    // Rate limiting: attempting to send another request within 60 days throws
+    expect(() =>
+      createFairReviewInvitation({
+        appointmentId: '22222222-3333-4444-5555-666666666666',
+        clientId: '66666666-6666-6666-6666-666666666666',
+        clientName: 'Chloe Bennet',
+        recipientDestination: '+1-555-0123',
+        channel: 'sms',
+        serviceName: 'Brow Sculpt',
+        practitionerName: 'Chloe V.',
+        publicReviewUrl: 'https://g.page/r/posie-austin/review',
+        appointmentCompleted: true,
+        lastReviewRequestSentAt: new Date().toISOString(), // sent today
+      })
+    ).toThrow(/received a review request recently/);
   });
 });

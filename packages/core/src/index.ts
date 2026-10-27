@@ -44,3 +44,7 @@ export * from './form_bundles';
 export * from './estimates';
 export * from './proposals';
 export * from './inventory';
+export * from './purchasing';
+export * from './segments';
+export * from './campaigns';
+export * from './reviews';
