@@ -6,6 +6,11 @@ node_modules
 .next/
 out/
 
+# Database files & local envs
+*.db
+*.db-journal
+.env.local
+
 # Coverage
 coverage/
 *.lcov

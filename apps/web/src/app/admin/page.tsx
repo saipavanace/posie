@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '@posie/ui';
+import { useAuth } from '../../context/AuthContext';
 import {
   Calendar,
   CreditCard,
@@ -29,10 +30,96 @@ import {
   TrendingUp,
   Activity,
   Download,
+  LogIn,
+  LogOut,
+  Database,
+  Plus,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function PosieStudioAdminPage() {
+  const { user, setIsAuthModalOpen, logout, quickLogin } = useAuth();
   const [activeTab, setActiveTab] = useState<'calendar' | 'pos' | 'clients' | 'inventory' | 'team' | 'financials' | 'brand_migration' | 'inbox_calling' | 'automations_hub' | 'analytics_insights'>('calendar');
+
+  // Live Database States (SQLite via Prisma)
+  const [dbAppointments, setDbAppointments] = useState<any[]>([]);
+  const [dbClients, setDbClients] = useState<any[]>([]);
+  const [dbInventory, setDbInventory] = useState<any[]>([]);
+  const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
+  const [showWalkInModal, setShowWalkInModal] = useState<boolean>(false);
+  const [walkInClientName, setWalkInClientName] = useState<string>('');
+  const [walkInClientEmail, setWalkInClientEmail] = useState<string>('');
+  const [walkInNotes, setWalkInNotes] = useState<string>('');
+
+  const loadDbData = async () => {
+    setIsLoadingDb(true);
+    try {
+      const [apptsRes, clientsRes, invRes] = await Promise.all([
+        fetch('/api/appointments').then(r => r.json()).catch(() => ({ appointments: [] })),
+        fetch('/api/clients').then(r => r.json()).catch(() => ({ clients: [] })),
+        fetch('/api/inventory').then(r => r.json()).catch(() => ({ items: [] })),
+      ]);
+      if (apptsRes.appointments) setDbAppointments(apptsRes.appointments);
+      if (clientsRes.clients) setDbClients(clientsRes.clients);
+      if (invRes.items) setDbInventory(invRes.items);
+    } catch (err) {
+      console.warn("Failed to load SQLite DB data:", err);
+    } finally {
+      setIsLoadingDb(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDbData();
+  }, []);
+
+  const handleAdjustInventory = async (id: string, delta: number) => {
+    try {
+      const res = await fetch('/api/inventory', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, adjustment: delta }),
+      });
+      const data = await res.json();
+      if (data.success && data.item) {
+        setDbInventory(prev => prev.map(item => item.id === id ? data.item : item));
+      }
+    } catch (err) {
+      console.error("Failed to adjust inventory:", err);
+    }
+  };
+
+  const handleCreateWalkIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const salonRes = await fetch('/api/salon');
+      const salonData = await salonRes.json();
+      const service = salonData.salon?.services?.[0];
+
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: service?.id,
+          clientName: walkInClientName || 'Walk-In Guest',
+          clientEmail: walkInClientEmail || `walkin.${Date.now()}@atelierposie.guest`,
+          scheduledAt: new Date().toISOString(),
+          depositPaidCents: 0,
+          clientNotes: walkInNotes || 'Direct walk-in front desk reception.',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowWalkInModal(false);
+        setWalkInClientName('');
+        setWalkInClientEmail('');
+        setWalkInNotes('');
+        loadDbData();
+      }
+    } catch (err) {
+      console.error("Failed to create walk-in:", err);
+    }
+  };
 
   // POS State
   const [posTipSplit, setPosTipSplit] = useState<boolean>(true);
@@ -137,8 +224,77 @@ export default function PosieStudioAdminPage() {
               </div>
             </div>
 
-            <Badge variant="sage">Maya Lin (Clocked In 09:14 AM)</Badge>
-            <Badge variant="muted">Daily Close: Balanced ($480.00)</Badge>
+            {/* User Session Pill */}
+            {user ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Badge variant={user.role === 'OWNER' ? 'rose' : user.role === 'STAFF' ? 'sage' : 'muted'}>
+                  {user.name} ({user.role})
+                </Badge>
+                <button
+                  onClick={() => logout()}
+                  title="Sign Out"
+                  style={{
+                    background: '#FAF8F5',
+                    border: '1px solid #D8D2C7',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontSize: '0.76rem',
+                    color: '#8E6D53',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <LogOut size={12} /> Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                style={{
+                  background: '#2D3B36',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '5px 12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
+              >
+                <LogIn size={13} /> Staff Sign In
+              </button>
+            )}
+
+            {/* SQLite Database Live Indicator */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.76rem',
+                background: '#F1F7F0',
+                border: '1px solid #BFD8BD',
+                color: '#2E5A27',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontWeight: 600,
+              }}
+            >
+              <Database size={13} />
+              <span>SQLite Live ({dbAppointments.length} Bookings • {dbInventory.length} Products)</span>
+              <button
+                onClick={loadDbData}
+                title="Refresh SQLite Data"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2E5A27', padding: '1px' }}
+              >
+                <RefreshCw size={12} className={isLoadingDb ? 'animate-spin' : ''} />
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -241,6 +397,96 @@ export default function PosieStudioAdminPage() {
 
         {/* Workspace Panels */}
         <main>
+          {/* Staff Auth Alert Banner if not logged in */}
+          {!user && (
+            <div style={{ background: '#FAF7F2', border: '1px solid #E8DFD5', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={18} color="#2D3B36" />
+                  <strong style={{ fontSize: '0.95rem', color: '#2D3B36' }}>Staff Credentials Required for Studio OS</strong>
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#666' }}>
+                  You are currently in guest mode. Select a pre-seeded profile or sign in to mutate appointments, stock, and client charts.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => quickLogin('OWNER')}
+                  style={{ background: '#2D3B36', color: '#FFF', border: 'none', borderRadius: '8px', padding: '7px 12px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  👑 As Owner (Elena)
+                </button>
+                <button
+                  onClick={() => quickLogin('STAFF')}
+                  style={{ background: '#FAF8F5', color: '#2D3B36', border: '1px solid #D8D2C7', borderRadius: '8px', padding: '7px 12px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  ✂️ As Staff (Marcus)
+                </button>
+                <button
+                  onClick={() => quickLogin('BOOTH_RENTER')}
+                  style={{ background: '#FAF8F5', color: '#2D3B36', border: '1px solid #D8D2C7', borderRadius: '8px', padding: '7px 12px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  🌿 As Renter (Chloe)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Walk-In Appointment Modal */}
+          {showWalkInModal && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+              <div style={{ background: '#FAF9F5', border: '1px solid #E5E0D8', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '440px' }}>
+                <h3 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', margin: '0 0 12px' }}>
+                  New Walk-In Appointment
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', marginBottom: '16px' }}>
+                  Create and persist an immediate appointment directly into the Posie SQLite database.
+                </p>
+                <form onSubmit={handleCreateWalkIn} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Client Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Clara Oswald"
+                      value={walkInClientName}
+                      onChange={(e) => setWalkInClientName(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D8D2C7', fontSize: '0.88rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Client Email</label>
+                    <input
+                      type="email"
+                      placeholder="clara@example.com"
+                      value={walkInClientEmail}
+                      onChange={(e) => setWalkInClientEmail(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D8D2C7', fontSize: '0.88rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Service Notes & Requests</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Skin sensitivity or treatment preferences..."
+                      value={walkInNotes}
+                      onChange={(e) => setWalkInNotes(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D8D2C7', fontSize: '0.88rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowWalkInModal(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" variant="primary" size="sm">
+                      Save to SQLite Database
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* 1. CALENDAR VIEW */}
           {activeTab === 'calendar' && (
             <div>
@@ -250,12 +496,46 @@ export default function PosieStudioAdminPage() {
                     Today’s Studio Schedule — Tuesday, Oct 27
                   </h2>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                    3 Practitioners • 8 Booked Appointments • 2 Processing Gaps
+                    3 Practitioners • {dbAppointments.length} Booked Appointments in SQLite
                   </span>
                 </div>
-                <Button size="sm" variant="primary">
+                <Button size="sm" variant="primary" onClick={() => setShowWalkInModal(true)}>
                   + New Walk-In Appointment
                 </Button>
+              </div>
+
+              {/* Persisted SQLite Live Appointments Feed */}
+              <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Database size={16} color="#2D3B36" />
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>
+                      Persisted SQLite Bookings ({dbAppointments.length} Total)
+                    </strong>
+                  </div>
+                  <Badge variant="sage">Real-Time Database Sync</Badge>
+                </div>
+                {dbAppointments.length === 0 ? (
+                  <p style={{ fontSize: '0.84rem', color: '#888', margin: 0 }}>No appointments currently in database. Book one on the client site or click + New Walk-In.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+                    {dbAppointments.map((appt) => (
+                      <div key={appt.id} style={{ border: '1px solid #E8E5DF', background: '#FAF9F5', padding: '12px', borderRadius: '8px', fontSize: '0.82rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <strong style={{ color: 'var(--color-primary)' }}>{appt.client ? `${appt.client.firstName} ${appt.client.lastName}` : 'Walk-In'}</strong>
+                          <span style={{ color: '#2B5329', fontWeight: 600 }}>{new Date(appt.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div style={{ color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                          {appt.service?.name || 'Bespoke Atelier Treatment'} ({appt.durationMinutes}m)
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px dashed #E0DCD5' }}>
+                          <span style={{ fontSize: '0.74rem', color: '#666' }}>Provider: {appt.staff?.name || 'Elena Rostova'}</span>
+                          <span style={{ fontSize: '0.72rem', background: '#E2EBE0', color: '#2B5329', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>{appt.paymentStatus}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
@@ -776,25 +1056,47 @@ export default function PosieStudioAdminPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px' }}>
                 <Card>
-                  <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', marginBottom: '14px' }}>
-                    Physical Stock Counts (Beverly Hills Atelier)
-                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <h3 style={{ fontSize: '1.15rem', color: 'var(--color-primary)', margin: 0 }}>
+                      Physical Stock Counts (SQLite Live)
+                    </h3>
+                    <Badge variant="sage">{dbInventory.length} Tracked SKUs</Badge>
+                  </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {[
-                      { name: 'Barrier Gentle Cleanser (CLN-001)', available: 10, reserved: 0, price: 32 },
-                      { name: 'Glow Hyaluronic Serum (SRM-002)', available: 4, reserved: 1, price: 48 },
-                      { name: 'Silk Radiance SPF 50 Drops (SPF-003)', available: 8, reserved: 0, price: 42 },
-                    ].map((p) => (
-                      <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #F0ECE6', borderRadius: '8px' }}>
+                    {(dbInventory.length > 0 ? dbInventory : [
+                      { id: '1', name: 'Barrier Gentle Cleanser', sku: 'CLN-001', quantityOnHand: 10, retailPriceCents: 3200 },
+                      { id: '2', name: 'Glow Hyaluronic Serum', sku: 'SRM-002', quantityOnHand: 4, retailPriceCents: 4800 },
+                      { id: '3', name: 'Silk Radiance SPF 50 Drops', sku: 'SPF-003', quantityOnHand: 8, retailPriceCents: 4200 },
+                    ]).map((p: any) => (
+                      <div key={p.id || p.sku} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', border: '1px solid #F0ECE6', borderRadius: '8px', background: '#FFF' }}>
                         <div>
                           <strong>{p.name}</strong>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>${p.price}.00 Unit Retail</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                            SKU: {p.sku} • ${(p.retailPriceCents / 100).toFixed(2)} Retail
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>{p.available} Available</strong>
-                          {p.reserved > 0 && (
-                            <span style={{ fontSize: '0.74rem', color: '#B36B5C', display: 'block' }}>({p.reserved} held in online cart)</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                            {p.quantityOnHand} in Stock
+                          </strong>
+                          {p.id && (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button
+                                onClick={() => handleAdjustInventory(p.id, -1)}
+                                title="Decrease stock in SQLite"
+                                style={{ background: '#FAF8F5', border: '1px solid #D8D2C7', borderRadius: '4px', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => handleAdjustInventory(p.id, 1)}
+                                title="Increase stock in SQLite"
+                                style={{ background: '#FAF8F5', border: '1px solid #D8D2C7', borderRadius: '4px', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                +
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>

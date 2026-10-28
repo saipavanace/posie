@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Salon {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  currency    String   @default("USD")
+  timezone    String   @default("America/New_York")
+  phone       String?
+  email       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  services    Service[]
+  clients     Client[]
+  appointments Appointment[]
+  invoices    Invoice[]
+  inventory   InventoryItem[]
+  auditLogs   AuditLog[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  salonId      String
+  salon        Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("STAFF") // "OWNER" | "STAFF" | "BOOTH_RENTER" | "CLIENT"
+  title        String?
+  phone        String?
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  appointments Appointment[] @relation("StaffAppointments")
+  sessions     Session[]
+  auditLogs    AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Client {
+  id                String   @id @default(cuid())
+  salonId           String
+  salon             Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  preferredPronouns String?
+  patchTestStatus   String   @default("PENDING") // "VERIFIED" | "PENDING" | "EXPIRED"
+  notes             String?
+  totalVisits       Int      @default(0)
+  totalSpendCents   Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  appointments      Appointment[]
+  invoices          Invoice[]
+}
+
+model Service {
+  id                   String   @id @default(cuid())
+  salonId              String
+  salon                Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name                 String
+  category             String   // "Aesthetics" | "Hair" | "Color" | "Wellness"
+  durationMinutes      Int
+  priceCents           Int
+  depositRequiredCents Int      @default(0)
+  description          String?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  appointments         Appointment[]
+}
+
+model Appointment {
+  id               String   @id @default(cuid())
+  salonId          String
+  salon            Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  staffId          String
+  staff            User     @relation("StaffAppointments", fields: [staffId], references: [id])
+  serviceId        String
+  service          Service  @relation(fields: [serviceId], references: [id])
+  scheduledAt      DateTime
+  durationMinutes  Int
+  status           String   @default("CONFIRMED") // "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
+  totalPriceCents  Int
+  depositPaidCents Int      @default(0)
+  paymentStatus    String   @default("UNPAID")    // "UNPAID" | "DEPOSIT_COLLECTED" | "PAID_IN_FULL"
+  clientNotes      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  salonId       String
+  salon         Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  invoiceNumber String   @unique
+  subtotalCents Int
+  taxCents      Int      @default(0)
+  totalCents    Int
+  paidCents     Int      @default(0)
+  status        String   @default("ISSUED") // "DRAFT" | "ISSUED" | "PAID" | "OVERDUE" | "CANCELLED"
+  dueDate       DateTime
+  issuedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model InventoryItem {
+  id                String   @id @default(cuid())
+  salonId           String
+  salon             Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  sku               String
+  name              String
+  brand             String
+  category          String
+  quantityOnHand    Int      @default(0)
+  reorderThreshold  Int      @default(5)
+  retailPriceCents  Int
+  costPriceCents    Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  salonId    String
+  salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+}
