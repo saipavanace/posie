@@ -157,6 +157,9 @@ export default function PosieClientPage() {
   const [guestPhone, setGuestPhone] = useState<string>('310-555-0199');
   const [agreeToD05Policy, setAgreeToD05Policy] = useState<boolean>(true);
   const [dbBookingId, setDbBookingId] = useState<string | null>(null);
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
+  const [cardLast4, setCardLast4] = useState<string>('4242');
+  const [cardExpiry, setCardExpiry] = useState<string>('12/28');
   const [isSavingBooking, setIsSavingBooking] = useState<boolean>(false);
 
   useEffect(() => {
@@ -172,22 +175,43 @@ export default function PosieClientPage() {
       const salonData = await salonRes.json();
       const dbService = salonData.salon?.services?.[0] || { id: 'fallback-svc', priceCents: 12000 };
 
+      const clientEmail = user?.email || `${guestName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@atelierposie.client`;
+
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serviceId: dbService.id,
           clientName: guestName,
-          clientEmail: user?.email || `${guestName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@atelierposie.client`,
+          clientEmail,
           clientPhone: guestPhone,
           scheduledAt: new Date(Date.now() + 86400000).toISOString(),
           depositPaidCents: 5000,
-          clientNotes: `Booked online. Specialist: ${selectedSpecialist}. Slot: ${selectedSlot}. D05 Cancellation Terms Signed.`,
+          clientNotes: `Booked online. Specialist: ${selectedSpecialist}. Slot: ${selectedSlot}. D05 Cancellation Terms Signed. Card: ••••${cardLast4}.`,
         }),
       });
       const data = await res.json();
+      let createdApptId = null;
       if (data.success && data.appointment) {
-        setDbBookingId(data.appointment.id);
+        createdApptId = data.appointment.id;
+        setDbBookingId(createdApptId);
+      }
+
+      // Initialize Stripe Pre-authorization Hold
+      const paymentRes = await fetch('/api/payments/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCents: 5000,
+          customerEmail: clientEmail,
+          customerName: guestName,
+          appointmentId: createdApptId,
+          isPreAuthHold: true,
+        }),
+      });
+      const paymentData = await paymentRes.json();
+      if (paymentData.success && paymentData.paymentIntentId) {
+        setStripePaymentIntentId(paymentData.paymentIntentId);
       }
     } catch (err) {
       console.warn("Reservation saved locally (offline mode):", err);
@@ -747,6 +771,53 @@ export default function PosieClientPage() {
                   </div>
                 </div>
 
+                {/* Stripe Preauthorization Card Element */}
+                <div style={{ border: '1px solid #D8D2C7', borderRadius: '10px', background: '#FFFFFF', padding: '16px', marginBottom: '18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CreditCard size={18} color="var(--color-primary)" />
+                      <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)' }}>
+                        Credit or Debit Card Hold ($50.00 Preauth)
+                      </strong>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', background: '#F0ECE4', color: '#5C5446', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                      Stripe TLS Encrypted
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.76rem', color: '#666', display: 'block', marginBottom: '4px' }}>Card Number</label>
+                      <input
+                        type="text"
+                        defaultValue="•••• •••• •••• 4242"
+                        readOnly
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D8D2C7', background: '#FAF9F6', fontSize: '0.88rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.76rem', color: '#666', display: 'block', marginBottom: '4px' }}>Expires</label>
+                      <input
+                        type="text"
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D8D2C7', fontSize: '0.88rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.76rem', color: '#666', display: 'block', marginBottom: '4px' }}>CVC</label>
+                      <input
+                        type="password"
+                        defaultValue="888"
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #D8D2C7', fontSize: '0.88rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
+                    🔒 Zero dollars charged today. Validated via Stripe PaymentIntent manual capture preauth.
+                  </div>
+                </div>
+
                 {/* Document D05 Policy Accordion */}
                 <div style={{ border: '1px solid #E5E0D8', borderRadius: '8px', background: '#FFFDF9', padding: '14px', marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -809,10 +880,19 @@ export default function PosieClientPage() {
                 </p>
 
                 {dbBookingId && (
-                  <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '8px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#F1F7F0', border: '1px solid #BFD8BD', borderRadius: '9999px', fontSize: '0.78rem', color: '#2E5A27', fontWeight: 600 }}>
                       <Database size={13} />
                       Synced to SQLite Database (Appointment ID: <code style={{ fontFamily: 'monospace' }}>{dbBookingId}</code>)
+                    </span>
+                  </div>
+                )}
+
+                {stripePaymentIntentId && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#FAF8F5', border: '1px solid #D8D2C7', borderRadius: '9999px', fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                      <CreditCard size={13} />
+                      Stripe Preauthorization Hold Placed: $50.00 (ID: <code style={{ fontFamily: 'monospace' }}>{stripePaymentIntentId}</code>)
                     </span>
                   </div>
                 )}

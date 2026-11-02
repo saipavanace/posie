@@ -8,16 +8,19 @@
     "start": "next start"
   },
   "dependencies": {
-    "@posie/tokens": "workspace:*",
     "@posie/core": "workspace:*",
-    "@posie/ui": "workspace:*",
     "@posie/database": "workspace:*",
+    "@posie/tokens": "workspace:*",
+    "@posie/ui": "workspace:*",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.0",
+    "bcryptjs": "^3.0.2",
+    "jose": "^5.9.6",
+    "lucide-react": "^0.475.0",
     "next": "^15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.475.0",
-    "bcryptjs": "^3.0.2",
-    "jose": "^5.9.6"
+    "stripe": "^23.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",

@@ -125,6 +125,58 @@ export default function PosieStudioAdminPage() {
   const [posTipSplit, setPosTipSplit] = useState<boolean>(true);
   const [posPaymentMethod, setPosPaymentMethod] = useState<'terminal' | 'split'>('terminal');
   const [posCheckoutCompleted, setPosCheckoutCompleted] = useState<boolean>(false);
+  const [stripePosProcessing, setStripePosProcessing] = useState<boolean>(false);
+  const [stripePosTxId, setStripePosTxId] = useState<string | null>(null);
+  const [stripeConnectLoading, setStripeConnectLoading] = useState<boolean>(false);
+  const [stripeConnectNotice, setStripeConnectNotice] = useState<string | null>(null);
+
+  const handleChargeStripeReader = async () => {
+    setStripePosProcessing(true);
+    try {
+      const res = await fetch('/api/payments/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCents: 25464, // $254.64
+          customerEmail: 'zendaya@example.com',
+          customerName: 'Zendaya Coleman',
+          isPreAuthHold: false,
+          currency: 'usd',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.paymentIntentId) {
+        setStripePosTxId(data.paymentIntentId);
+        setPosCheckoutCompleted(true);
+      }
+    } catch (err: any) {
+      console.error('POS Stripe charge failed:', err);
+    } finally {
+      setStripePosProcessing(false);
+    }
+  };
+
+  const handleStripeConnectOnboard = async () => {
+    setStripeConnectLoading(true);
+    try {
+      const res = await fetch('/api/payments/connect/onboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: 'Atelier Posie Manhattan',
+          email: user?.email || 'owner@atelierposie.com',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.stripeAccountId) {
+        setStripeConnectNotice(`Stripe Express Account linked: ${data.stripeAccountId}. Routing payouts.`);
+      }
+    } catch (err: any) {
+      console.error('Stripe Connect onboarding error:', err);
+    } finally {
+      setStripeConnectLoading(false);
+    }
+  };
 
   // Time off state
   const [timeOffApproved, setTimeOffApproved] = useState<boolean>(false);
@@ -791,10 +843,13 @@ export default function PosieStudioAdminPage() {
                     </div>
                   )}
 
-                  <div style={{ border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', textAlign: 'center', marginBottom: '18px' }}>
-                    <CreditCard size={32} color="var(--color-primary)" style={{ margin: '0 auto 8px' }} />
+                  <div style={{ border: '1px solid #E8E5E0', padding: '14px', borderRadius: '8px', textAlign: 'center', marginBottom: '18px', background: '#FAFAF8' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <CreditCard size={28} color="var(--color-primary)" />
+                      <Badge variant="sage">Stripe Terminal API Connected</Badge>
+                    </div>
                     <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)', display: 'block' }}>
-                      WisePOS E Terminal Ready
+                      WisePOS E Reader (Countertop #1)
                     </strong>
                     <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                       Ready for Contactless Apple Pay, Google Pay, or EMV Chip
@@ -802,23 +857,29 @@ export default function PosieStudioAdminPage() {
                   </div>
 
                   {posCheckoutCompleted ? (
-                    <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '12px', borderRadius: '6px', textAlign: 'center' }}>
+                    <div style={{ background: '#F4F7F4', border: '1px solid #738A73', padding: '14px', borderRadius: '8px', textAlign: 'center' }}>
                       <CheckCircle2 size={24} color="#2B5329" style={{ margin: '0 auto 4px' }} />
                       <strong style={{ color: '#2B5329', fontSize: '0.9rem', display: 'block' }}>
-                        Ticket Finalized & Receipt Sent
+                        Ticket Finalized & Payment Captured
                       </strong>
-                      <span style={{ fontSize: '0.76rem', color: '#4A6B48' }}>
+                      <span style={{ fontSize: '0.76rem', color: '#4A6B48', display: 'block', marginTop: '2px' }}>
                         SMS receipt delivered to 310-555-0199
                       </span>
+                      {stripePosTxId && (
+                        <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #A3BFA3', fontSize: '0.74rem', color: '#2B5329' }}>
+                          Stripe PaymentIntent: <code style={{ fontFamily: 'monospace', fontWeight: 600 }}>{stripePosTxId}</code>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <Button
                       variant="primary"
                       size="lg"
+                      disabled={stripePosProcessing}
                       style={{ width: '100%' }}
-                      onClick={() => setPosCheckoutCompleted(true)}
+                      onClick={handleChargeStripeReader}
                     >
-                      Charge $254.64 to Reader
+                      {stripePosProcessing ? 'Communicating with Terminal...' : 'Charge $254.64 via Stripe Reader'}
                     </Button>
                   )}
                 </Card>
@@ -1339,6 +1400,82 @@ export default function PosieStudioAdminPage() {
                     onClick={() => setQboSyncDone(true)}
                   >
                     {qboSyncDone ? 'Batch Synced ✓' : 'Dispatch Sync to QuickBooks Online'}
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Stripe Connect & Banking Rails Card */}
+              <Card style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CreditCard size={18} color="var(--color-primary)" />
+                      <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                        Stripe Connect Banking Rails & Payout Disbursals
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      Direct merchant payout routing, 1099 contractor sub-accounts, and daily automated ACH deposits
+                    </div>
+                  </div>
+                  <Badge variant="sage">Stripe Express: Connected</Badge>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '16px' }}>
+                  <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px' }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Available for Transfer
+                    </span>
+                    <strong style={{ fontSize: '1.3rem', color: 'var(--color-primary)' }}>
+                      $1,840.50
+                    </strong>
+                    <span style={{ fontSize: '0.74rem', color: '#2B5329', display: 'block', marginTop: '2px' }}>
+                      Ready for 2-day rolling payout
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px' }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      In-Flight Settlement
+                    </span>
+                    <strong style={{ fontSize: '1.3rem', color: 'var(--color-primary)' }}>
+                      $320.00
+                    </strong>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>
+                      Terminal & Online Preauth holds
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '12px' }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Destination Bank
+                    </span>
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                      JPMorgan Chase ••••8821
+                    </strong>
+                    <span style={{ fontSize: '0.74rem', color: '#2B5329', display: 'block', marginTop: '2px' }}>
+                      Next ACH: Tomorrow 6:00 AM
+                    </span>
+                  </div>
+                </div>
+
+                {stripeConnectNotice && (
+                  <div style={{ padding: '10px 14px', background: '#F1F7F0', border: '1px solid #BFD8BD', borderRadius: '6px', fontSize: '0.8rem', color: '#2B5329', marginBottom: '14px' }}>
+                    ✓ {stripeConnectNotice}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #F0ECE6' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    Complies with F187 Card Surcharging caps & F198 Segregated Booth Rent Escrow
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={stripeConnectLoading}
+                    onClick={handleStripeConnectOnboard}
+                  >
+                    {stripeConnectLoading ? 'Connecting Stripe API...' : 'Manage Stripe Connect Payout Settings'}
                   </Button>
                 </div>
               </Card>
