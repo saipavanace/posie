@@ -71,6 +71,7 @@ export default function PosieStudioAdminPage() {
 
   useEffect(() => {
     loadDbData();
+    loadStorageAssets();
   }, []);
 
   const handleAdjustInventory = async (id: string, delta: number) => {
@@ -279,6 +280,90 @@ export default function PosieStudioAdminPage() {
   // F107 Visit Hub State
   const [adminVisitLinkCopied, setAdminVisitLinkCopied] = useState<boolean>(false);
   const [adminSelfCheckoutCompleted, setAdminSelfCheckoutCompleted] = useState<boolean>(false);
+
+  // Milestone 4: Cloud Media Storage & Photo Management (F039, F102)
+  const [storageAssets, setStorageAssets] = useState<any[]>([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
+  const [storageUploadStatus, setStorageUploadStatus] = useState<string | null>(null);
+  const [selectedAnnotationPoint, setSelectedAnnotationPoint] = useState<string | null>("Glabella (20 Units)");
+  const [showVectorAnnotationOverlay, setShowVectorAnnotationOverlay] = useState<boolean>(true);
+
+  const loadStorageAssets = async () => {
+    try {
+      const res = await fetch('/api/storage/portfolio');
+      const data = await res.json();
+      if (data.portfolio) setStorageAssets(data.portfolio);
+    } catch (e) {
+      console.warn("Could not load portfolio media:", e);
+    }
+  };
+
+  const handleStorageUploadTest = async (assetType: 'CLINICAL_CHART' | 'BEFORE_AFTER_PORTFOLIO') => {
+    setIsUploadingMedia(true);
+    setStorageUploadStatus("Requesting direct pre-signed S3/R2 PUT URL...");
+    try {
+      const presignedRes = await fetch('/api/storage/presigned-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: assetType === 'CLINICAL_CHART' ? 'clinical-facemap-oct2026.png' : 'portfolio-aftercare-glow.png',
+          mimeType: 'image/png',
+          sizeBytes: 1024 * 1024 * 2.4, // 2.4MB
+          assetType,
+          isPublic: assetType === 'BEFORE_AFTER_PORTFOLIO',
+          marketingConsentGranted: marketingPermissionGranted,
+          title: assetType === 'CLINICAL_CHART' ? 'Zendaya Coleman — Glabella & Forehead Mapping' : 'HydraFacial 5-Series Transformation',
+        }),
+      });
+      const presignedData = await presignedRes.json();
+      if (!presignedData.success) {
+        throw new Error(presignedData.error || "Upload URL failed");
+      }
+
+      setStorageUploadStatus(`Direct-to-bucket upload: ${presignedData.simulated ? 'Simulated S3/R2 Direct PUT' : 'AWS S3 / Cloudflare R2'} ✓`);
+
+      // If clinical chart, also attach vector face-mapping annotations (F039)
+      if (assetType === 'CLINICAL_CHART' && presignedData.mediaAsset?.id) {
+        await fetch('/api/storage/annotations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetId: presignedData.mediaAsset.id,
+            photoAngle: 'frontal',
+            fitzpatrickScale: 4,
+            annotations: [
+              { id: 'ann-1', type: 'point', x: 50, y: 35, label: 'Glabella', treatmentType: 'Botox', units: 20, depthMm: 2.5, timestamp: new Date().toISOString() },
+              { id: 'ann-2', type: 'point', x: 40, y: 25, label: 'Left Forehead', treatmentType: 'Botox', units: 6, depthMm: 1.5, timestamp: new Date().toISOString() },
+              { id: 'ann-3', type: 'point', x: 60, y: 25, label: 'Right Forehead', treatmentType: 'Botox', units: 6, depthMm: 1.5, timestamp: new Date().toISOString() },
+            ],
+          }),
+        });
+      }
+
+      await loadStorageAssets();
+    } catch (err: any) {
+      setStorageUploadStatus(`Upload failed: ${err.message}`);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleToggleMarketingConsentInDb = async (assetId: string, grant: boolean) => {
+    try {
+      await fetch('/api/storage/portfolio', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId,
+          marketingConsentGranted: grant,
+          revocationReason: grant ? null : 'Client requested withdrawal from social media & public web',
+        }),
+      });
+      await loadStorageAssets();
+    } catch (e) {
+      console.warn("Failed to toggle consent in DB:", e);
+    }
+  };
 
   // F108 Automation State
   const [adminRecipeFilter, setAdminRecipeFilter] = useState<'review' | 'birthday' | 'aftercare'>('review');
@@ -1082,85 +1167,277 @@ export default function PosieStudioAdminPage() {
                   )}
                 </div>
 
-                {/* F102: Standardized Before & After Photos Widget */}
-                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                {/* MILESTONE 4: CLOUD OBJECT STORAGE & CLINICAL FACE-MAPPING (F039 & F102) */}
+                <div style={{ background: '#FAF8F5', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
-                      <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
-                        Standardized Before & After Clinical Media (F102)
-                      </strong>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                        Document D12 Media Consent & Non-Destructive Raw Original Preservation
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                          Milestone 4: Cloud Media Storage & Object Storage Rails
+                        </strong>
+                        <Badge variant="sage">AWS S3 / Cloudflare R2: Ready ✓</Badge>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                        Direct-to-bucket pre-signed PUT uploads • HIPAA-grade expiring 15-min GET URLs • Marketing CDN consent gateway
                       </div>
                     </div>
-                    <Badge variant={marketingPermissionGranted ? 'sage' : 'muted'}>
-                      {marketingPermissionGranted ? 'Marketing Consent: Active (Instagram / Web)' : 'Marketing Revoked (Internal Clinical Only)'}
-                    </Badge>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                    {/* Before Photo */}
-                    <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                        <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>Before Peel (Oct 20)</strong>
-                        <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Angle: Frontal 18&quot;</span>
-                      </div>
-                      <div style={{ background: '#F4F1EA', height: '110px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '0.8rem' }}>
-                        📷 Raw Capture (SHA-256 Verified)
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-                        Lighting: <strong>3200K (Warm Incandescent)</strong> • Unmodified Raw Media
-                      </div>
-                    </div>
-
-                    {/* After Photo */}
-                    <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                        <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>After Peel (Oct 27)</strong>
-                        <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Angle: Frontal 18&quot;</span>
-                      </div>
-                      <div style={{ background: '#F4F1EA', height: '110px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '0.8rem' }}>
-                        📷 Raw Capture (SHA-256 Verified)
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-                        Lighting: <strong>5000K (Daylight LED)</strong> • Non-destructive markup overlay
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Disclosure Notice */}
-                  <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.78rem', color: '#555', marginBottom: '12px' }}>
-                    ⚠ <strong>Capture Condition Difference Disclosed (F102 Invariant):</strong> Before photo was captured under 3200K warm tungsten vs After photo under 5000K daylight LED. Posie mandates transparent disclosure of lighting delta to eliminate deceptive aesthetic marketing claims.
-                  </div>
-
-                  {/* Dual-Tier Consent Controls */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EAE6DF', paddingTop: '10px' }}>
-                    <div style={{ fontSize: '0.78rem', color: '#444' }}>
-                      <strong>Tier 1:</strong> Internal Clinical Progress (Covered) • <strong>Tier 2:</strong> Public Marketing ({marketingPermissionGranted ? 'Approved' : 'Revoked'})
-                    </div>
-                    {marketingPermissionGranted ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          setMarketingPermissionGranted(false);
-                          setMarketingRevocationReason('Client requested withdrawal from social media');
-                        }}
+                        disabled={isUploadingMedia}
+                        onClick={() => handleStorageUploadTest('CLINICAL_CHART')}
                       >
-                        Client Revokes Marketing Consent (Rule D12)
+                        {isUploadingMedia ? 'Uploading...' : '+ Upload Clinical Chart (F039)'}
                       </Button>
-                    ) : (
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setMarketingPermissionGranted(true);
-                          setMarketingRevocationReason(null);
-                        }}
+                        variant="primary"
+                        disabled={isUploadingMedia}
+                        onClick={() => handleStorageUploadTest('BEFORE_AFTER_PORTFOLIO')}
                       >
-                        Re-grant Document D12 Marketing Consent
+                        {isUploadingMedia ? 'Uploading...' : '+ Upload Portfolio Photo (F102)'}
                       </Button>
-                    )}
+                    </div>
+                  </div>
+
+                  {storageUploadStatus && (
+                    <div style={{ background: '#F0F4F1', border: '1px solid #C4D7C8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', color: '#2D5236', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>☁ {storageUploadStatus}</span>
+                      <button onClick={() => setStorageUploadStatus(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#2D5236' }}>✕</button>
+                    </div>
+                  )}
+
+                  {/* F039: Interactive Face-Mapping Canvas */}
+                  <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div>
+                        <strong style={{ fontSize: '0.96rem', color: 'var(--color-primary)' }}>
+                          F039: Anatomical Face-Mapping & Non-Destructive Vector Markup
+                        </strong>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>
+                          Client: Zendaya Coleman • Fitzpatrick Type IV • 15-Min Expiring Private S3 GET URL
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', cursor: 'pointer', color: 'var(--color-primary)' }}>
+                          <input
+                            type="checkbox"
+                            checked={showVectorAnnotationOverlay}
+                            onChange={(e) => setShowVectorAnnotationOverlay(e.target.checked)}
+                          />
+                          Vector Annotation Layer
+                        </label>
+                        <Badge variant="rose">Private HIPAA Expiring URL</Badge>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '16px' }}>
+                      {/* Face Anatomy Vector Canvas */}
+                      <div style={{ position: 'relative', width: '320px', height: '240px', background: '#2C3E50', borderRadius: '8px', overflow: 'hidden', border: '2px solid #D5DED6' }}>
+                        <svg viewBox="0 0 320 240" style={{ width: '100%', height: '100%' }}>
+                          {/* Simulated Face Outline */}
+                          <ellipse cx="160" cy="120" rx="75" ry="95" fill="#FAF5EF" stroke="#D3C7B5" strokeWidth="2" />
+                          <circle cx="130" cy="105" r="5" fill="#4A3E39" />
+                          <circle cx="190" cy="105" r="5" fill="#4A3E39" />
+                          <path d="M160 110 L160 135 L153 140 L167 140" fill="none" stroke="#D3C7B5" strokeWidth="1.5" />
+                          <path d="M142 165 Q160 178 178 165" fill="none" stroke="#C49B88" strokeWidth="2.5" />
+
+                          {/* Vector Injection Points (F039) */}
+                          {showVectorAnnotationOverlay && (
+                            <>
+                              {/* Glabella Point */}
+                              <circle
+                                cx="160"
+                                cy="85"
+                                r="9"
+                                fill={selectedAnnotationPoint?.includes("Glabella") ? "#D97706" : "#E11D48"}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setSelectedAnnotationPoint("Glabella (20 Units Botox • Depth 2.5mm)")}
+                              />
+                              <text x="160" y="70" fontSize="9" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">20U</text>
+
+                              {/* Left Forehead */}
+                              <circle
+                                cx="125"
+                                cy="55"
+                                r="7"
+                                fill={selectedAnnotationPoint?.includes("Left Forehead") ? "#D97706" : "#3B82F6"}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setSelectedAnnotationPoint("Left Forehead (6 Units Botox • Depth 1.5mm)")}
+                              />
+                              <text x="125" y="44" fontSize="8" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">6U</text>
+
+                              {/* Right Forehead */}
+                              <circle
+                                cx="195"
+                                cy="55"
+                                r="7"
+                                fill={selectedAnnotationPoint?.includes("Right Forehead") ? "#D97706" : "#3B82F6"}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setSelectedAnnotationPoint("Right Forehead (6 Units Botox • Depth 1.5mm)")}
+                              />
+                              <text x="195" y="44" fontSize="8" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">6U</text>
+
+                              {/* Left Crow's Feet */}
+                              <circle
+                                cx="100"
+                                cy="105"
+                                r="6"
+                                fill={selectedAnnotationPoint?.includes("Left Crow") ? "#D97706" : "#10B981"}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setSelectedAnnotationPoint("Left Crow's Feet (4 Units Botox • Depth 1.0mm)")}
+                              />
+
+                              {/* Right Crow's Feet */}
+                              <circle
+                                cx="220"
+                                cy="105"
+                                r="6"
+                                fill={selectedAnnotationPoint?.includes("Right Crow") ? "#D97706" : "#10B981"}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setSelectedAnnotationPoint("Right Crow's Feet (4 Units Botox • Depth 1.0mm)")}
+                              />
+                            </>
+                          )}
+                        </svg>
+                      </div>
+
+                      {/* Vector Annotation Detail Card */}
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                            Selected Anatomical Marker
+                          </div>
+                          <strong style={{ fontSize: '1rem', color: 'var(--color-primary)', display: 'block', marginBottom: '8px' }}>
+                            {selectedAnnotationPoint || "Click a point on the canvas to inspect injection dosage"}
+                          </strong>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.78rem' }}>
+                            <div style={{ background: '#FAF8F5', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                              <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>Formulation</span>
+                              <strong>Botox Cosmetic (onabotulinumtoxinA)</strong>
+                            </div>
+                            <div style={{ background: '#FAF8F5', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                              <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>Needle Specification</span>
+                              <strong>32G × 4mm Ultra-Fine</strong>
+                            </div>
+                            <div style={{ background: '#FAF8F5', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                              <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>Vector Storage</span>
+                              <strong>Non-Destructive GeoJSON Layer</strong>
+                            </div>
+                            <div style={{ background: '#FAF8F5', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                              <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>Audit Trail</span>
+                              <strong>Dr. Lin (MD) • 2026-10-20 16:30Z</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ fontSize: '0.75rem', color: '#666', background: '#F8F9FA', padding: '8px 12px', borderRadius: '6px', marginTop: '10px' }}>
+                          💡 <strong>Clinical Invariant (F039):</strong> Vector coordinates are preserved independently from the base photo pixels. Raw clinical photography remains uncompressed and unaltered for statutory 7-year retention.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* F102: Standardized Before & After Photos Widget */}
+                  <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div>
+                        <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                          F102: Standardized Before & After Media & Marketing Consent Governance
+                        </strong>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                          Document D12 Consent Tracking • Automatic Public CDN Blocking upon Revocation
+                        </div>
+                      </div>
+                      <Badge variant={marketingPermissionGranted ? 'sage' : 'rose'}>
+                        {marketingPermissionGranted ? 'Marketing Consent: Active (CDN Public)' : 'Consent Revoked (CDN Blocked)'}
+                      </Badge>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      {/* Before Photo */}
+                      <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>Before Peel (Oct 20)</strong>
+                          <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Angle: Frontal 18&quot;</span>
+                        </div>
+                        <div style={{ background: '#F4F1EA', height: '110px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '0.8rem' }}>
+                          📷 Raw Capture (SHA-256 Verified)
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+                          Lighting: <strong>3200K (Warm Incandescent)</strong> • Unmodified Raw Media
+                        </div>
+                      </div>
+
+                      {/* After Photo */}
+                      <div style={{ background: '#FFF', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>After Peel (Oct 27)</strong>
+                          <span style={{ fontSize: '0.74rem', background: '#EAE6DF', padding: '2px 6px', borderRadius: '4px' }}>Angle: Frontal 18&quot;</span>
+                        </div>
+                        <div style={{ background: '#F4F1EA', height: '110px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: '0.8rem' }}>
+                          📷 Raw Capture (SHA-256 Verified)
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+                          Lighting: <strong>5000K (Daylight LED)</strong> • Non-destructive markup overlay
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Disclosure Notice */}
+                    <div style={{ background: '#FFFDF9', border: '1px solid #E5E0D8', padding: '10px 14px', borderRadius: '6px', fontSize: '0.78rem', color: '#555', marginBottom: '12px' }}>
+                      ⚠ <strong>Capture Condition Difference Disclosed (F102 Invariant):</strong> Before photo was captured under 3200K warm tungsten vs After photo under 5000K daylight LED. Posie mandates transparent disclosure of lighting delta to eliminate deceptive aesthetic marketing claims.
+                    </div>
+
+                    {/* Dual-Tier Consent Controls */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EAE6DF', paddingTop: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '0.78rem', color: '#444' }}>
+                        <strong>Tier 1:</strong> Internal Clinical Progress (Covered) • <strong>Tier 2:</strong> Public Marketing ({marketingPermissionGranted ? 'Approved' : 'Revoked'})
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {marketingPermissionGranted ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setMarketingPermissionGranted(false);
+                              setMarketingRevocationReason('Client requested withdrawal from social media');
+                              if (storageAssets.length > 0) {
+                                handleToggleMarketingConsentInDb(storageAssets[0].id, false);
+                              }
+                            }}
+                          >
+                            Revoke Marketing Consent (Rule D12)
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setMarketingPermissionGranted(true);
+                              setMarketingRevocationReason(null);
+                              if (storageAssets.length > 0) {
+                                handleToggleMarketingConsentInDb(storageAssets[0].id, true);
+                              }
+                            }}
+                          >
+                            Re-grant Document D12 Consent
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>
