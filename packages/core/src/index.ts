@@ -110,7 +110,15 @@ export * from './communication_inbox';
 export * from './calling_and_voicemail';
 export * from './message_consent';
 export * from './metric_dictionary';
-export * from './role_dashboards';
+export {
+  type DashboardStaffRole,
+  type PersonalGoalProgress,
+  type PractitionerDashboardView,
+  type OwnerManagerDashboardView,
+  type DashboardViewPayload,
+  generateRoleBasedDashboard,
+  canViewStaffMetrics,
+} from './role_dashboards';
 export * from './retention_cohorts';
 export * from './service_contribution';
 export * from './acquisition_attribution';
@@ -133,7 +141,15 @@ export * from './tax_configuration';
 export * from './integration_connection';
 export * from './consequential_approvals';
 export * from './wallet_payment_methods';
-export * from './waitlist_priorities';
+export {
+  type WaitlistPriorityStrategy,
+  type WaitlistClientEntry,
+  type WaitlistCancellationOpening,
+  type RankedWaitlistCandidate,
+  type ExclusiveWaitlistClaimOffer,
+  rankWaitlistCandidatesForOpening,
+  issueExclusiveWaitlistOffer,
+} from './waitlist_priorities';
 export * from './ocr_intake_assistance';
 export * from './branded_mobile_app';
 export * from './multi_location_ops';

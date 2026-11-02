@@ -148,6 +148,19 @@ export default function PosieStudioAdminPage() {
       if (data.success && data.paymentIntentId) {
         setStripePosTxId(data.paymentIntentId);
         setPosCheckoutCompleted(true);
+
+        // Dispatch Twilio digital SMS receipt
+        fetch('/api/communications/sms/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: '310-555-0199',
+            type: 'receipt',
+            clientName: 'Zendaya Coleman',
+            totalFormatted: '$254.64',
+            ticketId: 'TKT-88912',
+          }),
+        }).catch(() => {});
       }
     } catch (err: any) {
       console.error('POS Stripe charge failed:', err);
@@ -175,6 +188,59 @@ export default function PosieStudioAdminPage() {
       console.error('Stripe Connect onboarding error:', err);
     } finally {
       setStripeConnectLoading(false);
+    }
+  };
+
+  // Two-Way SMS Chat States (Twilio Live)
+  const [smsChatInput, setSmsChatInput] = useState<string>('Absolutely! I have added a chilled botanical ceramide mask to your protocol. See you tomorrow!');
+  const [smsChatThread, setSmsChatThread] = useState<Array<{ sender: 'client' | 'staff'; text: string; time: string; channel: string }>>([
+    {
+      sender: 'staff',
+      text: 'Hi Zendaya! Looking forward to your Hydra-Dew Facial tomorrow at 2:00 PM. Please arrive 5 minutes early to settle in.',
+      time: '10:15 AM',
+      channel: 'Twilio Studio SMS',
+    },
+    {
+      sender: 'client',
+      text: 'Thank you Maya! My skin barrier feels a little dry after my flight, can we add extra hydration?',
+      time: '10:22 AM',
+      channel: 'SMS ((310) 555-0199)',
+    },
+  ]);
+  const [isSendingChatSms, setIsSendingChatSms] = useState<boolean>(false);
+
+  const handleSendChatSms = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!smsChatInput.trim()) return;
+
+    const textToSend = smsChatInput;
+    setIsSendingChatSms(true);
+    try {
+      await fetch('/api/communications/sms/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: '+13105550199',
+          messageText: textToSend,
+          clientName: 'Zendaya Coleman',
+        }),
+      });
+
+      setSmsChatThread((prev) => [
+        ...prev,
+        {
+          sender: 'staff',
+          text: textToSend,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          channel: 'Twilio SMS Delivered',
+        },
+      ]);
+      setSmsChatInput('');
+      setAdminOutboundSent(true);
+    } catch (err: any) {
+      console.error('Failed to send SMS:', err);
+    } finally {
+      setIsSendingChatSms(false);
     }
   };
 
@@ -1823,30 +1889,33 @@ export default function PosieStudioAdminPage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '280px', overflowY: 'auto' }}>
-                  {/* Outbound message */}
-                  <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary)', color: '#FFF', padding: '12px 16px', borderRadius: '12px 12px 2px 12px', maxWidth: '70%', fontSize: '0.84rem' }}>
-                    <div>Hi Zendaya! Looking forward to your Hydra-Dew Facial tomorrow at 2:00 PM. Please arrive 5 minutes early to settle in.</div>
-                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px', textAlign: 'right' }}>
-                      Sent via Studio SMS • 10:15 AM • Delivered ✓
-                    </div>
-                  </div>
-
-                  {/* Inbound message */}
-                  <div style={{ alignSelf: 'flex-start', background: '#FAF8F5', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px 12px 12px 2px', maxWidth: '70%', fontSize: '0.84rem' }}>
-                    <div>Thank you Maya! My skin barrier feels a little dry after my flight, can we add extra hydration?</div>
-                    <div style={{ fontSize: '0.7rem', color: '#888', marginTop: '4px' }}>
-                      Received via SMS ((310) 555-0199) • 10:22 AM
-                    </div>
-                  </div>
-
-                  {adminOutboundSent && (
-                    <div style={{ alignSelf: 'flex-end', background: 'var(--color-primary)', color: '#FFF', padding: '12px 16px', borderRadius: '12px 12px 2px 12px', maxWidth: '70%', fontSize: '0.84rem' }}>
-                      <div>Absolutely! I have added a chilled botanical ceramide mask to your protocol. See you tomorrow!</div>
-                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px', textAlign: 'right' }}>
-                        Sent just now • Delivered ✓
+                  {smsChatThread.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        alignSelf: msg.sender === 'staff' ? 'flex-end' : 'flex-start',
+                        background: msg.sender === 'staff' ? 'var(--color-primary)' : '#FAF8F5',
+                        color: msg.sender === 'staff' ? '#FFF' : 'inherit',
+                        border: msg.sender === 'staff' ? 'none' : '1px solid var(--color-border)',
+                        padding: '12px 16px',
+                        borderRadius: msg.sender === 'staff' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                        maxWidth: '75%',
+                        fontSize: '0.84rem',
+                      }}
+                    >
+                      <div>{msg.text}</div>
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          color: msg.sender === 'staff' ? 'rgba(255,255,255,0.7)' : '#888',
+                          marginTop: '4px',
+                          textAlign: msg.sender === 'staff' ? 'right' : 'left',
+                        }}
+                      >
+                        {msg.channel} • {msg.time} ✓
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
 
                 {adminTimelineNoteSaved && (
@@ -1855,23 +1924,38 @@ export default function PosieStudioAdminPage() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <form onSubmit={handleSendChatSms} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
+                  <input
+                    type="text"
+                    value={smsChatInput}
+                    onChange={(e) => setSmsChatInput(e.target.value)}
+                    placeholder="Type client SMS message (Twilio 10DLC compliant)..."
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.86rem',
+                    }}
+                  />
                   <Button
+                    type="submit"
                     size="sm"
                     variant="primary"
-                    onClick={() => setAdminOutboundSent(true)}
+                    disabled={isSendingChatSms || !smsChatInput.trim()}
                   >
                     <Send size={14} style={{ marginRight: '6px' }} />
-                    Reply as Maya Lin
+                    {isSendingChatSms ? 'Dispatching...' : 'Send SMS'}
                   </Button>
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => setAdminTimelineNoteSaved(!adminTimelineNoteSaved)}
                   >
-                    {adminTimelineNoteSaved ? 'Remove from Timeline' : 'Save Message to Client Timeline (Rule F101)'}
+                    {adminTimelineNoteSaved ? 'Remove from Timeline' : 'Save to Timeline'}
                   </Button>
-                </div>
+                </form>
               </Card>
             </div>
           )}
@@ -2003,13 +2087,38 @@ export default function PosieStudioAdminPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <Button
                     size="sm"
                     variant={adminRecipePaused ? 'primary' : 'outline'}
                     onClick={() => setAdminRecipePaused(!adminRecipePaused)}
                   >
                     {adminRecipePaused ? 'Resume Recipe' : '1-Click Emergency Pause (F108)'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/communications/campaigns/dispatch', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            campaignName: 'Post-Visit Care & Review Flow',
+                            messageText: 'Atelier Posie: Thank you for visiting today! We hope your skin is glowing. Reply STOP to cancel.',
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          alert(`Flow Dispatched: ${data.execution?.totalEligibleRecipients} messages routed via Twilio gateway.`);
+                        }
+                      } catch (err: any) {
+                        console.error('Flow dispatch error:', err);
+                      }
+                    }}
+                  >
+                    <Send size={13} style={{ marginRight: '6px' }} />
+                    Rehearse &amp; Dispatch Live Twilio Flow (F191)
                   </Button>
                 </div>
               </Card>

@@ -18,7 +18,8 @@
  *    Practitioners inspect personalized compensation, tip pass-through, and client retention.
  */
 
-export type StaffRole = 'owner' | 'general_manager' | 'commission_practitioner' | 'booth_renter';
+export type DashboardStaffRole = 'owner' | 'general_manager' | 'commission_practitioner' | 'booth_renter';
+export type StaffRole = DashboardStaffRole;
 
 export interface PersonalGoalProgress {
   weeklyRevenueGoalUSD: number;

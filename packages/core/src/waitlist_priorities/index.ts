@@ -34,7 +34,7 @@ export interface WaitlistClientEntry {
   joinedAtUtc: string;
 }
 
-export interface CancellationOpening {
+export interface WaitlistCancellationOpening {
   openingId: string;
   practitionerId: string;
   practitionerName: string;
@@ -43,6 +43,7 @@ export interface CancellationOpening {
   availableDurationMinutes: number; // e.g. 60
   hoursUntilSlotStarts: number;
 }
+export type CancellationOpening = WaitlistCancellationOpening;
 
 export interface RankedWaitlistCandidate {
   entry: WaitlistClientEntry;
